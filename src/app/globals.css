@@ -1,26 +1,47 @@
 @import "tailwindcss";
 
+/* Design tokens from the design brief. Ledger palette: paper, ink, oxblood, brass. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f6f3ec;
+  --paper-2: #ebe7dd;
+  --ink: #15130f;
+  --ink-2: #4a463f;
+  --ink-3: #8a857b;
+  --rule: #d8d3c7;
+  --oxblood: #7a1f1f;
+  --oxblood-2: #f3e4e4;
+  --brass: #8c6a1f;
+  --brass-2: #f3ecd8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-oxblood: var(--oxblood);
+  --color-oxblood-2: var(--oxblood-2);
+  --color-brass: var(--brass);
+  --color-brass-2: var(--brass-2);
+  --font-sans: ui-sans-serif, system-ui, "Inter", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --radius: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html, body { background: var(--paper); color: var(--ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+.num { font-variant-numeric: tabular-nums; }
+.sku { font-family: var(--font-mono); letter-spacing: 0.02em; }
+.btn { @apply inline-flex items-center justify-center rounded-[4px] bg-ink px-4 py-3 text-sm font-medium text-paper disabled:opacity-50; }
+.btn-secondary { @apply inline-flex items-center justify-center rounded-[4px] border border-rule bg-transparent px-4 py-3 text-sm font-medium text-ink; }
+.field { @apply w-full rounded-[4px] border border-rule bg-white px-3 py-3 text-base text-ink outline-none focus:border-ink; }
+.pill { @apply inline-block rounded-[2px] border px-1.5 py-0.5 text-[11px] leading-4; }
+.pill-floor { @apply border-rule text-ink-2; }
+.pill-online { @apply border-brass text-brass bg-brass-2; }
+.pill-sold { @apply border-oxblood bg-oxblood text-paper; }
+.band-60 { @apply bg-brass-2 text-brass; }
+.band-90 { @apply border border-oxblood text-oxblood; }
+.band-120 { @apply bg-oxblood text-paper; }
