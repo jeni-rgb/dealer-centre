@@ -54,7 +54,19 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
     }
   }
 
-  const m = matchLine(line, candidates, categories);
+  let m = matchLine(line, candidates, categories);
+
+  // Manual till: an unknown ticket still belongs to the dealer whose code it starts with.
+  if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
+    const prefix = line.sku.match(/^([A-Z][A-Z0-9]{1,3}?)\d{1,4}$/)?.[1];
+    if (prefix) {
+      const { data: d } = await db.from("dealers").select("id").eq("code", prefix).maybeSingle();
+      if (d) {
+        const { data: link } = await db.from("dealer_centres").select("id").eq("dealer_id", d.id).eq("centre_id", centreId).is("left_at", null).maybeSingle();
+        if (link) m = { kind: "dealer_only", dealer_id: d.id, ticket_no: line.sku };
+      }
+    }
+  }
 
   // Sold price is the real price. amount_pence is what was paid; listed price is kept separately.
   const base = {

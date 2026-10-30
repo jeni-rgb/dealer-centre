@@ -12,7 +12,7 @@ export default async function CentreLayout({ children }: { children: React.React
   return (
     <div className="min-h-screen bg-surface">
       <CentreNav centreName={(owned?.[0]?.centres as unknown as { name: string })?.name ?? "Centre"} />
-      <main className="ml-[220px] p-8">{children}</main>
+      <main className="p-4 md:ml-[220px] md:p-8">{children}</main>
     </div>
   );
 }

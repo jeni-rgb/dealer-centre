@@ -4,8 +4,8 @@ import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 import { squareClient } from "@/lib/channels/square";
 import { MappingTable } from "./table";
 
-export default async function Mapping({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
-  const { centre: cp } = await searchParams;
+export default async function Mapping({ searchParams }: { searchParams: Promise<{ centre?: string; push?: string }> }) {
+  const { centre: cp, push } = await searchParams;
   const centre = await currentCentre(cp);
   if (!centre) redirect("/signup/centre");
   const sb = await supabaseServer();
@@ -27,6 +27,7 @@ export default async function Mapping({ searchParams }: { searchParams: Promise<
   return (
     <>
       <div className="mb-6"><h1 className="text-[24px] font-semibold">Dealers and Square categories</h1><p className="text-[13px] text-ink-muted">Each dealer needs one Square category. Till sales under that category go to that dealer even without a barcode. Rent shown is what the dealer declared; correct it here.</p></div>
+      {push && <div className="mb-4 rounded-[14px] border border-[#A7F3D0] bg-success-soft px-4 py-3 text-[14px] text-success">Square connected. Map each dealer to a category below, then press Push all stock to till. Every item already listed goes onto the till with its existing ticket number, so old labels scan straight away.</div>}
       {!ch && <div className="mb-4 rounded-[14px] border border-[#FDE68A] bg-warning-soft px-4 py-3 text-[14px] text-warning">Connect Square first to see categories. <a className="font-semibold underline" href={`/api/oauth/square?owner=centre&id=${centre.id}`}>Connect</a></div>}
       <MappingTable centreId={centre.id} categories={categories} rows={(links ?? []).map((l) => ({
         id: l.id, dealer_id: l.dealer_id, name: (l.dealers as unknown as { name: string }).name, code: (l.dealers as unknown as { code: string }).code, status: l.status,

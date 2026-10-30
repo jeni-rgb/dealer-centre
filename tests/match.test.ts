@@ -39,3 +39,10 @@ describe("matchLine", () => {
     expect(matchLine(base, cands, cats).kind).toBe("unmatched");
   });
 });
+
+describe("ticket prefix", () => {
+  it("reads a dealer code off a ticket", () => {
+    expect("B140372".match(/^([A-Z][A-Z0-9]{1,3}?)\d{1,4}$/)?.[1]).toBe("B14");
+    expect("JH0010".match(/^([A-Z][A-Z0-9]{1,3}?)\d{1,4}$/)?.[1]).toBe("JH");
+  });
+});

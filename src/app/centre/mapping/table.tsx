@@ -9,6 +9,14 @@ const SCHED: Record<string, string> = { first: "1st", fifteenth: "15th", last: "
 export function MappingTable({ centreId, categories, rows }: { centreId: string; categories: { id: string; name: string }[]; rows: Row[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
+  const [pushed, setPushed] = useState<string | null>(null);
+  async function pushStock() {
+    setBusy("push");
+    const r = await fetch(`/api/centres/${centreId}/push-stock`, { method: "POST" });
+    const j = await r.json();
+    setBusy(null);
+    setPushed(`Pushing ${j.items} live items to ${j.channels} channel${j.channels === 1 ? "" : "s"}. Takes a few minutes, watch Health for failures.`);
+  }
   async function save(id: string, patch: Record<string, unknown>) {
     setBusy(id);
     await fetch(`/api/centres/${centreId}/dealers/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
@@ -31,7 +39,13 @@ export function MappingTable({ centreId, categories, rows }: { centreId: string;
           ))}
         </div>
       )}
-      {unmapped.length > 0 && <p className="text-[13px] text-ink-muted">{unmapped.length} Square categor{unmapped.length === 1 ? "y is" : "ies are"} not assigned to any dealer.</p>}
+      {categories.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border bg-white px-4 py-3 text-[13px]">
+          <span className="text-ink-muted">{unmapped.length > 0 ? `${unmapped.length} Square categor${unmapped.length === 1 ? "y is" : "ies are"} not assigned to any dealer. ` : ""}Once dealers are mapped, push every item already in the app onto the till. Nothing is re added.</span>
+          <button className="btn-sm" disabled={busy === "push"} onClick={pushStock}>{busy === "push" ? "Queuing…" : "Push all stock to till"}</button>
+        </div>
+      )}
+      {pushed && <p className="text-[13px] text-success">{pushed}</p>}
       <div className="card overflow-hidden">
         <table className="w-full text-[14px]">
           <thead className="text-left text-[12px] text-ink-muted"><tr className="border-b border-border"><th className="px-5 py-3 font-medium">Dealer</th><th className="py-3 font-medium">Square category</th><th className="py-3 font-medium">Pitches</th><th className="py-3 font-medium">Rent</th><th className="py-3 font-medium">Taken</th><th className="px-5 py-3 font-medium">Status</th></tr></thead>

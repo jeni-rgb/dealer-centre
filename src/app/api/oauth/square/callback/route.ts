@@ -39,6 +39,6 @@ export async function GET(req: Request) {
     .single();
   if (ch) await enqueue(db, "backfill_channel", { channel_id: ch.id });
 
-  const dest = ownerType === "centre" ? `/centre/mapping?centre=${ownerId}&connected=square` : "/app/settings?connected=square";
+  const dest = ownerType === "centre" ? `/centre/mapping?centre=${ownerId}&connected=square&push=1` : "/app/settings?connected=square";
   return NextResponse.redirect(new URL(dest, process.env.NEXT_PUBLIC_APP_URL));
 }

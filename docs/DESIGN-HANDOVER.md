@@ -26,3 +26,8 @@ Tokens are in `src/app/globals.css`. Components in `src/components/ui.tsx`.
 - Rent: centre can override, `rent_set_by` records who set it; dealer notification not yet built.
 - Label artwork in the new direction: label renderer is unchanged (black on white Code 128).
 - Final product name, domain, wordmark.
+
+## Phase 1 without a till, phase 2 with one (added 30 Oct)
+- Looses has no POS. Every centre gets a `manual` channel. Centre owners record the day's collected tickets in **End of day** (`/centre/eod`): scan or type the ticket, cash or card, date, price paid. Each line goes through `record_sale`, so items close everywhere and dealers are notified.
+- An unknown ticket is attributed to the dealer whose code it starts with (`src/lib/sales/record.ts`).
+- When a Square till arrives, connecting it runs `backfill_channel`: every live item at the centre is pushed to Square with its existing SKU. "Push all stock to till" on Mapping re-runs it after dealers are mapped. Labels printed in phase 1 scan on the new till with no relabelling.

@@ -33,11 +33,11 @@ export function CentreSignupForm() {
           <p className="mt-2 text-[14px] text-ink-muted">Give this to dealers. They enter it when they sign up and you approve them on the mapping screen.</p>
         </div>
         <div>
-          <div className="mb-2 text-sm font-medium">Next: connect your Square till</div>
-          <a className="btn" href={`/api/oauth/square?owner=centre&id=${done.centre_id}`}>Connect Square</a>
-          <p className="mt-2 text-xs text-ink-muted">Sign in as the Square account owner. We read sales and items and create items for your dealers. We never take payments.</p>
+          <div className="mb-2 text-[14px] font-medium">How do you take payments?</div>
+          <a className="btn" href={`/centre/eod?centre=${done.centre_id}`}>An ordinary till, I record sales from the tickets</a>
+          <a className="btn-secondary mt-2" href={`/api/oauth/square?owner=centre&id=${done.centre_id}`}>Square, connect it</a>
+          <p className="mt-2 text-[12px] text-ink-muted">With an ordinary till, the customer brings the barcoded ticket to pay, the till keeps it, and you record the day's tickets in End of day. Takes a few minutes an evening.</p>
         </div>
-        <a className="text-[14px] font-medium text-accent" href={`/centre?centre=${done.centre_id}`}>Skip for now, go to the centre dashboard</a>
       </div>
     );
   }

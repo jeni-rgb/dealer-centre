@@ -33,7 +33,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
         {(pending ?? []).length > 0 && <Link href={`/centre/mapping?centre=${centre.id}`} className="btn-sm">{(pending ?? []).length} dealer{(pending ?? []).length > 1 ? "s" : ""} to approve</Link>}
       </div>
       {!channel && (
-        <div className="mb-6 flex items-center justify-between rounded-[14px] border border-[#FDE68A] bg-warning-soft px-4 py-3 text-[14px] text-warning"><span>Square is not connected. Floor sales will not appear until it is.</span><a className="font-semibold underline" href={`/api/oauth/square?owner=centre&id=${centre.id}`}>Connect Square</a></div>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border bg-white px-4 py-3 text-[14px]"><span>No Square till connected. Record floor sales from the collected tickets in <Link className="font-semibold text-accent" href={`/centre/eod?centre=${centre.id}`}>End of day</Link>.</span><a className="text-[13px] text-ink-muted underline" href={`/api/oauth/square?owner=centre&id=${centre.id}`}>Connect Square instead</a></div>
       )}
       <div className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <Kpi label="Month to date" value={money(total)} sub={`${money(online)} online`} />

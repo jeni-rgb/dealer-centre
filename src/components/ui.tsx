@@ -123,14 +123,21 @@ export function Empty({ text, href, cta }: { text: string; href?: string; cta?: 
 
 export function Sidebar({ items, title }: { items: [string, string, boolean][]; title: string }) {
   return (
-    <aside className="sidebar">
-      <div className="mb-6 px-3 text-[15px] font-semibold">Dealer Centre <span className="block text-[12px] font-normal text-ink-muted">{title}</span></div>
-      <nav className="flex flex-col gap-1">
+    <>
+      <aside className="sidebar hidden md:block">
+        <div className="mb-6 px-3 text-[15px] font-semibold">Dealer Centre <span className="block text-[12px] font-normal text-ink-muted">{title}</span></div>
+        <nav className="flex flex-col gap-1">
+          {items.map(([label, href, active]) => (
+            <Link key={href} href={href} className={`sidebar-link ${active ? "sidebar-link-active" : ""}`}>{label}</Link>
+          ))}
+        </nav>
+      </aside>
+      <nav className="flex gap-1 overflow-x-auto border-b border-border bg-white px-3 py-2 md:hidden">
         {items.map(([label, href, active]) => (
-          <Link key={href} href={href} className={`sidebar-link ${active ? "sidebar-link-active" : ""}`}>{label}</Link>
+          <Link key={href} href={href} className={`whitespace-nowrap rounded-[10px] px-3 py-2 text-[13px] font-medium ${active ? "bg-accent-soft text-accent-text" : "text-ink-muted"}`}>{label}</Link>
         ))}
       </nav>
-    </aside>
+    </>
   );
 }
 

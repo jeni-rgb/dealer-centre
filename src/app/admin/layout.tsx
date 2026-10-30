@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-surface">
       <AdminNav />
-      <main className="ml-[220px] p-8">{children}</main>
+      <main className="p-4 md:ml-[220px] md:p-8">{children}</main>
     </div>
   );
 }

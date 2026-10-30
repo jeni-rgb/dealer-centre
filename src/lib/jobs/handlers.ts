@@ -8,7 +8,8 @@ import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
 
-const adapters = { square: squareAdapter, shopify: shopifyAdapter, ebay: ebayAdapter };
+const adapters = { square: squareAdapter, shopify: shopifyAdapter, ebay: ebayAdapter } as const;
+const adapterFor = (t: string) => adapters[t as keyof typeof adapters];
 
 async function getChannel(db: Admin, id: string) {
   const { data, error } = await db.from("channels").select("*").eq("id", id).single();
@@ -41,7 +42,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
     }
     try {
       const existing = listing.external_id ? { external_id: listing.external_id, external_variant_id: listing.external_variant_id } : null;
-      const ref = await adapters[channel.type].upsertItem(channel, item, { categoryId, listingId, existing });
+      const ref = await adapterFor(channel.type).upsertItem(channel, item, { categoryId, listingId, existing });
       await db
         .from("item_listings")
         .update({ external_id: ref.external_id, external_variant_id: ref.external_variant_id, status: "live", synced_at: new Date().toISOString(), last_error: null })
@@ -107,7 +108,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
         continue;
       }
       const ch = await getChannel(db, l.channel_id);
-      await adapters[ch.type].setInventory(ch, { external_id: l.external_id, external_variant_id: l.external_variant_id }, 0);
+      await adapterFor(ch.type).setInventory(ch, { external_id: l.external_id, external_variant_id: l.external_variant_id }, 0);
       await db.from("item_listings").update({ status: "closed" }).eq("id", l.id);
     }
   },
@@ -117,7 +118,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
     const { data: listings } = await db.from("item_listings").select("*").eq("item_id", itemId).eq("status", "closed");
     for (const l of listings ?? []) {
       const ch = await getChannel(db, l.channel_id);
-      await adapters[ch.type].setInventory(ch, { external_id: l.external_id, external_variant_id: l.external_variant_id }, 1);
+      await adapterFor(ch.type).setInventory(ch, { external_id: l.external_id, external_variant_id: l.external_variant_id }, 1);
       await db.from("item_listings").update({ status: "live" }).eq("id", l.id);
     }
   },
@@ -145,7 +146,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
   async reconcile_channel(db, p) {
     const channel = await getChannel(db, p.channel_id as string);
     const since = p.since ? new Date(p.since as string) : new Date(Date.now() - 48 * 3600_000);
-    const lines = await adapters[channel.type].listOrderLines(channel, since);
+    const lines = await adapterFor(channel.type).listOrderLines(channel, since);
     for (const line of lines) await recordSale(db, channel, line);
   },
 

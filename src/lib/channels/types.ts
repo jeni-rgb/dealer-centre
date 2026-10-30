@@ -1,6 +1,6 @@
 export type ChannelRow = {
   id: string;
-  type: "square" | "shopify" | "ebay";
+  type: "square" | "shopify" | "ebay" | "manual";
   owner_type: "dealer" | "centre";
   owner_id: string;
   external_account_id: string;
