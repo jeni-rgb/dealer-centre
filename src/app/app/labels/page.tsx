@@ -1,54 +1,30 @@
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
-import { DealerNav, Empty, Page, Rule, Sku } from "@/components/ui";
-
+import { DealerNav, Screen } from "@/components/ui";
+import { LabelsView } from "./view";
 
 export default async function Labels() {
   const me = await requireDealer();
   const sb = await supabaseServer();
-  const { data: jobs } = await sb
-    .from("print_jobs")
-    .select("id, status, created_at, item_id, items(sku, title), printers(name, owner_type, provider)")
-    .eq("dealer_id", me.dealer_id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  const groups = new Map<string, typeof jobs>();
-  for (const j of jobs ?? []) {
-    const p = j.printers as unknown as { name: string; owner_type: string } | null;
-    const key = p ? `${p.name}${p.owner_type === "centre" ? " (shop)" : ""}` : "No printer";
-    groups.set(key, [...(groups.get(key) ?? []), j]);
-  }
-  const readyIds = (jobs ?? []).filter((j) => j.status === "ready").map((j) => j.item_id);
-
+  const [{ data: jobs }, { data: printers }, { data: last }] = await Promise.all([
+    sb.from("print_jobs").select("id, status, created_at, updated_at, printer_id, item_id, items(sku, title, status, photos)").eq("dealer_id", me.dealer_id).order("updated_at", { ascending: false }).limit(200),
+    sb.from("printers").select("id, name, owner_type, provider, status, centres:centre_id(name)").eq("status", "ready"),
+    sb.from("print_jobs").select("printer_id").eq("dealer_id", me.dealer_id).not("printer_id", "is", null).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const rows = (jobs ?? [])
+    .filter((j) => (j.items as unknown as { status: string })?.status === "live" || j.status !== "not_printed")
+    .map((j) => {
+      const it = j.items as unknown as { sku: string; title: string; photos: { url?: string }[] };
+      return { id: j.id, item_id: j.item_id, status: j.status, sku: it.sku, title: it.title, photo: it.photos?.[0]?.url ?? null, at: j.updated_at };
+    });
   return (
-    <Page
-      title="Labels"
-      action={readyIds.length > 0 && <a className="text-xs underline" href={`/api/labels/batch?ids=${readyIds.join(",")}`} target="_blank" rel="noreferrer">Print {readyIds.length} ready</a>}
-    >
-      {(jobs ?? []).length === 0 && <Empty text="No labels queued. Labels appear here when you list an item with a printer chosen." />}
-      {[...groups.entries()].map(([printer, list]) => (
-        <section key={printer} className="mb-6">
-          <h2 className="mb-1 text-sm font-medium">{printer}</h2>
-          <Rule />
-          <ul>
-            {(list ?? []).map((j) => {
-              const it = j.items as unknown as { sku: string; title: string };
-              const label = { queued: "Queued", ready: "Ready to print", sent: "Sent to printer", printed: "Printed", failed: "Failed" }[j.status as string];
-              return (
-                <li key={j.id} className="flex items-center justify-between border-b border-rule py-3 text-sm">
-                  <div className="min-w-0">
-                    <div className="truncate">{it.title}</div>
-                    <div className="text-xs"><Sku sku={it.sku} /></div>
-                  </div>
-                  <span className={`text-xs ${j.status === "failed" ? "text-oxblood" : j.status === "printed" ? "text-ink-3" : "text-brass"}`}>{label}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-      <DealerNav active="/app/labels" />
-    </Page>
+    <Screen title="Labels" back={{ href: "/app" }}>
+      <LabelsView
+        rows={rows}
+        printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${(p.centres as unknown as { name: string })?.name ?? p.name} till` : p.name, kind: p.owner_type === "centre" ? "Shop printer" : "Your printer", cloud: p.provider === "printnode" }))}
+        lastPrinterId={last?.printer_id ?? null}
+      />
+      <DealerNav active="today" />
+    </Screen>
   );
 }

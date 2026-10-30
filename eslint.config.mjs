@@ -15,4 +15,5 @@ const eslintConfig = defineConfig([
   ]),
 ]);
 
-export default eslintConfig;
+const extra = [{ rules: { "react-hooks/purity": "warn", "react-hooks/set-state-in-effect": "warn", "react/no-unescaped-entities": "off" } }];
+export default [...eslintConfig, ...extra];

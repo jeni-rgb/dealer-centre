@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
-import { ChannelPill, DaysBand, DealerNav, Page, Rule, Sku, money } from "@/components/ui";
+import { ChannelLabel, DaysBand, DealerNav, Pill, Screen, Sku, money, when } from "@/components/ui";
 import { ItemActions } from "./actions";
-
+import { MarginCard } from "./margin";
 
 export default async function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
   const me = await requireDealer();
@@ -11,59 +12,65 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
   const sb = await supabaseServer();
   const { data: item } = await sb
     .from("items")
-    .select("*, centres(name), item_listings(status, last_error, synced_at, channels:channel_id(type, owner_type)), sales(amount_pence, sold_at, channels:channel_id(type))")
-    .eq("id", id)
-    .eq("dealer_id", me.dealer_id)
-    .maybeSingle();
+    .select("*, centres(name, commission_bps, online_commission_bps), item_listings(status, last_error, channels:channel_id(type, owner_type)), sales(amount_pence, listed_price_pence, sold_at, channels:channel_id(type, owner_type)), print_jobs(status)")
+    .eq("id", id).eq("dealer_id", me.dealer_id).maybeSingle();
   if (!item) notFound();
 
+  const centre = item.centres as unknown as { name: string; commission_bps: number; online_commission_bps: number } | null;
   const listings = item.item_listings as unknown as { status: string; last_error: string | null; channels: { type: string; owner_type: string } | null }[];
-  const sale = (item.sales as unknown as { amount_pence: number; sold_at: string; channels: { type: string } | null }[])[0];
+  const sale = (item.sales as unknown as { amount_pence: number; listed_price_pence: number | null; sold_at: string; channels: { type: string; owner_type: string } | null }[])[0];
   const photos = item.photos as { url?: string }[];
+  const label = (item.print_jobs as unknown as { status: string }[])[0];
 
   return (
-    <Page title={item.title}>
-      <div className="grid grid-cols-3 gap-1">
-        {photos.map((p, i) => p.url && <img key={i} src={p.url} alt="" className="aspect-square w-full rounded-[2px] object-cover" />)}
+    <Screen title="Item" back={{ href: "/app/stock" }}>
+      {photos.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5">{photos.map((p, i) => p.url && <img key={i} src={p.url} alt="" className="aspect-square w-full rounded-[10px] object-cover" />)}</div>
+      )}
+      <div>
+        <h2 className="text-[20px] font-semibold leading-6">{item.title}</h2>
+        <div className="mt-2 flex items-center gap-2 text-[12px] text-ink-muted">
+          <Sku sku={item.sku} className="text-[14px]" />
+          {item.status === "sold" ? <Pill kind="success">Sold</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
+          {centre && <span>{centre.name}</span>}
+        </div>
       </div>
-      <div className="mt-5 flex items-baseline justify-between">
-        <div className="sku text-3xl font-medium">{<Sku sku={item.sku} />}</div>
-        <div className="num text-2xl font-medium">{money(item.price_pence)}</div>
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-ink-2">
-        {item.status === "sold" ? <ChannelPill kind="sold" /> : <DaysBand listedAt={item.listed_at} />}
-        {item.centres && <span>{(item.centres as unknown as { name: string }).name}</span>}
-        <span>Listed {new Date(item.listed_at).toLocaleDateString("en-GB")}</span>
-      </div>
-      {item.description && <p className="mt-4 text-sm text-ink-2">{item.description}</p>}
 
-      <h2 className="mt-8 mb-2 text-sm font-medium">Channels</h2>
-      <Rule />
-      <ul>
-        {listings.length === 0 && <li className="py-3 text-sm text-ink-2">Not on any channel yet.</li>}
-        {listings.map((l, i) => (
-          <li key={i} className="flex items-center justify-between border-b border-rule py-3 text-sm">
-            <span>{l.channels?.type === "shopify" ? "Shopify" : l.channels?.owner_type === "centre" ? "Centre till" : "Own till"}</span>
-            <span className={l.status === "failed" ? "text-oxblood" : l.status === "pending" ? "text-brass" : "text-ink-2"}>
-              {l.status === "live" ? "Live" : l.status === "closed" ? "Closed" : l.status === "failed" ? `Failed: ${l.last_error?.slice(0, 60)}` : "Syncing…"}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="card flex items-center justify-between p-4">
+        <div><div className="text-[12px] text-ink-muted">{item.status === "sold" ? "Sold for" : "Asking"}</div><div className="num text-[28px] font-bold leading-8">{money(sale?.amount_pence ?? item.price_pence)}</div></div>
+        {sale && sale.listed_price_pence !== null && sale.amount_pence !== sale.listed_price_pence && (
+          <div className="text-right"><div className="text-[12px] text-ink-muted">Listed at</div><div className="num text-[16px] text-ink-muted line-through">{money(sale.listed_price_pence)}</div></div>
+        )}
+      </div>
+
+      <MarginCard pricePence={sale?.amount_pence ?? item.price_pence} costPence={item.cost_pence} commissionBps={sale?.channels?.type && sale.channels.type !== "square" && sale.channels.owner_type === "centre" ? (centre?.online_commission_bps ?? 2700) : (centre?.commission_bps ?? 0)} sold={item.status === "sold"} />
+
+      <div>
+        <h3 className="mb-2 text-[15px] font-semibold">Channels</h3>
+        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[14px] border border-border">
+          {item.centre_id && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Floor, {centre?.name}</span>{item.status === "sold" ? <Pill kind="neutral">Closed</Pill> : <Pill kind="success">On the till</Pill>}</div>}
+          {listings.filter((l) => l.channels?.type !== "square").map((l, i) => (
+            <div key={i} className="flex h-[52px] items-center justify-between px-4">
+              <span className="text-[15px] font-medium"><ChannelLabel type={l.channels?.type} ownerType={l.channels?.owner_type} /></span>
+              {l.status === "live" ? <Pill kind="success">Live</Pill> : l.status === "closed" ? <Pill kind="neutral">Closed</Pill> : l.status === "failed" ? <Pill kind="danger">Failed</Pill> : <Pill kind="accent">Syncing</Pill>}
+            </div>
+          ))}
+          <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Label</span>{!label || label.status === "not_printed" ? <Pill kind="warning">Not printed</Pill> : label.status === "printed" || label.status === "sent" ? <Pill kind="success">Printed</Pill> : <Pill kind="accent">Queued</Pill>}</div>
+        </div>
+        {listings.some((l) => l.status === "failed") && <p className="mt-2 text-[12px] text-danger">{listings.find((l) => l.status === "failed")?.last_error?.slice(0, 120)}</p>}
+      </div>
 
       {sale && (
-        <>
-          <h2 className="mt-8 mb-2 text-sm font-medium">Sale</h2>
-          <Rule />
-          <div className="flex items-center justify-between py-3 text-sm">
-            <span>{new Date(sale.sold_at).toLocaleString("en-GB")} <ChannelPill kind={sale.channels?.type === "shopify" ? "online" : "floor"} /></span>
-            <span className="num font-medium">{money(sale.amount_pence)}</span>
-          </div>
-        </>
+        <div>
+          <h3 className="mb-2 text-[15px] font-semibold">History</h3>
+          <div className="card flex items-center justify-between p-4 text-[14px]"><span>Sold, <ChannelLabel type={sale.channels?.type} ownerType={sale.channels?.owner_type} /></span><span className="text-ink-muted">{when(sale.sold_at)}</span></div>
+        </div>
       )}
+      <div className="card flex items-center justify-between p-4 text-[14px]"><span>Listed</span><span className="text-ink-muted">{new Date(item.listed_at).toLocaleDateString("en-GB")}</span></div>
 
       <ItemActions id={item.id} status={item.status} price={item.price_pence} />
-      <DealerNav active="/app/stock" />
-    </Page>
+      <Link href="/app/stock" className="btn-ghost">Back to stock</Link>
+      <DealerNav active="stock" />
+    </Screen>
   );
 }

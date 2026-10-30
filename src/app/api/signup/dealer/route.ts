@@ -4,6 +4,7 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 const Input = z.object({ name: z.string().min(2).max(80), code: z.string().regex(/^[A-Z][A-Z0-9]{1,3}$/), centre_code: z.string().nullable().optional() });
+// Plan limits by tier are applied by the Stripe webhook; new dealers start on the entry limit.
 
 export async function POST(req: Request) {
   const me = await getMe();

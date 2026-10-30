@@ -28,9 +28,10 @@ export async function POST(req: Request) {
   }
   if (evt.type === "customer.subscription.updated" || evt.type === "customer.subscription.deleted" || evt.type === "customer.subscription.created") {
     const s = evt.data.object;
+    const limit = Number(s.items.data[0]?.price?.metadata?.item_limit ?? 0) || undefined;
     await db
       .from("dealers")
-      .update({ plan: planFor(s), trial_ends_at: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null })
+      .update({ plan: planFor(s), trial_ends_at: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null, ...(limit ? { item_limit: limit } : {}) })
       .eq("stripe_customer_id", String(s.customer));
   }
   await db.from("webhook_log").update({ status: "processed", processed_at: new Date().toISOString() }).eq("source", "stripe").eq("external_event_id", evt.id);

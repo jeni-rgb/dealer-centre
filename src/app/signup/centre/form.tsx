@@ -28,35 +28,35 @@ export function CentreSignupForm() {
     return (
       <div className="mt-6 space-y-6">
         <div>
-          <div className="text-xs uppercase tracking-wide text-ink-3">Your centre code</div>
-          <div className="sku mt-1 text-4xl font-medium">{done.invite_code}</div>
-          <p className="mt-2 text-sm text-ink-2">Give this to dealers. They enter it when they sign up and you approve them on the mapping screen.</p>
+          <div className="text-[12px] text-ink-muted">Your centre code</div>
+          <div className="ticket mt-1 text-[36px]">{done.invite_code}</div>
+          <p className="mt-2 text-[14px] text-ink-muted">Give this to dealers. They enter it when they sign up and you approve them on the mapping screen.</p>
         </div>
         <div>
           <div className="mb-2 text-sm font-medium">Next: connect your Square till</div>
           <a className="btn" href={`/api/oauth/square?owner=centre&id=${done.centre_id}`}>Connect Square</a>
-          <p className="mt-2 text-xs text-ink-3">Sign in as the Square account owner. We read sales and items and create items for your dealers. We never take payments.</p>
+          <p className="mt-2 text-xs text-ink-muted">Sign in as the Square account owner. We read sales and items and create items for your dealers. We never take payments.</p>
         </div>
-        <a className="text-sm underline" href={`/centre?centre=${done.centre_id}`}>Skip for now, go to the centre dashboard</a>
+        <a className="text-[14px] font-medium text-accent" href={`/centre?centre=${done.centre_id}`}>Skip for now, go to the centre dashboard</a>
       </div>
     );
   }
 
   return (
     <form onSubmit={submit} className="mt-6 space-y-5">
-      <label className="block"><span className="mb-1 block text-xs text-ink-3">Centre name</span><input className="field" value={f.name} onChange={set("name")} placeholder="Magdalen Antiques Centre" /></label>
-      <label className="block"><span className="mb-1 block text-xs text-ink-3">Address</span><input className="field" value={f.address} onChange={set("address")} /></label>
+      <label className="block"><span className="field-label">Centre name</span><input className="field" value={f.name} onChange={set("name")} placeholder="Magdalen Antiques Centre" /></label>
+      <label className="block"><span className="field-label">Address</span><input className="field" value={f.address} onChange={set("address")} /></label>
       <div className="grid grid-cols-3 gap-3">
-        <label className="block"><span className="mb-1 block text-xs text-ink-3">Commission %</span><input className="field num" inputMode="decimal" value={f.commission_percent} onChange={set("commission_percent")} /></label>
-        <label className="block"><span className="mb-1 block text-xs text-ink-3">Rent day</span><input className="field num" inputMode="numeric" value={f.rent_day} onChange={set("rent_day")} /></label>
-        <label className="block"><span className="mb-1 block text-xs text-ink-3">Statement day</span><input className="field num" inputMode="numeric" value={f.statement_day} onChange={set("statement_day")} /></label>
+        <label className="block"><span className="field-label">Commission %</span><input className="field num" inputMode="decimal" value={f.commission_percent} onChange={set("commission_percent")} /></label>
+        <label className="block"><span className="field-label">Rent day</span><input className="field num" inputMode="numeric" value={f.rent_day} onChange={set("rent_day")} /></label>
+        <label className="block"><span className="field-label">Statement day</span><input className="field num" inputMode="numeric" value={f.statement_day} onChange={set("statement_day")} /></label>
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs text-ink-3">Till PIN</span>
+        <span className="field-label">Till PIN</span>
         <input className="field num" inputMode="numeric" value={f.pin} onChange={set("pin")} placeholder="4 to 8 digits" />
-        <span className="mt-1 block text-xs text-ink-3">Staff type this on the till iPad to print quick labels. No login needed.</span>
+        <span className="mt-1 block text-xs text-ink-muted">Staff type this on the till iPad to print quick labels. No login needed.</span>
       </label>
-      {err && <p className="text-sm text-oxblood">{err}</p>}
+      {err && <p className="text-sm text-danger">{err}</p>}
       <button className="btn w-full" disabled={busy}>{busy ? "Creating…" : "Create centre"}</button>
     </form>
   );

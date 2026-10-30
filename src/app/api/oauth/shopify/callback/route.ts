@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const state = u.searchParams.get("state");
   const saved = (await cookies()).get("sh_state")?.value;
   if (!state || state !== saved) return new NextResponse("state mismatch", { status: 400 });
-  const { dealerId, shop } = JSON.parse(Buffer.from(state, "base64url").toString()) as { dealerId: string; shop: string };
+  const { ownerType, ownerId, shop } = JSON.parse(Buffer.from(state, "base64url").toString()) as { ownerType: "dealer" | "centre"; ownerId: string; shop: string };
   if (u.searchParams.get("shop") !== shop) return new NextResponse("shop mismatch", { status: 400 });
 
   const tok = await shopifyOAuth.exchange(shop, u.searchParams.get("code")!);
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const { data: ch } = await db
     .from("channels")
     .upsert(
-      { type: "shopify", owner_type: "dealer", owner_id: dealerId, external_account_id: shop, access_token: tok.access_token, scopes: tok.scope.split(","), status: "active" },
+      { type: "shopify", owner_type: ownerType, owner_id: ownerId, external_account_id: shop, access_token: tok.access_token, scopes: tok.scope.split(","), status: "active" },
       { onConflict: "type,external_account_id" },
     )
     .select("id")
@@ -36,5 +36,5 @@ export async function GET(req: Request) {
     }).catch(() => undefined);
   }
   if (ch) await enqueue(db, "backfill_channel", { channel_id: ch.id });
-  return NextResponse.redirect(new URL("/app/settings?connected=shopify", process.env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(ownerType === "centre" ? `/centre/settings?centre=${ownerId}&connected=shopify` : "/app/settings?connected=shopify", process.env.NEXT_PUBLIC_APP_URL));
 }

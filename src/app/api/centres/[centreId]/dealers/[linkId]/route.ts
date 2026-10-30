@@ -10,7 +10,9 @@ const Patch = z.object({
   create_square_category: z.boolean().optional(),
   pitch_numbers: z.array(z.string()).optional(),
   rent_pence: z.number().int().min(0).optional(),
-  status: z.enum(["active", "pending"]).optional(),
+  rent_mode: z.enum(["rent", "commission_only"]).optional(),
+  rent_schedule: z.enum(["first", "fifteenth", "last", "weekly_friday", "weekly_monday", "quarterly"]).optional(),
+  status: z.enum(["active", "pending", "declined"]).optional(),
 });
 
 /** Centre owner edits a dealer's link: category mapping, pitches, rent, approval. */
@@ -30,9 +32,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ centre
 
   const upd: Record<string, unknown> = {};
   if (p.data.pitch_numbers) upd.pitch_numbers = p.data.pitch_numbers;
-  if (p.data.rent_pence !== undefined) upd.rent_pence = p.data.rent_pence;
+  if (p.data.rent_pence !== undefined) { upd.rent_pence = p.data.rent_pence; upd.rent_set_by = "centre"; }
+  if (p.data.rent_mode) { upd.rent_mode = p.data.rent_mode; upd.rent_set_by = "centre"; }
+  if (p.data.rent_schedule) { upd.rent_schedule = p.data.rent_schedule; upd.rent_set_by = "centre"; }
   if (p.data.square_category_id !== undefined) upd.square_category_id = p.data.square_category_id;
-  if (p.data.status) { upd.status = p.data.status; if (p.data.status === "active" && !link.joined_at) upd.joined_at = new Date().toISOString(); }
+  if (p.data.status) { upd.status = p.data.status; if (p.data.status === "active" && !link.joined_at) upd.joined_at = new Date().toISOString(); if (p.data.status === "declined") upd.left_at = new Date().toISOString(); }
 
   // Create the dealer's category and a variable price catch all item in Square in one go.
   if (p.data.create_square_category) {

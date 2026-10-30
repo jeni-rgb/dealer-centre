@@ -1,6 +1,6 @@
 export type ChannelRow = {
   id: string;
-  type: "square" | "shopify";
+  type: "square" | "shopify" | "ebay";
   owner_type: "dealer" | "centre";
   owner_id: string;
   external_account_id: string;
@@ -20,8 +20,13 @@ export type ItemRow = {
   title: string;
   description: string | null;
   price_pence: number;
+  listed_price_pence: number | null;
+  cost_pence: number | null;
   photos: { path: string; url?: string }[];
   status: "draft" | "live" | "sold" | "withdrawn";
+  on_own_shopify: boolean;
+  on_centre_shopify: boolean;
+  on_centre_ebay: boolean;
 };
 
 export type ListingRef = { external_id: string; external_variant_id: string | null };
@@ -36,6 +41,8 @@ export type IncomingLine = {
   note: string | null;
   amount_pence: number;
   fees_pence: number;
+  discount_pence?: number;
+  postage_pence?: number;
   payment_type: string | null;
   sold_at: string;
   raw: unknown;

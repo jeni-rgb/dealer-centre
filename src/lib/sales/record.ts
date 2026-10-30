@@ -56,21 +56,32 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
 
   const m = matchLine(line, candidates, categories);
 
+  // Sold price is the real price. amount_pence is what was paid; listed price is kept separately.
   const base = {
     channel_id: channel.id,
     external_order_id: line.external_order_id,
     external_line_id: line.external_line_id ?? "",
     amount_pence: line.amount_pence,
     fees_pence: line.fees_pence,
+    discount_pence: line.discount_pence ?? 0,
+    postage_pence: line.postage_pence ?? 0,
     payment_type: line.payment_type,
     sold_at: line.sold_at,
     raw: line.raw,
   };
 
   if (m.kind === "item") {
+    const { data: itemRow } = await db.from("items").select("listed_price_pence, price_pence").eq("id", m.item.item_id).single();
+    const listed = itemRow?.listed_price_pence ?? itemRow?.price_pence ?? null;
+    // Centre online channels: the centre's online commission and handling are fees on the sale
+    let channelFee = 0;
+    if (channel.owner_type === "centre" && channel.type !== "square") {
+      const { data: c } = await db.from("centres").select("online_commission_bps").eq("id", channel.owner_id).single();
+      channelFee = Math.round((line.amount_pence * (c?.online_commission_bps ?? 2700)) / 10000);
+    }
     const { data: sale } = await db
       .from("sales")
-      .insert({ ...base, item_id: m.item.item_id, dealer_id: m.item.dealer_id, centre_id: centreId ?? m.item.centre_id, ticket_no: m.item.sku })
+      .insert({ ...base, item_id: m.item.item_id, dealer_id: m.item.dealer_id, centre_id: centreId ?? m.item.centre_id, ticket_no: m.item.sku, listed_price_pence: listed, channel_fee_pence: channelFee })
       .select("id")
       .single();
     await db.from("items").update({ status: "sold", sold_at: line.sold_at }).eq("id", m.item.item_id).eq("status", "live");

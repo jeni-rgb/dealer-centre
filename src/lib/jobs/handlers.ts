@@ -2,12 +2,13 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow, ItemRow } from "@/lib/channels/types";
 import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
+import { ebayAdapter } from "@/lib/channels/ebay";
 import { renderLabelPdf } from "@/lib/labels/render";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
 
-const adapters = { square: squareAdapter, shopify: shopifyAdapter };
+const adapters = { square: squareAdapter, shopify: shopifyAdapter, ebay: ebayAdapter };
 
 async function getChannel(db: Admin, id: string) {
   const { data, error } = await db.from("channels").select("*").eq("id", id).single();
@@ -54,7 +55,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
   async render_label(db, p) {
     const jobId = p.print_job_id as string;
     const { data: pj } = await db.from("print_jobs").select("*, items(*), dealers(code), printers(provider, provider_id, label_width_mm, label_height_mm)").eq("id", jobId).single();
-    if (!pj) return;
+    if (!pj || pj.status === "not_printed") return;
     const item = pj.items as ItemRow;
     let centreName: string | null = null;
     if (item.centre_id) {
@@ -123,10 +124,13 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
 
   async backfill_channel(db, p) {
     const channel = await getChannel(db, p.channel_id as string);
-    let q = db.from("items").select("id").eq("status", "live");
+    let q = db.from("items").select("id, on_own_shopify, on_centre_shopify, on_centre_ebay").eq("status", "live");
     q = channel.owner_type === "dealer" ? q.eq("dealer_id", channel.owner_id) : q.eq("centre_id", channel.owner_id);
     const { data: items } = await q;
     for (const it of items ?? []) {
+      if (channel.owner_type === "dealer" && channel.type === "shopify" && !it.on_own_shopify) continue;
+      if (channel.owner_type === "centre" && channel.type === "shopify" && !it.on_centre_shopify) continue;
+      if (channel.owner_type === "centre" && channel.type === "ebay" && !it.on_centre_ebay) continue;
       const { data: l } = await db
         .from("item_listings")
         .upsert({ item_id: it.id, channel_id: channel.id }, { onConflict: "item_id,channel_id", ignoreDuplicates: true })

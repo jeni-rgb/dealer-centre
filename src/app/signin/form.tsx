@@ -21,7 +21,7 @@ export function SignInForm({ next }: { next: string }) {
     <form onSubmit={submit} className="mt-6 space-y-3">
       <input className="field" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <button className="btn w-full">Send sign in link</button>
-      {err && <p className="text-sm text-oxblood">{err}</p>}
+      {err && <p className="text-sm text-danger">{err}</p>}
     </form>
   );
 }

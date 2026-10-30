@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { money } from "@/components/ui";
+import { Kpi, Pill, money } from "@/components/ui";
 
 
 export default async function Admin() {
@@ -7,7 +7,7 @@ export default async function Admin() {
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const [{ data: centres }, { data: dealers }, { data: sales }, { data: channels }] = await Promise.all([
     db.from("centres").select("id, name, invite_code, status, created_at"),
-    db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at"),
+    db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at, item_limit"),
     db.from("sales").select("dealer_id, centre_id, amount_pence").is("voided_at", null).gte("sold_at", monthStart.toISOString()),
     db.from("channels").select("owner_type, owner_id, type, status, last_webhook_at"),
   ]);
@@ -19,45 +19,48 @@ export default async function Admin() {
   }
   const paying = (dealers ?? []).filter((d) => d.plan === "pro").length;
   const trial = (dealers ?? []).filter((d) => d.plan === "trial").length;
+  const priceFor = (limit: number) => (limit >= 250 ? 15000 : limit >= 100 ? 10000 : 2500);
+  const mrr = (dealers ?? []).filter((d) => d.plan === "pro").reduce((a, d) => a + priceFor(d.item_limit ?? 50), 0);
 
   return (
     <>
-      <div className="mb-8 grid grid-cols-4 gap-6 text-sm">
-        <div><div className="text-xs text-ink-3">Centres</div><div className="num text-2xl">{(centres ?? []).length}</div></div>
-        <div><div className="text-xs text-ink-3">Paying dealers</div><div className="num text-2xl">{paying}</div></div>
-        <div><div className="text-xs text-ink-3">On trial</div><div className="num text-2xl">{trial}</div></div>
-        <div><div className="text-xs text-ink-3">MRR</div><div className="num text-2xl">{money(paying * 15000)}</div></div>
+      <h1 className="mb-6 text-[24px] font-semibold">Centres and dealers</h1>
+      <div className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+        <Kpi label="Centres" value={String((centres ?? []).length)} />
+        <Kpi label="Paying dealers" value={String(paying)} />
+        <Kpi label="On trial" value={String(trial)} />
+        <Kpi label="MRR" value={money(mrr)} sub="Subscriptions only" />
       </div>
 
-      <h2 className="mb-2 text-sm font-medium">Centres</h2>
-      <table className="mb-10 w-full text-sm">
-        <thead className="text-left text-xs text-ink-3"><tr className="border-b border-rule"><th className="py-2 font-normal">Name</th><th className="py-2 font-normal">Code</th><th className="py-2 font-normal">Square</th><th className="py-2 text-right font-normal">Sales MTD</th><th className="py-2 text-right font-normal">Export</th></tr></thead>
+      <div className="card mb-8 overflow-hidden"><div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Centres</h2></div>
+      <table className="w-full text-[14px]">
+        <thead className="text-left text-[12px] text-ink-muted"><tr className="border-b border-border"><th className="px-5 py-2 font-medium">Name</th><th className="py-2 font-medium">Code</th><th className="py-2 font-medium">Square</th><th className="py-2 text-right font-medium">Sales MTD</th><th className="py-2 text-right font-medium">Export</th></tr></thead>
         <tbody>
           {(centres ?? []).map((c) => {
             const ch = (channels ?? []).find((x) => x.owner_type === "centre" && x.owner_id === c.id && x.type === "square");
             return (
-              <tr key={c.id} className="border-b border-rule">
-                <td className="py-2"><a className="underline" href={`/centre?centre=${c.id}`}>{c.name}</a></td>
-                <td className="sku py-2">{c.invite_code}</td>
-                <td className="py-2 text-xs">{ch ? `${ch.status}${ch.last_webhook_at ? `, ${new Date(ch.last_webhook_at).toLocaleString("en-GB")}` : ""}` : <span className="text-oxblood">Not connected</span>}</td>
+              <tr key={c.id} className="border-b border-border">
+                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/centre?centre=${c.id}`}>{c.name}</a></td>
+                <td className="ticket py-2 text-[12px]">{c.invite_code}</td>
+                <td className="py-2 text-xs">{ch ? `${ch.status}${ch.last_webhook_at ? `, ${new Date(ch.last_webhook_at).toLocaleString("en-GB")}` : ""}` : <Pill kind="danger">Not connected</Pill>}</td>
                 <td className="num py-2 text-right">{money(byCentre.get(c.id) ?? 0)}</td>
                 <td className="py-2 text-right"><a className="text-xs underline" href={`/api/admin/export?centre=${c.id}`}>CSV</a></td>
               </tr>
             );
           })}
         </tbody>
-      </table>
+      </table></div>
 
-      <h2 className="mb-2 text-sm font-medium">Dealers</h2>
-      <table className="w-full text-sm">
-        <thead className="text-left text-xs text-ink-3"><tr className="border-b border-rule"><th className="py-2 font-normal">Name</th><th className="py-2 font-normal">Code</th><th className="py-2 font-normal">Plan</th><th className="py-2 font-normal">Shopify</th><th className="py-2 text-right font-normal">Sales MTD</th><th className="py-2 text-right font-normal">Joined</th></tr></thead>
+      <div className="card overflow-hidden"><div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Dealers</h2></div>
+      <table className="w-full text-[14px]">
+        <thead className="text-left text-[12px] text-ink-muted"><tr className="border-b border-border"><th className="px-5 py-2 font-medium">Name</th><th className="py-2 font-medium">Code</th><th className="py-2 font-medium">Plan</th><th className="py-2 font-medium">Shopify</th><th className="py-2 text-right font-medium">Sales MTD</th><th className="py-2 text-right font-medium">Joined</th></tr></thead>
         <tbody>
           {(dealers ?? []).map((d) => {
             const sh = (channels ?? []).find((x) => x.owner_type === "dealer" && x.owner_id === d.id && x.type === "shopify");
             return (
-              <tr key={d.id} className="border-b border-rule">
-                <td className="py-2">{d.name}</td>
-                <td className="sku py-2">{d.code}</td>
+              <tr key={d.id} className="border-b border-border">
+                <td className="px-5 py-2 font-medium">{d.name}</td>
+                <td className="ticket py-2 text-[12px]">{d.code}</td>
                 <td className="py-2">{d.plan}{d.plan === "trial" && d.trial_ends_at ? ` to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</td>
                 <td className="py-2 text-xs">{sh ? sh.status : "–"}</td>
                 <td className="num py-2 text-right">{money(byDealer.get(d.id) ?? 0)}</td>
@@ -66,7 +69,7 @@ export default async function Admin() {
             );
           })}
         </tbody>
-      </table>
+      </table></div>
     </>
   );
 }

@@ -2,6 +2,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+export function CentreTermsForm({ centreId, initial }: { centreId: string; initial: { commission: number; online: number; share: number; handling: number; rent_day: number; statement_day: number } }) {
+  const router = useRouter();
+  const [f, setF] = useState(initial);
+  const [saved, setSaved] = useState(false);
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: parseFloat(e.target.value || "0") });
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    await fetch(`/api/centres/${centreId}/terms`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(f) });
+    setSaved(true); setTimeout(() => setSaved(false), 1500); router.refresh();
+  }
+  return (
+    <form onSubmit={save} className="flex flex-wrap items-end gap-4">
+      <Field value={f.commission} onChange={set("commission")} label="Floor commission" suffix="%" />
+      <Field value={f.online} onChange={set("online")} label="Online commission" suffix="%" />
+      <Field value={f.share} onChange={set("share")} label="Your share of online" suffix="%" />
+      <Field value={f.handling} onChange={set("handling")} label="Handling fee, buyer pays" suffix="£" />
+      <Field value={f.rent_day} onChange={set("rent_day")} label="Rent day" suffix="" />
+      <Field value={f.statement_day} onChange={set("statement_day")} label="Statement day" suffix="" />
+      <button className="btn-sm">{saved ? "Saved" : "Save"}</button>
+    </form>
+  );
+}
+
 export function CentrePrinterForm({ centreId }: { centreId: string }) {
   const router = useRouter();
   const [name, setName] = useState("Till printer");
@@ -14,13 +37,14 @@ export function CentrePrinterForm({ centreId }: { centreId: string }) {
   }
   return (
     <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
-      <input className="field flex-1" value={name} onChange={(e) => setName(e.target.value)} />
-      <select className="field w-44" value={provider} onChange={(e) => setProvider(e.target.value as "browser" | "printnode")}>
-        <option value="browser">Browser print</option>
-        <option value="printnode">PrintNode</option>
-      </select>
-      {provider === "printnode" && <input className="field w-36" placeholder="Printer ID" value={pid} onChange={(e) => setPid(e.target.value)} />}
-      <button className="btn-secondary">Add printer</button>
+      <input className="field !h-10 !w-48 !text-[14px]" value={name} onChange={(e) => setName(e.target.value)} />
+      <select className="field !h-10 !w-40 !text-[14px]" value={provider} onChange={(e) => setProvider(e.target.value as "browser" | "printnode")}><option value="browser">Browser print</option><option value="printnode">PrintNode</option></select>
+      {provider === "printnode" && <input className="field !h-10 !w-32 !text-[14px]" placeholder="Printer ID" value={pid} onChange={(e) => setPid(e.target.value)} />}
+      <button className="btn-sm-secondary">Add printer</button>
     </form>
   );
+}
+
+function Field({ value, onChange, label, suffix }: { value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; label: string; suffix: string }) {
+  return <label className="flex flex-col gap-1 text-[12px] text-ink-muted">{label}<span className="flex items-center gap-1"><input className="field num !h-10 !w-24 !text-[14px]" inputMode="decimal" value={value} onChange={onChange} /><span>{suffix}</span></span></label>;
 }

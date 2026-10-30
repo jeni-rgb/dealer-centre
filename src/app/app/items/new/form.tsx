@@ -1,35 +1,40 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { displaySku } from "@/lib/sku";
+import { Icon, Phone, Pill, TicketCard, Toggle, ToggleGroup } from "@/components/ui";
 
+type Centre = { id: string; name: string; hasShop: boolean; hasEbay: boolean };
 type Props = {
-  dealerCode: string;
-  centres: { id: string; name: string }[];
-  hasShopify: boolean;
-  printers: { id: string; name: string; provider: string }[];
+  dealerCode: string; nextNumber: number; centres: Centre[]; hasOwnShopify: boolean;
+  defaults: { own: boolean; shop: boolean; ebay: boolean }; printers: { id: string; name: string }[];
 };
 
-export function ListItemForm({ dealerCode, centres, hasShopify, printers }: Props) {
-  const router = useRouter();
+export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers }: Props) {
+  const previewSku = `${dealerCode}${String(nextNumber).padStart(4, "0")}`;
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
-  const [desc, setDesc] = useState("");
+  const [cost, setCost] = useState("");
   const [centre, setCentre] = useState(centres[0]?.id ?? "");
-  const [shopify, setShopify] = useState(hasShopify);
+  const [own, setOwn] = useState(hasOwnShopify && defaults.own);
+  const [shop, setShop] = useState(defaults.shop);
+  const [ebay, setEbay] = useState(defaults.ebay);
+  const [label, setLabel] = useState(printers.length > 0);
   const [printer, setPrinter] = useState(printers[0]?.id ?? "");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [limit, setLimit] = useState(false);
   const [done, setDone] = useState<{ sku: string; id: string } | null>(null);
+  const c = centres.find((x) => x.id === centre);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
     const pence = Math.round(parseFloat(price || "0") * 100);
     if (title.trim().length < 2) return setErr("Give it a title.");
-    if (!(pence >= 0)) return setErr("Enter a price.");
+    if (!(pence > 0)) return setErr("Enter a price.");
     setBusy(true);
     try {
       const sb = supabaseBrowser();
@@ -40,90 +45,120 @@ export function ListItemForm({ dealerCode, centres, hasShopify, printers }: Prop
         if (!error) photos.push({ path, url: sb.storage.from("files").getPublicUrl(path).data.publicUrl });
       }
       const r = await fetch("/api/items", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), description: desc || undefined, price_pence: pence, centre_id: centre || null, photos, list_on_shopify: shopify, printer_id: printer || null }),
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(), price_pence: pence, cost_pence: cost ? Math.round(parseFloat(cost) * 100) : null,
+          centre_id: centre || null, photos, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop, on_centre_ebay: ebay && !!c?.hasEbay,
+          print_now: label && !!printer, printer_id: printer || null,
+        }),
       });
       const j = await r.json();
+      if (r.status === 402) { setLimit(true); throw new Error(j.error); }
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
       setDone({ sku: j.item.sku, id: j.item.id });
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   }
+
+  const reset = () => { setDone(null); setTitle(""); setPrice(""); setCost(""); setFiles([]); };
+  const status = (on: boolean, text = "Syncing") => on ? <Pill kind="accent">{text}</Pill> : <Pill kind="neutral">Not listed</Pill>;
 
   if (done) {
     return (
-      <div className="py-6">
-        <div className="text-xs uppercase tracking-wide text-ink-3">Listed. Ticket number</div>
-        <div className="sku mt-2 text-5xl font-medium">{displaySku(done.sku)}</div>
-        <p className="mt-4 text-sm text-ink-2">
-          {centre ? "On the till in a few seconds. " : ""}{shopify ? "Going live on Shopify. " : ""}{printer ? "Label printing." : "No label printed."}
-        </p>
-        <div className="mt-8 flex gap-2">
-          <button className="btn flex-1" onClick={() => { setDone(null); setTitle(""); setPrice(""); setDesc(""); setFiles([]); }}>List another</button>
-          <button className="btn-secondary flex-1" onClick={() => router.push(`/app/items/${done.id}`)}>View item</button>
+      <Phone>
+        <div className="flex min-h-screen flex-col gap-6 px-5 pb-6 pt-14">
+          <div className="flex flex-col items-center gap-3 pt-10">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success-soft">{Icon.check}</span>
+            <h1 className="text-[22px] font-semibold">Listed</h1>
+            <span className="ticket text-[36px]">{displaySku(done.sku)}</span>
+          </div>
+          <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[14px] border border-border">
+            {c && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Floor, {c.name}</span><Pill kind="success">On the till</Pill></div>}
+            <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Your Shopify</span>{status(own)}</div>
+            {c?.hasShop && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">{c.name} online shop</span>{status(shop)}</div>}
+            {c?.hasEbay && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">{c.name} eBay store</span>{status(ebay)}</div>}
+            <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Label</span>{label && printer ? <Pill kind="accent">Printing</Pill> : <Pill kind="neutral">Not printed</Pill>}</div>
+          </div>
+          <div className="mt-auto flex flex-col gap-2.5">
+            <button className="btn" onClick={reset}>List another</button>
+            <Link href={`/app/items/${done.id}`} className="btn-secondary">View item</Link>
+            <Link href="/app" className="btn-ghost">Back to Today</Link>
+          </div>
         </div>
-      </div>
+      </Phone>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
-      <label className="block">
-        <span className="mb-1 block text-xs text-ink-3">Photos</span>
-        <input type="file" accept="image/*" capture="environment" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="block w-full text-sm" />
-        {files.length > 0 && <span className="mt-1 block text-xs text-ink-2">{files.length} photo{files.length > 1 ? "s" : ""} ready</span>}
-      </label>
-
-      <label className="block">
-        <span className="mb-1 block text-xs text-ink-3">Title</span>
-        <input className="field" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Victorian mahogany writing slope" autoFocus />
-      </label>
-
-      <label className="block">
-        <span className="mb-1 block text-xs text-ink-3">Price</span>
-        <div className="flex items-center">
-          <span className="mr-2 text-xl">£</span>
-          <input className="field num text-2xl" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" />
+    <Phone>
+      <form onSubmit={submit} className="flex min-h-screen flex-col">
+        <div className="flex items-center justify-between px-5 pb-3 pt-14">
+          <Link href="/app" className="text-[15px] font-medium text-ink-muted">Cancel</Link>
+          <h1 className="text-[17px] font-semibold">List item</h1>
+          <span className="w-12" />
         </div>
-      </label>
+        <div className="flex flex-1 flex-col gap-4 px-5 pb-4 pt-1">
+          <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-[#CBD5E1] bg-surface text-[14px] font-medium text-[#334155]">
+            <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
+            {files.length > 0 ? <span>{files.length} photo{files.length > 1 ? "s" : ""} ready</span> : <><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Take photo</>}
+          </label>
 
-      <label className="block">
-        <span className="mb-1 block text-xs text-ink-3">Description, optional</span>
-        <textarea className="field" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
-      </label>
+          <TicketCard sku={previewSku} hint="Assigned by the app, goes on the label and the till" />
 
-      {centres.length > 0 && (
-        <label className="block">
-          <span className="mb-1 block text-xs text-ink-3">Where is it</span>
-          <select className="field" value={centre} onChange={(e) => setCentre(e.target.value)}>
-            {centres.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            <option value="">Not at a centre</option>
-          </select>
-        </label>
-      )}
+          <div><label className="field-label" htmlFor="title">Title</label><input id="title" className="field" placeholder="What is it" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
 
-      <div className="space-y-3 border-t border-rule pt-4">
-        <label className="flex items-center justify-between text-sm">
-          <span>List on Shopify</span>
-          <input type="checkbox" className="h-5 w-5 accent-ink" checked={shopify} disabled={!hasShopify} onChange={(e) => setShopify(e.target.checked)} />
-        </label>
-        {!hasShopify && <p className="text-xs text-ink-3">Connect Shopify in Settings to list online.</p>}
-        <label className="block text-sm">
-          <span className="mb-1 block">Print label</span>
-          <select className="field" value={printer} onChange={(e) => setPrinter(e.target.value)}>
-            {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            <option value="">Do not print now</option>
-          </select>
-        </label>
-      </div>
+          <div>
+            <label className="field-label" htmlFor="price">Price</label>
+            <div className="flex h-14 items-center gap-1.5 rounded-[12px] border border-border px-3.5">
+              <span className="text-[24px] font-semibold text-ink-muted">£</span>
+              <input id="price" type="number" inputMode="decimal" placeholder="0" className="num min-w-0 flex-1 border-0 bg-transparent text-[24px] font-semibold outline-none" value={price} onChange={(e) => setPrice(e.target.value)} />
+            </div>
+          </div>
 
-      <p className="text-xs text-ink-3">Ticket number will be <span className="sku">{dealerCode} ····</span>, assigned when you list.</p>
-      {err && <p className="text-sm text-oxblood">{err}</p>}
-      <button className="btn w-full" disabled={busy}>{busy ? "Listing…" : "List it"}</button>
-    </form>
+          <div>
+            <label className="field-label flex justify-between" htmlFor="cost">What you paid <span className="font-normal text-ink-muted">Private, only you see it</span></label>
+            <div className="flex h-12 items-center gap-1.5 rounded-[12px] border border-border bg-surface px-3.5">
+              <span className="text-[18px] font-semibold text-ink-muted">£</span>
+              <input id="cost" type="number" inputMode="decimal" placeholder="0" className="num min-w-0 flex-1 border-0 bg-transparent text-[18px] font-semibold outline-none" value={cost} onChange={(e) => setCost(e.target.value)} />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            </div>
+          </div>
+
+          {centres.length > 0 && (
+            <div>
+              <span className="field-label">Where is it</span>
+              {centres.length === 1 ? (
+                <div className="flex h-12 items-center justify-between rounded-[12px] border border-border px-3.5"><span className="text-[15px] font-medium">{centres[0].name}</span><span className="text-[12px] text-ink-muted">Only centre</span></div>
+              ) : (
+                <select className="field" value={centre} onChange={(e) => setCentre(e.target.value)}>{centres.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}<option value="">Not at a centre</option></select>
+              )}
+            </div>
+          )}
+
+          <div>
+            <span className="field-label">Also list on</span>
+            <ToggleGroup>
+              <Toggle on={own} onChange={setOwn} label="Your Shopify" hint={hasOwnShopify ? "Photo and price go to your own shop" : "Connect Shopify in Settings first"} disabled={!hasOwnShopify} />
+              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={c.hasShop ? "The centre's Shopify store, they ship it. 27% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop} />}
+              {c && <Toggle on={ebay} onChange={setEbay} label={`${c.name} eBay store`} hint={c.hasEbay ? "Buy it now at your price, centre handles postage" : "Centre has not connected eBay yet"} disabled={!c.hasEbay} />}
+            </ToggleGroup>
+          </div>
+
+          <div>
+            <span className="field-label">Label</span>
+            <ToggleGroup>
+              <Toggle on={label} onChange={setLabel} label="Print label now" hint={label && printer ? `${printers.find((p) => p.id === printer)?.name ?? "Printer"}, ready` : "Off. It waits in Labels until you print it"} disabled={printers.length === 0} />
+              {label && printers.length > 1 && (
+                <div className="px-4 py-3"><select className="field" value={printer} onChange={(e) => setPrinter(e.target.value)}>{printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+              )}
+            </ToggleGroup>
+          </div>
+
+          {err && <p className={`text-[13px] ${limit ? "text-warning" : "text-danger"}`}>{err}{limit && <> <Link href="/api/billing/portal" className="underline">Upgrade</Link></>}</p>}
+        </div>
+        <div className="sticky bottom-0 border-t border-border bg-white px-5 pb-7 pt-3">
+          <button className="btn" disabled={busy}>{busy ? "Listing…" : "List item"}</button>
+        </div>
+      </form>
+    </Phone>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { CreateItemInput, createItem } from "@/lib/items/create";
+import { CreateItemInput, createItem, PlanLimitError } from "@/lib/items/create";
 
 export async function POST(req: Request) {
   const me = await getMe();
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
     const item = await createItem(supabaseAdmin(), me.dealer_id, parsed.data);
     return NextResponse.json({ item });
   } catch (e) {
+    if (e instanceof PlanLimitError) return NextResponse.json({ error: e.message, code: "plan_limit" }, { status: 402 });
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
