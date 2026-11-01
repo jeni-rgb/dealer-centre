@@ -43,12 +43,12 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.user_admin, email: "jeni@thedealercentre.com", role: "platform_admin", is_platform_admin: true, dealer_id: null },
   ],
   dealers: [
-    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: d(-26), stripe_customer_id: "cus_demo", item_limit: 250, default_own_shopify: true, default_centre_shopify: false, default_centre_ebay: false, created_at: d(4) },
-    { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, created_at: d(40) },
-    { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, created_at: d(55) },
+    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: d(-26), stripe_customer_id: "cus_demo", item_limit: 250, monthly_sold_limit: 100000, default_own_shopify: true, default_centre_shopify: false, default_centre_ebay: false, created_at: d(4) },
+    { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, monthly_sold_limit: 50, created_at: d(40) },
+    { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, monthly_sold_limit: 25, created_at: d(55) },
   ],
   centres: [
-    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2700, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", till_pin_plain: "4821", charges_rent: true, rent_frequency: "monthly", created_at: d(10) },
+    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2700, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", till_pin_plain: "4821", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
@@ -71,12 +71,12 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "l8", item_id: "i08", channel_id: IDS.ch_shopify, status: "closed", external_id: "gid://shopify/Product/8", external_variant_id: "v8", last_error: null },
   ],
   sales: [
-    { id: "s1", item_id: "i07", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod1", amount_pence: 4200, listed_price_pence: 4200, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140370", sold_at: d(0, 11, 20), voided_at: null },
-    { id: "s2", item_id: "i08", dealer_id: IDS.dealer, centre_id: null, channel_id: IDS.ch_shopify, external_order_id: "sh1", amount_pence: 11000, listed_price_pence: 11000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "online", ticket_no: "B140365", sold_at: d(0, 16, 40), voided_at: null },
-    { id: "s3", item_id: "i09", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod2", amount_pence: 3000, listed_price_pence: 3300, discount_pence: 300, channel_fee_pence: 0, postage_pence: 0, payment_type: "CASH", ticket_no: "B140362", sold_at: d(0, 14, 5), voided_at: null },
-    { id: "s4", item_id: "i10", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod3", amount_pence: 2800, listed_price_pence: 2800, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140360", sold_at: d(0, 12, 0), voided_at: null },
-    { id: "s5", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod4", amount_pence: 8500, listed_price_pence: null, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "JH0041", sold_at: d(0, 15, 30), voided_at: null },
-    { id: "s6", item_id: null, dealer_id: null, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod5", amount_pence: 1500, listed_price_pence: null, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CASH", ticket_no: null, sold_at: d(0, 13, 0), voided_at: null },
+    { id: "s1", item_id: "i07", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod1", amount_pence: 4200, listed_price_pence: 4200, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140370", sold_at: d(0, 11, 20), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "s2", item_id: "i08", dealer_id: IDS.dealer, centre_id: null, channel_id: IDS.ch_shopify, external_order_id: "sh1", amount_pence: 11000, listed_price_pence: 11000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "online", ticket_no: "B140365", sold_at: d(0, 16, 40), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "s3", item_id: "i09", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod2", amount_pence: 3000, listed_price_pence: 3300, discount_pence: 300, channel_fee_pence: 0, postage_pence: 0, payment_type: "CASH", ticket_no: "B140362", sold_at: d(0, 14, 5), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "s4", item_id: "i10", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod3", amount_pence: 2800, listed_price_pence: 2800, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140360", sold_at: d(0, 12, 0), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "s5", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod4", amount_pence: 8500, listed_price_pence: null, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "JH0041", sold_at: d(0, 15, 30), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "s6", item_id: null, dealer_id: null, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod5", amount_pence: 1500, listed_price_pence: null, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CASH", ticket_no: null, sold_at: d(0, 13, 0), voided_at: null, corrected_at: null, original_amount_pence: null },
   ],
   printers: [
     { id: IDS.printer_centre, owner_type: "centre", owner_id: IDS.centre, centre_id: IDS.centre, name: "Till printer", provider: "printnode", provider_id: "7391", status: "ready", source: "centre" },

@@ -69,7 +69,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-muted">
           <label className="flex items-center gap-2 whitespace-nowrap">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
-          <span className="basis-full">Type the number off each ticket and press Enter, or scan it with a Bluetooth scanner. Price and dealer fill in by themselves.</span>
+          <span className="basis-full">Type the number off each ticket and press Enter, or scan it with a Bluetooth scanner. Price and dealer fill in by themselves. If the dealer gave a discount, change the price to what was actually paid.</span>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
             </div>
             {l.status !== "sold" && (
               <div className="mt-3 flex items-center gap-2">
-                <div className="flex h-11 flex-1 items-center gap-1 rounded-[12px] border border-border px-3"><span className="text-ink-muted">£</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={l.amount} onChange={(e) => update(l.key, { amount: e.target.value })} placeholder="Paid" /></div>
+                <div className="flex h-11 flex-1 items-center gap-1 rounded-[12px] border border-border px-3"><span className="whitespace-nowrap text-[12px] text-ink-muted">Price paid £</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={l.amount} onChange={(e) => update(l.key, { amount: e.target.value })} placeholder="Paid" /></div>
                 <div className="flex rounded-[10px] bg-surface-2 p-0.5">
                   {(["CARD", "CASH"] as const).map((p) => <button key={p} onClick={() => update(l.key, { payment: p })} className={`h-10 rounded-[8px] px-4 text-[13px] font-semibold ${l.payment === p ? "bg-white shadow-sm" : "text-ink-muted"}`}>{p === "CARD" ? "Card" : "Cash"}</button>)}
                 </div>

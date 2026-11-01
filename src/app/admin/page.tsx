@@ -7,7 +7,7 @@ export default async function Admin() {
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const [{ data: centres }, { data: dealers }, { data: sales }, { data: channels }] = await Promise.all([
     db.from("centres").select("id, name, invite_code, status, created_at"),
-    db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at, item_limit"),
+    db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at, monthly_sold_limit"),
     db.from("sales").select("dealer_id, centre_id, amount_pence").is("voided_at", null).gte("sold_at", monthStart.toISOString()),
     db.from("channels").select("owner_type, owner_id, type, status, last_webhook_at"),
   ]);
@@ -19,8 +19,8 @@ export default async function Admin() {
   }
   const paying = (dealers ?? []).filter((d) => d.plan === "pro").length;
   const trial = (dealers ?? []).filter((d) => d.plan === "trial").length;
-  const priceFor = (limit: number) => (limit >= 250 ? 15000 : limit >= 100 ? 10000 : 2500);
-  const mrr = (dealers ?? []).filter((d) => d.plan === "pro").reduce((a, d) => a + priceFor(d.item_limit ?? 50), 0);
+  const priceFor = (limit: number) => (limit > 50 ? 15000 : limit > 25 ? 10000 : 2500);
+  const mrr = (dealers ?? []).filter((d) => d.plan === "pro").reduce((a, d) => a + priceFor(d.monthly_sold_limit ?? 25), 0);
 
   return (
     <>

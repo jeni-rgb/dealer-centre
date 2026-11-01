@@ -93,7 +93,8 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
     }
     const { data: sale } = await db
       .from("sales")
-      .insert({ ...base, item_id: m.item.item_id, dealer_id: m.item.dealer_id, centre_id: centreId ?? m.item.centre_id, ticket_no: m.item.sku, listed_price_pence: listed, channel_fee_pence: channelFee })
+      // A dealer's own channel (own Shopify, own manual "sold elsewhere") is not a centre sale: no centre, no commission.
+      .insert({ ...base, item_id: m.item.item_id, dealer_id: m.item.dealer_id, centre_id: channel.owner_type === "dealer" ? null : (centreId ?? m.item.centre_id), ticket_no: m.item.sku, listed_price_pence: listed, channel_fee_pence: channelFee })
       .select("id")
       .single();
     await db.from("items").update({ status: "sold", sold_at: line.sold_at }).eq("id", m.item.item_id).eq("status", "live");

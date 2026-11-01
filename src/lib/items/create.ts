@@ -25,11 +25,11 @@ export type CreateItemInput = z.infer<typeof CreateItemInput>;
 export class PlanLimitError extends Error {}
 
 export async function createItem(db: Admin, dealerId: string, input: CreateItemInput) {
-  // Plan limit: live items against the dealer's tier
-  const { data: dealer } = await db.from("dealers").select("item_limit, plan").eq("id", dealerId).single();
-  const { count } = await db.from("items").select("id", { count: "exact", head: true }).eq("dealer_id", dealerId).eq("status", "live");
-  if (dealer && input.source === "app" && (count ?? 0) >= dealer.item_limit) {
-    throw new PlanLimitError(`You have ${count} live items, your plan allows ${dealer.item_limit}. Upgrade in Settings to list more.`);
+  // Plans are by items sold a month, not items listed. Listing is never blocked; the Today screen
+  // nudges an upgrade when a dealer has sold past their tier this month. Only a lapsed plan stops listing.
+  const { data: dealer } = await db.from("dealers").select("plan").eq("id", dealerId).single();
+  if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
+    throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }
   const { data: sku, error: skuErr } = await db.rpc("next_sku", { p_dealer_id: dealerId });
   if (skuErr || !sku) throw new Error(skuErr?.message ?? "sku failed");

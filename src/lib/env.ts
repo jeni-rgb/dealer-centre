@@ -11,6 +11,8 @@ export const env = {
   },
   stripe: {
     price: (tier: "25" | "100" | "150") => pick(`STRIPE_PRICE_${tier}`, tier === "25" ? "STRIPE_PRICE_50" : tier === "100" ? "STRIPE_PRICE_100" : "STRIPE_PRICE_250", "STRIPE_PRICE_ID")!,
+    /** Centre subscription, £299 a month. */
+    centrePrice: () => pick("STRIPE_PRICE_CENTRE", "STRIPE_PRICE_299") ?? "",
   },
   emailFrom: () => pick("EMAIL_FROM") ?? "Dealer Centre <onboarding@resend.dev>",
 };

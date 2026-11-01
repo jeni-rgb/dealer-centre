@@ -3,6 +3,9 @@ import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
+/** "Over 100 a month" has no cap; stored as a large number so comparisons stay simple. */
+const UNLIMITED = 100000;
+
 
 export async function POST(req: Request) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -23,19 +26,28 @@ export async function POST(req: Request) {
   if (evt.type === "checkout.session.completed") {
     const s = evt.data.object;
     const dealerId = s.metadata?.dealer_id;
-    if (dealerId) {
-      await db.from("dealers").update({ stripe_customer_id: String(s.customer), stripe_subscription_id: String(s.subscription) }).eq("id", dealerId);
-    }
+    const centreId = s.metadata?.centre_id;
+    if (dealerId) await db.from("dealers").update({ stripe_customer_id: String(s.customer), stripe_subscription_id: String(s.subscription) }).eq("id", dealerId);
+    if (centreId) await db.from("centres").update({ stripe_customer_id: String(s.customer), stripe_subscription_id: String(s.subscription), plan: "trial" }).eq("id", centreId);
   }
   if (evt.type === "customer.subscription.updated" || evt.type === "customer.subscription.deleted" || evt.type === "customer.subscription.created") {
     const s = evt.data.object;
     const priceId = s.items.data[0]?.price?.id;
-    const byPrice: Record<string, number> = { [env.stripe.price("25")]: 50, [env.stripe.price("100")]: 100, [env.stripe.price("150")]: 250 };
-    const limit = Number(s.items.data[0]?.price?.metadata?.item_limit ?? 0) || (priceId ? byPrice[priceId] : undefined) || undefined;
-    await db
-      .from("dealers")
-      .update({ plan: planFor(s), trial_ends_at: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null, ...(limit ? { item_limit: limit } : {}) })
-      .eq("stripe_customer_id", String(s.customer));
+    const customer = String(s.customer);
+    const trialEnds = s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null;
+    if (priceId && priceId === env.stripe.centrePrice()) {
+      // Centre plan, £299 a month
+      await db.from("centres").update({ plan: planFor(s), trial_ends_at: trialEnds }).eq("stripe_customer_id", customer);
+    } else {
+      // Dealer tiers by items sold a month: 25 / 50 / over 100 (no cap)
+      const byPrice: Record<string, number> = { [env.stripe.price("25")]: 25, [env.stripe.price("100")]: 50, [env.stripe.price("150")]: UNLIMITED };
+      const meta = Number(s.items.data[0]?.price?.metadata?.monthly_sold_limit ?? 0);
+      const limit = meta || (priceId ? byPrice[priceId] : undefined) || undefined;
+      await db
+        .from("dealers")
+        .update({ plan: planFor(s), trial_ends_at: trialEnds, ...(limit ? { monthly_sold_limit: limit } : {}) })
+        .eq("stripe_customer_id", customer);
+    }
   }
   await db.from("webhook_log").update({ status: "processed", processed_at: new Date().toISOString() }).eq("source", "stripe").eq("external_event_id", evt.id);
   return NextResponse.json({ ok: true });

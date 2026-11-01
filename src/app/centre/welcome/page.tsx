@@ -3,14 +3,30 @@ import { redirect } from "next/navigation";
 import { currentCentre } from "@/lib/centre";
 
 /** Server rendered welcome. Safe to refresh, safe to press Back from. */
-export default async function Welcome({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
-  const { centre: cp } = await searchParams;
+export default async function Welcome({ searchParams }: { searchParams: Promise<{ centre?: string; paid?: string; preview?: string }> }) {
+  const { centre: cp, paid, preview } = await searchParams;
   const centre = await currentCentre(cp);
   if (!centre) redirect("/signup/centre");
+  const needsCard = (!centre.stripe_customer_id || preview === "pay") && paid !== "1";
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-[24px] font-semibold">{centre.name} is set up</h1>
-      <p className="mt-1 text-[14px] text-ink-muted">Three things to do now, in any order.</p>
+      <p className="mt-1 text-[14px] text-ink-muted">{needsCard ? "One payment step, then three things to do in any order." : "Three things to do now, in any order."}</p>
+
+      {needsCard ? (
+        <div className="card mt-6 border-accent p-5">
+          <div className="flex items-baseline justify-between"><span className="text-[15px] font-semibold">Dealer Centre for centres</span><span className="num text-[22px] font-bold">£299<span className="text-[13px] font-normal text-ink-muted"> /month</span></span></div>
+          <ul className="mt-3 flex flex-col gap-1.5 text-[14px] text-ink-muted">
+            <li>Unlimited dealers, End of day, statements and dealer payouts worked out for you</li>
+            <li>Till screen and label printing, Square connection when you have one</li>
+            <li>Your own online shop with every dealer&rsquo;s stock, run for you</li>
+          </ul>
+          <p className="mt-3 text-[13px] text-ink-muted">30 days free. Card taken now, nothing charged until day 30, cancel any time.</p>
+          <a href={`/api/billing/centre-checkout?centre=${centre.id}`} className="btn mt-4">Add card and start trial</a>
+        </div>
+      ) : paid === "1" ? (
+        <div className="card mt-6 flex items-center justify-between p-4 text-[14px]"><span>Trial started. First payment in 30 days, email three days before.</span><span className="pill pill-success">Paid</span></div>
+      ) : null}
 
       <div className="card mt-6 p-5">
         <div className="text-[12px] text-ink-muted">Your centre code</div>

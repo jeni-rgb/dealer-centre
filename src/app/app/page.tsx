@@ -10,7 +10,7 @@ export default async function Today() {
   const [{ data: summary }, { data: recent }, { data: dealer }, { data: centres }, { data: toPrint }, { data: old }] = await Promise.all([
     sb.rpc("dealer_summary", { p_dealer_id: me.dealer_id }),
     sb.from("sales").select("id, amount_pence, sold_at, ticket_no, item_id, items(title, photos), channels:channel_id(type, owner_type)").eq("dealer_id", me.dealer_id).is("voided_at", null).order("sold_at", { ascending: false }).limit(3),
-    sb.from("dealers").select("name, code, plan, trial_ends_at").eq("id", me.dealer_id).single(),
+    sb.from("dealers").select("name, code, plan, trial_ends_at, monthly_sold_limit").eq("id", me.dealer_id).single(),
     sb.from("dealer_centres").select("status, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null),
     sb.from("print_jobs").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).in("status", ["not_printed", "ready"]),
     sb.from("items").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).eq("status", "live").lte("listed_at", new Date(Date.now() - 90 * 86400000).toISOString()),
@@ -59,6 +59,9 @@ export default async function Today() {
           <Link href="/app/labels" className="btn-secondary !h-12 !gap-1.5 !px-2 !text-[14px]">{Icon.printer} Labels{printCount > 0 && <span className="pill pill-warning !h-5 !rounded-full whitespace-nowrap !px-1.5 !text-[11px]">{printCount} to print</span>}</Link>
         </div>
 
+        {dealer && dealer.monthly_sold_limit < 100000 && (s.items_sold_month ?? 0) >= dealer.monthly_sold_limit && (
+          <Link href="/api/billing/portal" className="card flex items-center justify-between border-accent p-4 text-[14px]"><span><span className="block font-medium">Good month: {s.items_sold_month} sold</span><span className="text-[12px] text-ink-muted">That is past the {dealer.monthly_sold_limit} on your plan. Nothing stops, but please move up a tier.</span></span><span className="text-[13px] font-medium text-accent">Upgrade</span></Link>
+        )}
         {dealer?.plan === "trial" && dealer.trial_ends_at && (
           <p className="text-[12px] text-ink-muted">Trial ends {new Date(dealer.trial_ends_at).toLocaleDateString("en-GB")}. <Link className="text-accent" href="/api/billing/portal">Manage plan</Link></p>
         )}

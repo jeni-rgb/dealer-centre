@@ -109,14 +109,14 @@ export function CentreSignupForm() {
       {steps[step] === "confirm" && (
         <Q {...q} title="Does this look right?">
           <div className="card divide-y divide-border text-[14px]">
-            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Centre</span><span className="font-medium">{name}{town ? `, ${town}` : ""}</span></div>
+            <div className="flex items-start justify-between gap-6 px-4 py-3"><span className="shrink-0 text-ink-muted">Centre</span><span className="text-right font-medium"><span className="block">{name}</span>{town && <span className="block text-[13px] font-normal text-ink-muted">{town}</span>}</span></div>
             <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Rent</span><span className="font-medium">{r.charges_rent ? `${r.rent_frequency}, ${r.rent_day}` : "None"}</span></div>
             <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Commission</span><span className="font-medium">{r.charges_commission ? `${r.commission}%` : "None"}</span></div>
             <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Payments</span><span className="font-medium">{till === "square" ? "Square" : "Ordinary till"}</span></div>
           </div>
           {err && <p className="text-[13px] text-danger">{err}</p>}
           <button className="btn" disabled={busy} onClick={create}>{busy ? "Setting up…" : "Set up my centre"}</button>
-          <p className="text-[12px] text-ink-muted">Free for centres. You can change any of this later in Settings.</p>
+          <p className="text-[12px] text-ink-muted">£299 a month after a 30 day free trial; you add a card on the next screen. You can change any of this later in Settings.</p>
         </Q>
       )}
     </div>

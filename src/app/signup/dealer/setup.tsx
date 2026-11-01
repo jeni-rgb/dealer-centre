@@ -6,7 +6,7 @@ import { Phone, Pill } from "@/components/ui";
 import { isValidDealerCode, suggestDealerCode } from "@/lib/sku";
 
 type Dealer = { name: string; code: string; plan: string; stripe_customer_id: string | null } | null;
-const STEPS = ["business", "card", "centre", "till", "printers", "shopify", "summary"] as const;
+const STEPS = ["business", "card", "centre", "printers", "shopify", "summary"] as const;
 type Step = (typeof STEPS)[number];
 type HP = { idx: number; signup: boolean; step: Step; next: () => void };
 
@@ -28,24 +28,15 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
           <StepHeader {...hp} title="Card and 30 day trial" sub="Nothing is charged today. First payment in 30 days, email three days before." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
-              {[["25", "Up to 50 items", "£25 a month"], ["100", "Up to 100 items", "£100 a month"], ["150", "Up to 250 items", "£150 a month"]].map(([t, a, b]) => (
-                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}</span><span className="text-accent">Choose</span></span></a>
+              {[["25", "Up to 25 sold a month", "£25"], ["100", "Up to 50 sold a month", "£100"], ["150", "Over 100 sold a month", "£150"]].map(([t, a, b]) => (
+                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}<span className="font-normal text-ink-muted"> /mo</span></span><span className="text-accent">Choose</span></span></a>
               ))}
             </div>
-            <p className="text-[12px] text-ink-muted">Taken on the web by Stripe. Change or cancel any time from Settings.</p>
+            <p className="text-[12px] text-ink-muted">Plans are by what you sell, not what you list. List as much stock as you like. Taken on the web by Stripe; change or cancel any time from Settings.</p>
           </div>
         </>
       )}
       {step === "centre" && <Centre hp={hp} centres={centres} onDone={next} />}
-      {step === "till" && (
-        <>
-          <StepHeader {...hp} title="Your till" sub="Items at a centre go through the centre's till automatically once they connect. Only connect your own Square if you run your own shop." />
-          <div className="flex flex-col gap-3 px-5 pt-6">
-            <a className="btn-secondary" href="/api/oauth/square?owner=dealer">Connect my own Square</a>
-            <button className="btn" onClick={next}>I sell at a centre, continue</button>
-          </div>
-        </>
-      )}
       {step === "printers" && <Printers hp={hp} ownPrinters={ownPrinters} centres={centres} onDone={next} />}
       {step === "shopify" && <Shopify hp={hp} hasShopify={hasShopify} onDone={next} />}
       {step === "summary" && (
@@ -168,11 +159,15 @@ function Printers({ hp, ownPrinters, centres, onDone }: { hp: HP; ownPrinters: n
   async function add() { setBusy(true); await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name.trim() || "My label printer", provider: "browser" }) }); setBusy(false); onDone(); }
   return (
     <>
-      <StepHeader {...hp} title="Printers" sub={centres.length ? `You already have ${centres[0].name}'s till printer. Add your own if you label at home.` : "Add your own if you label at home. Centre printers are added automatically when you join."} />
+      <StepHeader {...hp} title="Label printers" sub="Labels print at the centre when you list. Add another printer if you also label at home." />
       <div className="flex flex-col gap-4 px-5 pt-6">
-        {ownPrinters > 0 && <div className="card px-4 py-3 text-[14px]">{ownPrinters} printer{ownPrinters > 1 ? "s" : ""} added</div>}
+        <div className="card divide-y divide-border text-[14px]">
+          {centres.length > 0 && <div className="flex items-center justify-between px-4 py-3"><span>Centre label printer</span><Pill kind="success">Connected</Pill></div>}
+          {centres.length === 0 && <div className="flex items-center justify-between px-4 py-3 text-ink-muted"><span>Centre printer</span><span>Added when your centre approves you</span></div>}
+          {ownPrinters > 0 && <div className="flex items-center justify-between px-4 py-3"><span>Your printer{ownPrinters > 1 ? "s" : ""}</span><Pill kind="success">{ownPrinters} added</Pill></div>}
+        </div>
         <input className="field" placeholder="Brother QL at home" value={name} onChange={(e) => setName(e.target.value)} />
-        <button className="btn" disabled={busy} onClick={add}>Add printer</button>
+        <button className="btn" disabled={busy} onClick={add}>Add another printer</button>
         <p className="text-[12px] text-ink-muted">Labels open as a PDF sized to the roll. Direct Bluetooth printing arrives with the App Store build.</p>
       </div>
     </>
@@ -183,7 +178,7 @@ function Shopify({ hp, hasShopify, onDone }: { hp: HP; hasShopify: boolean; onDo
   const [shop, setShop] = useState("");
   return (
     <>
-      <StepHeader {...hp} title="Your Shopify" sub="Optional. Every item you list goes to your own shop too, and sells out of both places at once." />
+      <StepHeader {...hp} title="Your own Shopify" sub="Optional, and only for a shop you run yourself. Items you list can go to it as well as the centre floor, and sell out of both at once. The centre's online shop is separate: you choose it item by item when you list, nothing to connect." />
       <div className="flex flex-col gap-4 px-5 pt-6">
         {hasShopify ? <div className="card flex items-center justify-between px-4 py-3 text-[14px]"><span>Shopify</span><Pill kind="success">Connected</Pill></div> : (
           <form action="/api/oauth/shopify" method="get" className="flex flex-col gap-3"><input name="shop" className="field" placeholder="yourstore.myshopify.com" value={shop} onChange={(e) => setShop(e.target.value)} /><button className="btn">Connect Shopify</button></form>
