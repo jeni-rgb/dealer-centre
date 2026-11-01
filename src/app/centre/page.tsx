@@ -20,7 +20,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
   ]);
   const list = (rows ?? []) as Row[];
   const total = (sales ?? []).reduce((a, s) => a + s.amount_pence, 0);
-  const online = (sales ?? []).filter((s) => (s.channels as unknown as { type: string })?.type !== "square").reduce((a, s) => a + s.amount_pence, 0);
+  const online = (sales ?? []).filter((s) => !["square", "manual"].includes((s.channels as unknown as { type: string })?.type)).reduce((a, s) => a + s.amount_pence, 0);
   const card = (sales ?? []).filter((s) => s.payment_type && s.payment_type !== "CASH").reduce((a, s) => a + s.amount_pence, 0);
   const unmatched = (sales ?? []).filter((s) => !s.dealer_id).length;
   const stale = (r: Row) => !r.last_sale_at || Date.now() - new Date(r.last_sale_at).getTime() > 30 * 86400000;

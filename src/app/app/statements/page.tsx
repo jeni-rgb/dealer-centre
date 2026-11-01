@@ -18,8 +18,9 @@ export default async function Statement() {
 
   const all = sales ?? [];
   const gross = all.reduce((a, s) => a + s.amount_pence, 0);
-  const floor = all.filter((s) => (s.channels as unknown as { type: string })?.type === "square");
-  const online = all.filter((s) => (s.channels as unknown as { type: string })?.type !== "square");
+  const isFloor = (s: { channels: unknown }) => ["square", "manual"].includes((s.channels as { type: string })?.type);
+  const floor = all.filter(isFloor);
+  const online = all.filter((s) => !isFloor(s));
   const card = floor.filter((s) => s.payment_type && s.payment_type !== "CASH").reduce((a, s) => a + s.amount_pence, 0);
   const floorGross = floor.reduce((a, s) => a + s.amount_pence, 0);
   const onlineGross = online.reduce((a, s) => a + s.amount_pence, 0);

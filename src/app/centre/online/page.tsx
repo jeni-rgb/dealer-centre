@@ -15,7 +15,7 @@ export default async function CentreOnline({ searchParams }: { searchParams: Pro
     .from("sales")
     .select("id, amount_pence, sold_at, ticket_no, postage_pence, item_id, dealers(name, code), items(title, photos), channels:channel_id(type, owner_type), dealer_centres:dealer_id(pitch_numbers)")
     .eq("centre_id", centre.id).is("voided_at", null).gte("sold_at", monthStart.toISOString()).order("sold_at", { ascending: false });
-  const online = (sales ?? []).filter((s) => { const c = s.channels as unknown as { type: string; owner_type: string }; return c?.type !== "square" && c?.owner_type === "centre"; });
+  const online = (sales ?? []).filter((s) => { const c = s.channels as unknown as { type: string; owner_type: string }; return !["square", "manual"].includes(c?.type) && c?.owner_type === "centre"; });
   const gross = online.reduce((a, s) => a + s.amount_pence, 0);
   const share = Math.round((gross * centre.centre_online_share_bps) / 10000);
   const live = online.filter((s) => Date.now() - new Date(s.sold_at).getTime() < 3 * 86400000);
