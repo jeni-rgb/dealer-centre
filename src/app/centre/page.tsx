@@ -62,7 +62,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
                 </tr>
               );
             })}
-            {list.length === 0 && <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-muted">No dealers yet. Give them your centre code or invite them from Mapping.</td></tr>}
+            {list.length === 0 && <tr><td colSpan={7} className="px-5 py-8 text-center text-ink-muted">No dealers yet. Give them your centre code <span className="ticket">{centre.invite_code}</span>, or tell them to search for {centre.name} when they sign up. Approve them on the Mapping page.</td></tr>}
           </tbody>
         </table>
       </div>

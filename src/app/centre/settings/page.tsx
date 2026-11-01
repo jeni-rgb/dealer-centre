@@ -27,17 +27,17 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
 
       <Card title="Connections">
         <div className="divide-y divide-border">
-          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, "Floor sales and items for every dealer"], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"], ["ebay", "Centre eBay store", `/api/oauth/ebay?id=${centre.id}`, "Buy it now listings, you handle postage"]].map(([t, label, href, hint]) => {
+          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, centre.till === "square" ? "Floor sales and items flow in automatically" : "Not needed. You record sales in End of day. Connect this only if you move to Square."], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"], ["ebay", "Centre eBay store", `/api/oauth/ebay?id=${centre.id}`, "Buy it now listings, you handle postage. Coming soon"]].map(([t, label, href, hint]) => {
             const c = ch(t!);
             return (
               <div key={t} className="flex items-center justify-between py-3">
                 <span className="flex flex-col"><span className="text-[15px] font-medium">{label}</span><span className="text-[12px] text-ink-muted">{c ? `${c.external_account_id}${c.last_webhook_at ? ` · last event ${new Date(c.last_webhook_at).toLocaleString("en-GB")}` : ""}` : hint}</span></span>
-                {c ? <Pill kind="success">Connected</Pill> : t === "shopify" ? <ShopifyConnect centreId={centre.id} /> : <a className="btn-sm" href={href!}>Connect</a>}
+                {c ? <Pill kind="success">Connected</Pill> : t === "shopify" ? <ShopifyConnect centreId={centre.id} /> : t === "ebay" ? <Pill kind="neutral">Later</Pill> : <a className={centre.till === "square" ? "btn-sm" : "btn-sm-secondary"} href={href!}>Connect</a>}
               </div>
             );
           })}
         </div>
-        <p className="mt-3 text-[12px] text-ink-muted">Square webhook address: <span className="ticket">{env.appUrl()}/api/webhooks/square</span></p>
+        {centre.till === "square" && <p className="mt-3 text-[12px] text-ink-muted">While Square is in test mode, the connect button only works when opened from Square's own developer dashboard. With a real Square account it works from here.</p>}
       </Card>
 
       <Card title="Till printer">
@@ -46,8 +46,9 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
         <p className="mt-3 text-[12px] text-ink-muted">For labels to print without anyone touching a computer, install the PrintNode client on the till PC or a Raspberry Pi next to the printer and enter its printer ID.</p>
       </Card>
 
-      <Card title="Till screen">
-        <p className="text-[14px]">Open <a className="font-medium text-accent" href={`/till?centre=${centre.id}`}>/till</a> on the till iPad and add it to the home screen. Staff enter the till PIN once a day. Dealer tiles carry the code in large type.</p>
+      <Card title="Quick label screen, optional">
+        <p className="text-[14px] text-ink-muted">For dealers who do not use the app. Whoever is on the till opens <a className="font-medium text-accent" href={`/till?centre=${centre.id}`}>this page</a> on a phone or tablet, picks the dealer, types a price, and a barcode label prints or downloads. It is protected by a four digit PIN so only staff can use it.</p>
+        <p className="mt-3 text-[14px]">Your till PIN: <span className="ticket text-[20px]">{centre.till_pin_plain ?? "set in sign up"}</span></p>
       </Card>
     </div>
   );

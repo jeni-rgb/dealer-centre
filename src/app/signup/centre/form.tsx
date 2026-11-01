@@ -1,63 +1,138 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
+type Rent = { charges_rent: boolean | null; rent_frequency: "weekly" | "monthly" | "quarterly"; rent_day: string; charges_commission: boolean | null; commission: string };
+
+/**
+ * Centre sign up as a conversation. Six short questions, plain words, nothing technical.
+ * On success we go to a server page so Back or Refresh never creates a second centre.
+ */
 export function CentreSignupForm() {
-  const [f, setF] = useState({ name: "", address: "", commission_percent: "10", rent_day: "1", statement_day: "1", pin: "" });
+  const router = useRouter();
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState("");
+  const [town, setTown] = useState("");
+  const [dealers, setDealers] = useState("");
+  const [r, setR] = useState<Rent>({ charges_rent: null, rent_frequency: "monthly", rent_day: "1st of the month", charges_commission: null, commission: "10" });
+  const [till, setTill] = useState<"ordinary" | "square" | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState<{ centre_id: string; invite_code: string } | null>(null);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    if (!/^\d{4,8}$/.test(f.pin)) return setErr("Till PIN is 4 to 8 digits.");
-    setBusy(true);
-    const r = await fetch("/api/signup/centre", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...f, commission_percent: parseFloat(f.commission_percent), rent_day: parseInt(f.rent_day), statement_day: parseInt(f.statement_day) }),
+  const steps = ["name", "dealers", "rent", "commission", "till", "confirm"] as const;
+  const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+
+  async function create() {
+    setBusy(true); setErr(null);
+    const rentDay = r.rent_frequency === "weekly" ? (r.rent_day.includes("Monday") ? 1 : 5) : r.rent_day.startsWith("15") ? 15 : r.rent_day.startsWith("Last") ? 28 : 1;
+    const res = await fetch("/api/signup/centre", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: name.trim(), address: town.trim(), dealer_count: parseInt(dealers || "0") || null,
+        charges_rent: !!r.charges_rent, rent_frequency: r.rent_frequency, rent_day: rentDay, statement_day: 1,
+        commission_percent: r.charges_commission ? parseFloat(r.commission || "0") : 0, till: till ?? "ordinary",
+      }),
     });
-    const j = await r.json();
+    const j = await res.json();
     setBusy(false);
-    if (!r.ok) return setErr(j.error);
-    setDone(j);
+    if (!res.ok) return setErr(j.error ?? "Something went wrong");
+    router.replace(`/centre/welcome?centre=${j.centre_id}`);
   }
 
-  if (done) {
-    return (
-      <div className="mt-6 space-y-6">
-        <div>
-          <div className="text-[12px] text-ink-muted">Your centre code</div>
-          <div className="ticket mt-1 text-[36px]">{done.invite_code}</div>
-          <p className="mt-2 text-[14px] text-ink-muted">Give this to dealers. They enter it when they sign up and you approve them on the mapping screen.</p>
-        </div>
-        <div>
-          <div className="mb-2 text-[14px] font-medium">How do you take payments?</div>
-          <a className="btn" href={`/centre/eod?centre=${done.centre_id}`}>An ordinary till, I record sales from the tickets</a>
-          <a className="btn-secondary mt-2" href={`/api/oauth/square?owner=centre&id=${done.centre_id}`}>Square, connect it</a>
-          <p className="mt-2 text-[12px] text-ink-muted">With an ordinary till, the customer brings the barcoded ticket to pay, the till keeps it, and you record the day's tickets in End of day. Takes a few minutes an evening.</p>
-        </div>
-      </div>
-    );
-  }
+  const q = { step, total: steps.length, back };
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-5">
-      <label className="block"><span className="field-label">Centre name</span><input className="field" value={f.name} onChange={set("name")} placeholder="Magdalen Antiques Centre" /></label>
-      <label className="block"><span className="field-label">Address</span><input className="field" value={f.address} onChange={set("address")} /></label>
-      <div className="grid grid-cols-3 gap-3">
-        <label className="block"><span className="field-label">Commission %</span><input className="field num" inputMode="decimal" value={f.commission_percent} onChange={set("commission_percent")} /></label>
-        <label className="block"><span className="field-label">Rent day</span><input className="field num" inputMode="numeric" value={f.rent_day} onChange={set("rent_day")} /></label>
-        <label className="block"><span className="field-label">Statement day</span><input className="field num" inputMode="numeric" value={f.statement_day} onChange={set("statement_day")} /></label>
-      </div>
-      <label className="block">
-        <span className="field-label">Till PIN</span>
-        <input className="field num" inputMode="numeric" value={f.pin} onChange={set("pin")} placeholder="4 to 8 digits" />
-        <span className="mt-1 block text-xs text-ink-muted">Staff type this on the till iPad to print quick labels. No login needed.</span>
-      </label>
-      {err && <p className="text-sm text-danger">{err}</p>}
-      <button className="btn w-full" disabled={busy}>{busy ? "Creating…" : "Create centre"}</button>
-    </form>
+    <div className="mt-6">
+      {steps[step] === "name" && (
+        <Q {...q} title="What is your centre called?" sub="And where is it. Dealers search for you by either.">
+          <input className="field" placeholder="Looses Emporium" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          <input className="field" placeholder="Magdalen Street, Norwich" value={town} onChange={(e) => setTown(e.target.value)} />
+          <button className="btn" disabled={name.trim().length < 2} onClick={next}>Continue</button>
+        </Q>
+      )}
+
+      {steps[step] === "dealers" && (
+        <Q {...q} title="Roughly how many dealers trade with you?" sub="A guess is fine. It just helps us size things.">
+          <div className="grid grid-cols-2 gap-2">{["Under 20", "20 to 50", "50 to 100", "Over 100"].map((o, i) => <Choice key={o} on={dealers === String([10, 35, 75, 150][i])} onClick={() => setDealers(String([10, 35, 75, 150][i]))}>{o}</Choice>)}</div>
+          <button className="btn" onClick={next}>Continue</button>
+        </Q>
+      )}
+
+      {steps[step] === "rent" && (
+        <Q {...q} title="Do your dealers pay rent for their pitch?" sub="Most centres charge rent, commission, or both. Dealers will tell us their own rent when they join and you can correct it.">
+          <div className="flex flex-col gap-2">
+            <Choice on={r.charges_rent === true} onClick={() => setR({ ...r, charges_rent: true })}>Yes, dealers pay rent</Choice>
+            <Choice on={r.charges_rent === false} onClick={() => setR({ ...r, charges_rent: false })}>No, commission only</Choice>
+          </div>
+          {r.charges_rent && (
+            <>
+              <div><span className="field-label">How often is rent taken?</span><div className="grid grid-cols-3 gap-2">{(["weekly", "monthly", "quarterly"] as const).map((f) => <Choice key={f} on={r.rent_frequency === f} onClick={() => setR({ ...r, rent_frequency: f, rent_day: f === "weekly" ? "Every Friday" : f === "quarterly" ? "1st of the month" : "1st of the month" })}><span className="w-full text-center capitalize">{f}</span></Choice>)}</div></div>
+              <div><span className="field-label">On which day?</span>
+                <select className="field" value={r.rent_day} onChange={(e) => setR({ ...r, rent_day: e.target.value })}>
+                  {(r.rent_frequency === "weekly" ? ["Every Friday", "Every Monday"] : ["1st of the month", "15th of the month", "Last day of the month"]).map((d) => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+          <button className="btn" disabled={r.charges_rent === null} onClick={next}>Continue</button>
+        </Q>
+      )}
+
+      {steps[step] === "commission" && (
+        <Q {...q} title="Do you take commission on sales?" sub="A percentage of each floor sale, kept by the centre.">
+          <div className="flex flex-col gap-2">
+            <Choice on={r.charges_commission === true} onClick={() => setR({ ...r, charges_commission: true })}>Yes</Choice>
+            <Choice on={r.charges_commission === false} onClick={() => setR({ ...r, charges_commission: false })}>No, rent only</Choice>
+          </div>
+          {r.charges_commission && (
+            <div><span className="field-label">What percentage?</span><div className="flex h-12 items-center gap-1 rounded-[12px] border border-border px-3.5"><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={r.commission} onChange={(e) => setR({ ...r, commission: e.target.value })} /><span className="text-ink-muted">%</span></div></div>
+          )}
+          <button className="btn" disabled={r.charges_commission === null} onClick={next}>Continue</button>
+        </Q>
+      )}
+
+      {steps[step] === "till" && (
+        <Q {...q} title="How do customers pay?" sub="This decides how sales get into the app.">
+          <div className="flex flex-col gap-2">
+            <Choice on={till === "ordinary"} onClick={() => setTill("ordinary")}>
+              <span className="flex flex-col py-2"><span>An ordinary till or card machine</span><span className="text-[12px] font-normal text-ink-muted">The customer brings the item's ticket to the till. At the end of the day you type or scan the tickets into the app, two minutes. Most centres.</span></span>
+            </Choice>
+            <Choice on={till === "square"} onClick={() => setTill("square")}>
+              <span className="flex flex-col py-2"><span>Square</span><span className="text-[12px] font-normal text-ink-muted">You already take payments through Square. Sales flow in automatically when you connect it later in Settings.</span></span>
+            </Choice>
+          </div>
+          <button className="btn" disabled={!till} onClick={next}>Continue</button>
+        </Q>
+      )}
+
+      {steps[step] === "confirm" && (
+        <Q {...q} title="Does this look right?">
+          <div className="card divide-y divide-border text-[14px]">
+            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Centre</span><span className="font-medium">{name}{town ? `, ${town}` : ""}</span></div>
+            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Rent</span><span className="font-medium">{r.charges_rent ? `${r.rent_frequency}, ${r.rent_day}` : "None"}</span></div>
+            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Commission</span><span className="font-medium">{r.charges_commission ? `${r.commission}%` : "None"}</span></div>
+            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Payments</span><span className="font-medium">{till === "square" ? "Square" : "Ordinary till"}</span></div>
+          </div>
+          {err && <p className="text-[13px] text-danger">{err}</p>}
+          <button className="btn" disabled={busy} onClick={create}>{busy ? "Setting up…" : "Set up my centre"}</button>
+          <p className="text-[12px] text-ink-muted">Free for centres. You can change any of this later in Settings.</p>
+        </Q>
+      )}
+    </div>
   );
+}
+
+function Q({ step, total, back, title, sub, children }: { step: number; total: number; back: () => void; title: string; sub?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between text-[12px] text-ink-muted"><span>Question {step + 1} of {total}</span>{step > 0 && <button className="font-medium text-accent" onClick={back}>Back</button>}</div>
+      <div className="flex gap-1">{Array.from({ length: total }).map((_, i) => <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-accent" : "bg-surface-2"}`} />)}</div>
+      <div><h2 className="text-[22px] font-semibold leading-7">{title}</h2>{sub && <p className="mt-1.5 text-[14px] text-ink-muted">{sub}</p>}</div>
+      {children}
+    </div>
+  );
+}
+function Choice({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return <button type="button" onClick={onClick} className={`flex min-h-[56px] w-full items-center rounded-[14px] border px-4 text-left text-[15px] font-medium ${on ? "border-accent bg-accent-soft text-accent-text" : "border-border bg-white"}`}>{children}</button>;
 }

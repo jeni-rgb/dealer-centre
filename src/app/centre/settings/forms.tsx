@@ -18,7 +18,7 @@ export function CentreTermsForm({ centreId, initial }: { centreId: string; initi
       <Field value={f.online} onChange={set("online")} label="Online commission" suffix="%" />
       <Field value={f.share} onChange={set("share")} label="Your share of online" suffix="%" />
       <Field value={f.handling} onChange={set("handling")} label="Handling fee, buyer pays" suffix="£" />
-      <Field value={f.rent_day} onChange={set("rent_day")} label="Rent day" suffix="" />
+      <Field value={f.rent_day} onChange={set("rent_day")} label="Rent day (1 to 28, or 1 = Monday, 5 = Friday for weekly)" suffix="" />
       <Field value={f.statement_day} onChange={set("statement_day")} label="Statement day" suffix="" />
       <button className="btn-sm">{saved ? "Saved" : "Save"}</button>
     </form>

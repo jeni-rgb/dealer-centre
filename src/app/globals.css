@@ -2,47 +2,47 @@
 
 /* Design tokens from the Claude Design handover, 30 Oct 2026. Dark header direction. */
 :root {
-  --ink: #0F172A;
-  --ink-muted: #64748B;
-  --border: #E2E8F0;
-  --surface: #F8FAFC;
-  --surface-2: #F1F5F9;
-  --accent: #2563EB;
-  --accent-soft: #EFF6FF;
-  --accent-text: #1D4ED8;
-  --success: #047857;
-  --success-soft: #ECFDF5;
-  --success-dot: #10B981;
-  --warning: #92400E;
-  --warning-soft: #FEF3C7;
-  --danger: #B91C1C;
-  --danger-soft: #FEE2E2;
-  --header-muted: #94A3B8;
-  --header-green: #6EE7B7;
+  --dc-ink: #0F172A;
+  --dc-ink-muted: #64748B;
+  --dc-border: #E2E8F0;
+  --dc-surface: #F8FAFC;
+  --dc-surface-2: #F1F5F9;
+  --dc-accent: #2563EB;
+  --dc-accent-soft: #EFF6FF;
+  --dc-accent-text: #1D4ED8;
+  --dc-success: #047857;
+  --dc-success-soft: #ECFDF5;
+  --dc-success-dot: #10B981;
+  --dc-warning: #92400E;
+  --dc-warning-soft: #FEF3C7;
+  --dc-danger: #B91C1C;
+  --dc-danger-soft: #FEE2E2;
+  --dc-header-muted: #94A3B8;
+  --dc-header-green: #6EE7B7;
 }
 
 @theme inline {
-  --color-ink: var(--ink);
-  --color-ink-muted: var(--ink-muted);
-  --color-border: var(--border);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-accent-text: var(--accent-text);
-  --color-success: var(--success);
-  --color-success-soft: var(--success-soft);
-  --color-success-dot: var(--success-dot);
-  --color-warning: var(--warning);
-  --color-warning-soft: var(--warning-soft);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
-  --color-header-muted: var(--header-muted);
-  --color-header-green: var(--header-green);
+  --color-ink: var(--dc-ink);
+  --color-ink-muted: var(--dc-ink-muted);
+  --color-border: var(--dc-border);
+  --color-surface: var(--dc-surface);
+  --color-surface-2: var(--dc-surface-2);
+  --color-accent: var(--dc-accent);
+  --color-accent-soft: var(--dc-accent-soft);
+  --color-accent-text: var(--dc-accent-text);
+  --color-success: var(--dc-success);
+  --color-success-soft: var(--dc-success-soft);
+  --color-success-dot: var(--dc-success-dot);
+  --color-warning: var(--dc-warning);
+  --color-warning-soft: var(--dc-warning-soft);
+  --color-danger: var(--dc-danger);
+  --color-danger-soft: var(--dc-danger-soft);
+  --color-header-muted: var(--dc-header-muted);
+  --color-header-green: var(--dc-header-green);
   --font-sans: Inter, system-ui, sans-serif;
 }
 
-html, body { background: #fff; color: var(--ink); }
+html, body { background: #fff; color: var(--dc-ink); }
 body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 
 .num { font-variant-numeric: tabular-nums; }

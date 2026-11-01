@@ -52,7 +52,8 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
 
   return (
     <div className="mx-auto max-w-[520px]">
-      <div className="mb-4 flex items-baseline justify-between"><h1 className="text-[24px] font-semibold">End of day</h1><span className="text-[13px] text-ink-muted">{centreName}</span></div>
+      <div className="mb-1 flex items-baseline justify-between"><h1 className="text-[24px] font-semibold">End of day</h1><span className="text-[13px] text-ink-muted">{centreName}</span></div>
+      <p className="mb-4 text-[14px] text-ink-muted">Gather the tickets the till kept today. Add each one here, mark cash or card, press Record. Every dealer gets told their item sold.</p>
 
       {done && (
         <div className="mb-4 rounded-[14px] border border-[#A7F3D0] bg-success-soft px-4 py-3 text-[14px] text-success">
@@ -66,9 +67,9 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
           <input ref={input} className="field ticket flex-1 uppercase !text-[18px]" placeholder="Scan or type ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(ticket); } }} autoCapitalize="characters" autoCorrect="off" />
           <button className="btn-dark !h-12" onClick={() => add(ticket)}>Add</button>
         </div>
-        <div className="mt-3 flex items-center justify-between text-[13px] text-ink-muted">
-          <label className="flex items-center gap-2">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
-          <span>A Bluetooth scanner types into this box. Or type the number off the ticket.</span>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-muted">
+          <label className="flex items-center gap-2 whitespace-nowrap">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
+          <span className="basis-full">Type the number off each ticket and press Enter, or scan it with a Bluetooth scanner. Price and dealer fill in by themselves.</span>
         </div>
       </div>
 

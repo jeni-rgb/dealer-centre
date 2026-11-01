@@ -59,7 +59,8 @@ export function TillScreen({ centreId, centreName, dealers }: { centreId: string
   if (!dealer) return (
     <Shell>
       <div className="mb-5 flex items-baseline justify-between"><h1 className="text-[24px] font-semibold">Whose item is it?</h1><span className="text-[13px] text-ink-muted">{centreName}</span></div>
-      <div className="grid grid-cols-5 gap-3 lg:grid-cols-6">
+      {dealers.length === 0 && <p className="card p-6 text-[14px] text-ink-muted">No approved dealers yet. Dealers appear here once they have joined {centreName} and been approved on the Dealers page.</p>}
+      <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6">
         {dealers.map((d) => (
           <button key={d.id} onClick={() => setDealer(d)} className="card flex min-h-[112px] flex-col items-start p-4 text-left active:bg-accent-soft">
             <span className="ticket text-[44px] leading-none">{d.code}</span>
