@@ -51,7 +51,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
   const cash = lines.filter((l) => l.payment === "CASH" && l.status !== "sold").reduce((a, l) => a + Math.round(parseFloat(l.amount || "0") * 100), 0);
 
   return (
-    <div className="mx-auto max-w-[520px]">
+    <div>
       <div className="mb-1 flex items-baseline justify-between"><h1 className="text-[24px] font-semibold">End of day</h1><span className="text-[13px] text-ink-muted">{centreName}</span></div>
       <p className="mb-4 text-[14px] text-ink-muted">Gather the tickets the till kept today. Add each one here, mark cash or card, press Record. Every dealer gets told their item sold.</p>
 
