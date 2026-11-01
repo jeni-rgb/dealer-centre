@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { env } from "@/lib/env";
 import { currentCentre } from "@/lib/centre";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Pill } from "@/components/ui";
@@ -36,7 +37,7 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
             );
           })}
         </div>
-        <p className="mt-3 text-[12px] text-ink-muted">Square webhook address: <span className="ticket">{process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/square</span></p>
+        <p className="mt-3 text-[12px] text-ink-muted">Square webhook address: <span className="ticket">{env.appUrl()}/api/webhooks/square</span></p>
       </Card>
 
       <Card title="Till printer">

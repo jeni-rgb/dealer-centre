@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { env } from "@/lib/env";
 import type { Admin } from "@/lib/supabase/server";
 import { displaySku } from "@/lib/sku";
 
@@ -29,7 +30,7 @@ export async function sendSaleNotification(
   }
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
-    from: process.env.EMAIL_FROM ?? "Dealer Centre <onboarding@resend.dev>",
+    from: env.emailFrom(),
     to: users.map((u) => u.email),
     subject: line,
     text: `${line}, ${time}.\n\nOpen Dealer Centre to see today's total.`,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 
 /** Magic link lands here. Exchanges the code, ensures a users row, sends them on. */
@@ -14,5 +15,5 @@ export async function GET(req: Request) {
       await db.from("users").upsert({ id: data.user.id, email: data.user.email! }, { onConflict: "id", ignoreDuplicates: true });
     }
   }
-  return NextResponse.redirect(new URL(next, process.env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(next, env.appUrl()));
 }

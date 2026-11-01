@@ -1,7 +1,8 @@
 import { SquareClient, SquareEnvironment, WebhooksHelper } from "square";
 import type { ChannelAdapter, ChannelRow, IncomingLine, ItemRow, ListingRef } from "./types";
+import { env as E } from "@/lib/env";
 
-const env = process.env.SQUARE_ENV === "production" ? SquareEnvironment.Production : SquareEnvironment.Sandbox;
+const env = E.square.production() ? SquareEnvironment.Production : SquareEnvironment.Sandbox;
 
 export function squareClient(token: string) {
   return new SquareClient({ token, environment: env });
@@ -14,13 +15,13 @@ export const squareOAuth = {
       "ITEMS_READ", "ITEMS_WRITE", "INVENTORY_READ", "INVENTORY_WRITE",
       "ORDERS_READ", "PAYMENTS_READ", "MERCHANT_PROFILE_READ",
     ].join("+");
-    return `${base}/oauth2/authorize?client_id=${process.env.SQUARE_APP_ID}&scope=${scopes}&session=false&state=${state}`;
+    return `${base}/oauth2/authorize?client_id=${E.square.appId()}&scope=${scopes}&session=false&state=${state}`;
   },
   async exchange(code: string) {
     const c = new SquareClient({ environment: env });
     const r = await c.oAuth.obtainToken({
-      clientId: process.env.SQUARE_APP_ID!,
-      clientSecret: process.env.SQUARE_APP_SECRET!,
+      clientId: E.square.appId()!,
+      clientSecret: E.square.appSecret(),
       code,
       grantType: "authorization_code",
     });
@@ -29,8 +30,8 @@ export const squareOAuth = {
   async refresh(refreshToken: string) {
     const c = new SquareClient({ environment: env });
     return c.oAuth.obtainToken({
-      clientId: process.env.SQUARE_APP_ID!,
-      clientSecret: process.env.SQUARE_APP_SECRET!,
+      clientId: E.square.appId()!,
+      clientSecret: E.square.appSecret(),
       refreshToken,
       grantType: "refresh_token",
     });
@@ -41,7 +42,7 @@ export function verifySquareSignature(body: string, signature: string, url: stri
   return WebhooksHelper.verifySignature({
     requestBody: body,
     signatureHeader: signature,
-    signatureKey: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY!,
+    signatureKey: E.square.webhookKey(),
     notificationUrl: url,
   });
 }

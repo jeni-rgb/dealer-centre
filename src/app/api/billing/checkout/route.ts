@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import Stripe from "stripe";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 /** Starts a Stripe Checkout for the dealer's subscription. Web only, never from the native app. */
 export async function GET(req: Request) {
-  const tier = new URL(req.url).searchParams.get("tier") ?? "250";
-  const priceId = { "50": process.env.STRIPE_PRICE_50, "100": process.env.STRIPE_PRICE_100, "250": process.env.STRIPE_PRICE_250 }[tier] ?? process.env.STRIPE_PRICE_ID!;
+  const t = new URL(req.url).searchParams.get("tier") ?? "150";
+  const tier = (["25", "100", "150"].includes(t) ? t : "150") as "25" | "100" | "150";
+  const priceId = env.stripe.price(tier);
   const me = await getMe();
-  if (!me?.dealer_id) return NextResponse.redirect(new URL("/signin", process.env.NEXT_PUBLIC_APP_URL));
+  if (!me?.dealer_id) return NextResponse.redirect(new URL("/signin", env.appUrl()));
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   const db = supabaseAdmin();
   const { data: dealer } = await db.from("dealers").select("name, stripe_customer_id").eq("id", me.dealer_id).single();
@@ -21,8 +23,8 @@ export async function GET(req: Request) {
     subscription_data: { trial_period_days: 30, metadata: { dealer_id: me.dealer_id } },
     payment_method_collection: "always",
     metadata: { dealer_id: me.dealer_id },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/app?welcome=1`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/signup/dealer?step=card`,
+    success_url: `${env.appUrl()}/app?welcome=1`,
+    cancel_url: `${env.appUrl()}/signup/dealer?step=card`,
     locale: "en-GB",
   });
   return NextResponse.redirect(session.url!);

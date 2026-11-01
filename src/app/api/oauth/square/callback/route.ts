@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { cookies } from "next/headers";
 import { squareClient, squareOAuth } from "@/lib/channels/square";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -40,5 +41,5 @@ export async function GET(req: Request) {
   if (ch) await enqueue(db, "backfill_channel", { channel_id: ch.id });
 
   const dest = ownerType === "centre" ? `/centre/mapping?centre=${ownerId}&connected=square&push=1` : "/app/settings?connected=square";
-  return NextResponse.redirect(new URL(dest, process.env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(dest, env.appUrl()));
 }

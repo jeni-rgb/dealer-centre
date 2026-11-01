@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { cookies } from "next/headers";
 import { ebayOAuth } from "@/lib/channels/ebay";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -25,5 +26,5 @@ export async function GET(req: Request) {
     )
     .select("id").single();
   if (ch) await enqueue(db, "backfill_channel", { channel_id: ch.id });
-  return NextResponse.redirect(new URL(`/centre/settings?centre=${centreId}&connected=ebay`, process.env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(`/centre/settings?centre=${centreId}&connected=ebay`, env.appUrl()));
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 
@@ -28,7 +29,9 @@ export async function POST(req: Request) {
   }
   if (evt.type === "customer.subscription.updated" || evt.type === "customer.subscription.deleted" || evt.type === "customer.subscription.created") {
     const s = evt.data.object;
-    const limit = Number(s.items.data[0]?.price?.metadata?.item_limit ?? 0) || undefined;
+    const priceId = s.items.data[0]?.price?.id;
+    const byPrice: Record<string, number> = { [env.stripe.price("25")]: 50, [env.stripe.price("100")]: 100, [env.stripe.price("150")]: 250 };
+    const limit = Number(s.items.data[0]?.price?.metadata?.item_limit ?? 0) || (priceId ? byPrice[priceId] : undefined) || undefined;
     await db
       .from("dealers")
       .update({ plan: planFor(s), trial_ends_at: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null, ...(limit ? { item_limit: limit } : {}) })

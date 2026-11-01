@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { squareClient, squareOrderToLines, verifySquareSignature } from "@/lib/channels/square";
 import { recordSale, voidSale } from "@/lib/sales/record";
@@ -12,7 +13,7 @@ import type { ChannelRow } from "@/lib/channels/types";
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get("x-square-hmacsha256-signature") ?? "";
-  const url = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/square`;
+  const url = `${env.appUrl()}/api/webhooks/square`;
   if (!verifySquareSignature(body, sig, url)) return new NextResponse("bad signature", { status: 401 });
 
   const evt = JSON.parse(body) as { event_id: string; type: string; merchant_id: string; data: { object: Record<string, unknown> } };

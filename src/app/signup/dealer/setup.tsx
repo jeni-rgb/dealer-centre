@@ -28,9 +28,10 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
           <StepHeader {...hp} title="Card and 30 day trial" sub="Nothing is charged today. First payment in 30 days, email three days before." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
-              {[["Up to 50 items", "£25 a month"], ["Up to 100 items", "£100 a month"], ["Up to 250 items", "£150 a month"]].map(([a, b]) => <div key={a} className="flex h-[52px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="num font-semibold">{b}</span></div>)}
+              {[["25", "Up to 50 items", "£25 a month"], ["100", "Up to 100 items", "£100 a month"], ["150", "Up to 250 items", "£150 a month"]].map(([t, a, b]) => (
+                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}</span><span className="text-accent">Choose</span></span></a>
+              ))}
             </div>
-            <a className="btn" href="/api/billing/checkout">Add card and start trial</a>
             <p className="text-[12px] text-ink-muted">Taken on the web by Stripe. Change or cancel any time from Settings.</p>
           </div>
         </>

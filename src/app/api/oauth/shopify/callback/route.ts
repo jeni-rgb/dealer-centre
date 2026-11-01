@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "@/lib/env";
 import { cookies } from "next/headers";
 import { shopifyOAuth } from "@/lib/channels/shopify";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
     .single();
 
   // Register webhooks
-  const address = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/shopify`;
+  const address = `${env.appUrl()}/api/webhooks/shopify`;
   for (const topic of TOPICS) {
     await fetch(`https://${shop}/admin/api/${process.env.SHOPIFY_API_VERSION ?? "2025-10"}/webhooks.json`, {
       method: "POST",
@@ -36,5 +37,5 @@ export async function GET(req: Request) {
     }).catch(() => undefined);
   }
   if (ch) await enqueue(db, "backfill_channel", { channel_id: ch.id });
-  return NextResponse.redirect(new URL(ownerType === "centre" ? `/centre/settings?centre=${ownerId}&connected=shopify` : "/app/settings?connected=shopify", process.env.NEXT_PUBLIC_APP_URL));
+  return NextResponse.redirect(new URL(ownerType === "centre" ? `/centre/settings?centre=${ownerId}&connected=shopify` : "/app/settings?connected=shopify", env.appUrl()));
 }

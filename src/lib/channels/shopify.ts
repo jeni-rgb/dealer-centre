@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { env } from "@/lib/env";
 import type { ChannelAdapter, ChannelRow, IncomingLine, ItemRow, ListingRef } from "./types";
 
 const API_VERSION = process.env.SHOPIFY_API_VERSION ?? "2025-10";
@@ -6,7 +7,7 @@ const SCOPES = "read_products,write_products,read_inventory,write_inventory,read
 
 export const shopifyOAuth = {
   authorizeUrl(shop: string, state: string) {
-    const redirect = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/shopify/callback`;
+    const redirect = `${env.appUrl()}/api/oauth/shopify/callback`;
     return `https://${shop}/admin/oauth/authorize?client_id=${process.env.SHOPIFY_API_KEY}&scope=${SCOPES}&redirect_uri=${encodeURIComponent(redirect)}&state=${state}`;
   },
   verifyHmac(query: URLSearchParams) {
