@@ -5,7 +5,7 @@ import { canonicalTicket, displaySku } from "@/lib/sku";
 
 type Line = { key: string; ticket: string; title: string | null; dealer: string | null; amount: string; payment: "CASH" | "CARD"; status: "ok" | "unknown" | "sold" | "looking" };
 
-export function EndOfDay({ centreId, centreName, onRecorded }: { centreId: string; centreName: string; onRecorded?: () => void }) {
+export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: { centreId: string; centreName: string; onRecorded?: () => void; clearToken?: number }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [ticket, setTicket] = useState("");
@@ -15,6 +15,10 @@ export function EndOfDay({ centreId, centreName, onRecorded }: { centreId: strin
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => { input.current?.focus(); }, [lines.length]);
+  // Something changed in the Recorded list (edit or undo): the "Recorded N sales" banner is stale, drop it
+  useEffect(() => { if (clearToken > 0) setDone(null); }, [clearToken]);
+  // Wake the lookup function so the first scan of the day is not a cold start
+  useEffect(() => { fetch(`/api/centres/${centreId}/sales?ticket=WARMUP`, { cache: "no-store" }).catch(() => {}); }, [centreId]);
 
   async function add(raw: string) {
     const sku = canonicalTicket(raw);

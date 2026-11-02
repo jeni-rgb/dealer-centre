@@ -8,7 +8,7 @@ export type RecordedSale = { id: string; amount_pence: number; original_amount_p
 /** The last few days of recorded tickets, each with Edit price and Undo. The "what did it sell for" fix on the centre side. */
 export type RecordedHandle = { reload: () => void };
 
-export const Recorded = forwardRef<RecordedHandle, { centreId: string; initial: RecordedSale[] }>(function Recorded({ centreId, initial }, ref) {
+export const Recorded = forwardRef<RecordedHandle, { centreId: string; initial: RecordedSale[]; onChanged?: () => void }>(function Recorded({ centreId, initial, onChanged }, ref) {
   const [sales, setSales] = useState<RecordedSale[]>(initial);
   const [flash, setFlash] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -26,14 +26,14 @@ export const Recorded = forwardRef<RecordedHandle, { centreId: string; initial: 
   async function save(id: string) {
     setBusy(true);
     await fetch(`/api/sales/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ amount_pence: Math.round(parseFloat(amount || "0") * 100), payment_type: pay }) });
-    setBusy(false); setEditing(null); setFlash("Price updated. The dealer's statement follows it."); await reload();
+    setBusy(false); setEditing(null); setFlash("Price updated. The dealer's statement follows it."); onChanged?.(); await reload();
   }
   async function undo(id: string) {
     setBusy(true);
     const r = await fetch(`/api/sales/${id}`, { method: "DELETE" });
     setBusy(false); setConfirming(null); setEditing(null);
     setFlash(r.ok ? "Sale undone. The item is back on sale." : "Could not undo that sale.");
-    await reload();
+    onChanged?.(); await reload();
   }
   if (sales.length === 0 && !flash) return null;
 
