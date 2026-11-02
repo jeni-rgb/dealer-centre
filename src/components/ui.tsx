@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "./logo";
 import { displaySku } from "@/lib/sku";
 
 export const money = (pence: number) =>
@@ -7,7 +8,7 @@ export const money = (pence: number) =>
 export const when = (iso: string) => {
   const d = new Date(iso);
   const days = Math.floor((Date.now() - d.getTime()) / 86400000);
-  if (days === 0) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  if (days <= 0) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days} days ago`;
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -54,7 +55,7 @@ export function ToggleGroup({ children }: { children: React.ReactNode }) {
 
 export function TicketCard({ sku, hint }: { sku: string; hint: string }) {
   return (
-    <div className="flex items-center justify-between rounded-[14px] bg-ink px-4 py-3.5 text-white">
+    <div className="flex items-center justify-between rounded-[14px] bg-forest px-4 py-3.5 text-white">
       <div className="flex flex-col gap-0.5">
         <span className="text-[12px] text-header-muted">Ticket number</span>
         <span className="ticket text-[28px] leading-8">{displaySku(sku)}</span>
@@ -125,7 +126,7 @@ export function Sidebar({ items, title }: { items: [string, string, boolean][]; 
   return (
     <>
       <aside className="sidebar hidden md:block">
-        <div className="mb-6 px-3 text-[15px] font-semibold">Dealer Centre <span className="block text-[12px] font-normal text-ink-muted">{title}</span></div>
+        <div className="mb-6 px-3"><Logo size={26} /><span className="mt-2 block text-[12px] text-ink-muted">{title}</span></div>
         <nav className="flex flex-col gap-1">
           {items.map(([label, href, active]) => (
             <Link key={href} href={href} className={`sidebar-link ${active ? "sidebar-link-active" : ""}`}>{label}</Link>

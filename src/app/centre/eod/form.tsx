@@ -100,7 +100,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
       </div>
 
       {lines.length > 0 && (
-        <div className="sticky bottom-0 mt-4 rounded-[16px] bg-ink p-4 text-white">
+        <div className="sticky bottom-0 mt-4 rounded-[16px] bg-forest p-4 text-white">
           <div className="mb-3 grid grid-cols-3 gap-2 text-center">
             <div><div className="num text-[18px] font-semibold">{lines.filter((l) => l.status !== "sold").length}</div><div className="text-[11px] text-header-muted">Tickets</div></div>
             <div><div className="num text-[18px] font-semibold">{money(total)}</div><div className="text-[11px] text-header-muted">Total</div></div>

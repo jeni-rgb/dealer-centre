@@ -2,23 +2,29 @@
 
 /* Design tokens from the Claude Design handover, 30 Oct 2026. Dark header direction. */
 :root {
-  --dc-ink: #0F172A;
-  --dc-ink-muted: #64748B;
-  --dc-border: #E2E8F0;
-  --dc-surface: #F8FAFC;
-  --dc-surface-2: #F1F5F9;
-  --dc-accent: #2563EB;
-  --dc-accent-soft: #EFF6FF;
-  --dc-accent-text: #1D4ED8;
-  --dc-success: #047857;
-  --dc-success-soft: #ECFDF5;
-  --dc-success-dot: #10B981;
-  --dc-warning: #92400E;
-  --dc-warning-soft: #FEF3C7;
-  --dc-danger: #B91C1C;
-  --dc-danger-soft: #FEE2E2;
-  --dc-header-muted: #94A3B8;
-  --dc-header-green: #6EE7B7;
+  /* Dealer Centre brand, Nov 2026. Cream ground, olive primary, gold and forest accents. */
+  --dc-ink: #1A1A17;
+  --dc-ink-muted: #6E6A58;
+  --dc-border: #E6E1CC;
+  --dc-surface: #FDFBEF;
+  --dc-surface-2: #F3EFDD;
+  --dc-accent: #5C5319;
+  --dc-accent-soft: #EFEBD3;
+  --dc-accent-text: #4A4214;
+  --dc-gold: #C2B34A;
+  --dc-gold-soft: #F4EFC9;
+  --dc-forest: #2F5A3F;
+  --dc-forest-soft: #E1ECE3;
+  --dc-success: #2F5A3F;
+  --dc-success-soft: #E1ECE3;
+  --dc-success-dot: #5E9E73;
+  --dc-warning: #7A5F08;
+  --dc-warning-soft: #F4EFC9;
+  --dc-danger: #9A3B2B;
+  --dc-danger-soft: #F7E3DD;
+  --dc-header-muted: #CFC79A;
+  --dc-header-green: #D9CC6E;
+  --dc-cream: #FDFBEF;
 }
 
 @theme inline {
@@ -39,26 +45,35 @@
   --color-danger-soft: var(--dc-danger-soft);
   --color-header-muted: var(--dc-header-muted);
   --color-header-green: var(--dc-header-green);
+  --color-gold: var(--dc-gold);
+  --color-gold-soft: var(--dc-gold-soft);
+  --color-forest: var(--dc-forest);
+  --color-forest-soft: var(--dc-forest-soft);
+  --color-cream: var(--dc-cream);
   --font-sans: Inter, system-ui, sans-serif;
+  --font-display: Archivo, Inter, system-ui, sans-serif;
 }
 
-html, body { background: #fff; color: var(--dc-ink); }
+html, body { background: var(--dc-surface); color: var(--dc-ink); }
+h1, h2, .display { font-family: var(--font-display); letter-spacing: -0.01em; }
 body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 
 .num { font-variant-numeric: tabular-nums; }
-.ticket { font-weight: 700; letter-spacing: 0.02em; }
+.ticket { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em; }
+.wordmark { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; line-height: 0.95; }
 
 /* Buttons: 52 primary, 48 secondary, radius 12 */
-.btn { @apply inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-[12px] bg-accent px-4 text-[16px] font-semibold text-white disabled:opacity-50; }
-.btn-dark { @apply inline-flex h-[48px] items-center justify-center gap-2 rounded-[12px] bg-ink px-4 text-[14px] font-semibold text-white disabled:opacity-50; }
-.btn-secondary { @apply inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-[12px] border border-border bg-white px-4 text-[15px] font-semibold text-ink disabled:opacity-50; }
+.btn { @apply inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-accent px-5 text-[16px] font-semibold text-cream disabled:opacity-50; }
+.btn-dark { @apply inline-flex h-[48px] items-center justify-center gap-2 rounded-full bg-forest px-5 text-[14px] font-semibold text-white disabled:opacity-50; }
+.btn-secondary { @apply inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gold px-5 text-[15px] font-semibold text-ink disabled:opacity-50; }
+.btn-outline { @apply inline-flex h-[48px] w-full items-center justify-center gap-2 rounded-full border border-border bg-white px-5 text-[15px] font-semibold text-ink disabled:opacity-50; }
 .btn-ghost { @apply inline-flex h-[44px] w-full items-center justify-center text-[14px] font-medium text-ink-muted; }
-.btn-sm { @apply inline-flex h-[36px] items-center justify-center rounded-[10px] bg-accent px-3 text-[13px] font-semibold text-white disabled:opacity-50; }
-.btn-sm-secondary { @apply inline-flex h-[36px] items-center justify-center rounded-[10px] border border-border bg-white px-3 text-[13px] font-semibold text-ink disabled:opacity-50; }
+.btn-sm { @apply inline-flex h-[36px] items-center justify-center rounded-full bg-accent px-4 text-[13px] font-semibold text-cream disabled:opacity-50; }
+.btn-sm-secondary { @apply inline-flex h-[36px] items-center justify-center rounded-full border border-border bg-white px-4 text-[13px] font-semibold text-ink disabled:opacity-50; }
 
 /* Inputs: 48 tall, radius 12 */
 .field { @apply h-[48px] w-full rounded-[12px] border border-border bg-white px-3.5 text-[16px] text-ink outline-none focus:border-accent; }
-.field-label { @apply mb-1.5 block text-[13px] font-medium text-[#334155]; }
+.field-label { @apply mb-1.5 block text-[13px] font-medium text-[#4A4737]; }
 
 /* Cards and rows */
 .card { @apply rounded-[16px] border border-border bg-white; }
@@ -67,18 +82,18 @@ body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webki
 
 /* Pills: radius 8 */
 .pill { @apply inline-flex h-6 items-center rounded-[8px] px-2 text-[12px] font-semibold; }
-.pill-neutral { @apply bg-surface-2 text-[#334155]; }
+.pill-neutral { @apply bg-surface-2 text-[#4A4737]; }
 .pill-accent { @apply bg-accent-soft text-accent-text; }
 .pill-success { @apply bg-success-soft text-success; }
 .pill-warning { @apply bg-warning-soft text-warning; }
 .pill-danger { @apply bg-danger-soft text-danger; }
 
 /* Dark header */
-.header-dark { @apply rounded-b-[24px] bg-ink px-5 pb-6 pt-14 text-white; }
+.header-dark { @apply rounded-b-[28px] bg-accent px-5 pb-6 pt-14 text-cream; }
 .header-stat { @apply flex flex-col gap-0.5 rounded-[12px] bg-white/[0.07] px-3 py-2.5; }
 
 /* Desktop shell */
-.sidebar { @apply fixed inset-y-0 left-0 w-[220px] border-r border-border bg-white px-4 py-6; }
-.sidebar-link { @apply flex h-10 items-center rounded-[10px] px-3 text-[14px] font-medium text-ink-muted hover:bg-surface; }
+.sidebar { @apply fixed inset-y-0 left-0 w-[220px] border-r border-border bg-surface px-4 py-6; }
+.sidebar-link { @apply flex h-10 items-center rounded-full px-3 text-[14px] font-medium text-ink-muted hover:bg-surface-2; }
 .sidebar-link-active { @apply bg-accent-soft text-accent-text; }
 .kpi { @apply rounded-[16px] border border-border bg-white p-5; }

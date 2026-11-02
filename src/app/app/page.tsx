@@ -40,7 +40,7 @@ export default async function Today() {
           <div className="flex items-baseline gap-3">
             <span className="num text-[44px] font-bold leading-[48px] tracking-[-0.03em]">{money(s.month ?? 0)}</span>
             {s.last_month_to_date > 0 && (
-              <span className={`inline-flex h-6 items-center gap-1 rounded-[8px] px-2 text-[12px] font-semibold ${delta >= 0 ? "bg-[rgba(52,211,153,0.16)] text-header-green" : "bg-white/10 text-header-muted"}`}>
+              <span className={`inline-flex h-6 items-center gap-1 rounded-[8px] px-2 text-[12px] font-semibold ${delta >= 0 ? "bg-white/15 text-header-green" : "bg-white/10 text-header-muted"}`}>
                 {delta >= 0 && Icon.up}{money(Math.abs(delta))} vs last month
               </span>
             )}
@@ -94,7 +94,7 @@ export default async function Today() {
         </div>
 
         {oldCount > 0 && (
-          <Link href="/app/stock?f=old" className="flex items-center justify-between gap-3 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-3 text-[13px] text-[#991B1B]">
+          <Link href="/app/stock?f=old" className="flex items-center justify-between gap-3 rounded-[14px] border border-[#EBC9C1] bg-danger-soft px-3.5 py-3 text-[13px] text-danger">
             <span><strong className="font-semibold">{oldCount} item{oldCount > 1 ? "s" : ""}</strong> over 90 days on the floor</span>
             <span className="font-semibold">Review</span>
           </Link>

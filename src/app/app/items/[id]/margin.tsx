@@ -15,7 +15,7 @@ export function MarginCard({ pricePence, costPence, commissionBps, sold }: { pri
   const profit = net(pricePence);
 
   return (
-    <div className="rounded-[16px] bg-ink p-4 text-white">
+    <div className="rounded-[16px] bg-forest p-4 text-white">
       <div className="flex items-center justify-between">
         <span className="text-[12px] text-header-muted">Private · only you</span>
         <span className="text-[12px] text-header-muted">Commission {commissionBps / 100}%</span>

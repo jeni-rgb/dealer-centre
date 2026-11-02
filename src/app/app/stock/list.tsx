@@ -85,7 +85,7 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
 
       {selecting && sel.size > 0 && (
         <div className="fixed inset-x-0 bottom-[84px] z-10 px-5">
-          <div className="mx-auto flex max-w-[350px] items-center justify-between rounded-[14px] bg-ink px-4 py-3 text-white shadow-lg">
+          <div className="mx-auto flex max-w-[350px] items-center justify-between rounded-[14px] bg-forest px-4 py-3 text-white shadow-lg">
             <span className="text-[14px]">{sel.size} selected</span>
             <a href={`/api/labels/batch?ids=${[...sel].join(",")}`} target="_blank" rel="noreferrer" className="rounded-[10px] bg-accent px-3 py-2 text-[13px] font-semibold">Print labels</a>
           </div>

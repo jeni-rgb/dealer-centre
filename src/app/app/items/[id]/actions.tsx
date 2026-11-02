@@ -32,7 +32,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <button className="btn" onClick={() => setMode("sold")}>Mark as sold</button>
           <div className="grid grid-cols-2 gap-2.5">
             <button className="btn-secondary" onClick={() => setMode("price")}>Edit price</button>
-            <button className="btn-secondary" disabled={busy} onClick={() => call("/api/labels/print", "POST", { item_ids: [id] })}>Reprint label</button>
+            <button className="btn-outline" disabled={busy} onClick={() => call("/api/labels/print", "POST", { item_ids: [id] })}>Reprint label</button>
           </div>
         </>
       )}
@@ -42,7 +42,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <span className="text-[13px] font-medium">New asking price</span>
           <Money v={newPrice} set={setNewPrice} />
           <p className="text-[12px] text-ink-muted">Updates the till, your Shopify and any centre store. Print a new label if the price is on it.</p>
-          <div className="grid grid-cols-2 gap-2"><button className="btn-secondary" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy} onClick={() => call(`/api/items/${id}`, "PATCH", { price_pence: pence(newPrice) })}>Save</button></div>
+          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy} onClick={() => call(`/api/items/${id}`, "PATCH", { price_pence: pence(newPrice) })}>Save</button></div>
         </div>
       )}
 
@@ -57,7 +57,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <label className="flex items-center justify-between text-[13px] text-ink-muted">Sold on<input type="date" className="field !h-10 !w-40 !text-[13px]" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} /></label>
           <p className="text-[12px] text-ink-muted">{where === "centre" ? "Goes on your centre statement with commission, same as if the till had recorded it." : "No centre commission. Use this for fairs, home sales or anywhere the app does not watch."}</p>
           {err && <p className="text-[13px] text-danger">{err}</p>}
-          <div className="grid grid-cols-2 gap-2"><button className="btn-secondary" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Mark sold</button></div>
+          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Mark sold</button></div>
         </div>
       )}
 
@@ -75,7 +75,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <PayToggle pay={pay} setPay={setPay} />
           <p className="text-[12px] text-ink-muted">Dealers give discounts. Put the real figure here and the statement follows it. The ticket price is kept for reference.</p>
           {err && <p className="text-[13px] text-danger">{err}</p>}
-          <div className="grid grid-cols-2 gap-2"><button className="btn-secondary" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy} onClick={() => call(`/api/sales/${sale.id}`, "PATCH", { amount_pence: pence(paid), payment_type: pay })}>Save</button></div>
+          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy} onClick={() => call(`/api/sales/${sale.id}`, "PATCH", { amount_pence: pence(paid), payment_type: pay })}>Save</button></div>
         </div>
       )}
 

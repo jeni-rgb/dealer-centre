@@ -140,7 +140,7 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
   }
   async function claim(id: string) {
     setBusy(true);
-    const r = await fetch("/api/dealers/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ dealer_id: id }) });
+    const r = await fetch("/api/dealers/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ dealer_id: id, centre_id: picked?.id }) });
     const j = await r.json(); setBusy(false);
     if (r.ok) { setClaimed(j.code); setMsg(`That's you. Your code stays ${j.code} and everything already sold under it is on your statement. ${picked?.name} just confirms it.`); setTimeout(onDone, 2200); } else setMsg(j.error ?? "Something went wrong");
   }
@@ -164,7 +164,7 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
                   {(["rent", "commission_only"] as const).map((m) => <button key={m} onClick={() => setMode(m)} className={`h-10 flex-1 rounded-[8px] text-[13px] font-semibold ${mode === m ? "bg-white shadow-sm" : "text-ink-muted"}`}>{m === "rent" ? "I pay rent" : "Commission only"}</button>)}
                 </div>
                 {mode === "rent" && <div className="flex h-12 items-center gap-1.5 rounded-[12px] border border-border px-3.5"><span className="text-ink-muted">£</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder="Rent" /></div>}
-                <div className="grid grid-cols-2 gap-2"><button className="btn-secondary" onClick={() => setAdding(false)}>Back</button><button className="btn" disabled={busy} onClick={addCentre}>{busy ? "Adding…" : "Add centre"}</button></div>
+                <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setAdding(false)}>Back</button><button className="btn" disabled={busy} onClick={addCentre}>{busy ? "Adding…" : "Add centre"}</button></div>
               </div>
             )}
           </>
