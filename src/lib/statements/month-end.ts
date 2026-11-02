@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { env } from "@/lib/env";
 import type { Admin } from "@/lib/supabase/server";
 import { computeStatement, issueStatement, periodKey, periodBounds, periodLabel } from "./compute";
 
@@ -44,7 +45,7 @@ export async function runMonthEnd(db: Admin, period = lastClosedPeriod()) {
 
       if (row && !row.stripe_invoice_item_id && platform > 0 && c.stripe_customer_id && process.env.STRIPE_SECRET_KEY) {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-        const taxRate = process.env.STRIPE_TAX_RATE_VAT; // a 20% VAT tax rate id; if unset, VAT is added into the amount
+        const taxRate = env.stripe.vatRate(); // a 20% VAT tax rate id; if unset, VAT is added into the amount
         const item = await stripe.invoiceItems.create({
           customer: c.stripe_customer_id,
           currency: "gbp",

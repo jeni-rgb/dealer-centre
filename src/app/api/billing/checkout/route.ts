@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     mode: "subscription",
     customer: dealer?.stripe_customer_id ?? undefined,
     customer_email: dealer?.stripe_customer_id ? undefined : me.email,
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1, tax_rates: env.stripe.vatRate() ? [env.stripe.vatRate()!] : undefined }],
     subscription_data: { trial_period_days: 14, description: describe, metadata: { dealer_id: me.dealer_id, tier } },
     payment_method_collection: "always",
     metadata: { dealer_id: me.dealer_id },

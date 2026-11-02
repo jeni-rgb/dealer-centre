@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     mode: "subscription",
     customer: row?.stripe_customer_id ?? undefined,
     customer_email: row?.stripe_customer_id ? undefined : me.email,
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1, tax_rates: env.stripe.vatRate() ? [env.stripe.vatRate()!] : undefined }],
     subscription_data: withKit
       ? { metadata: { centre_id: centre.id, minimum_term_months: "12", kit: "register" }, description: "Dealer Centre for centres: £299 a month + VAT, 12 month minimum, Square Register kit included" }
       : { trial_period_days: 14, metadata: { centre_id: centre.id, minimum_term_months: "0", kit: "none" }, description: "Dealer Centre for centres: £299 a month + VAT, monthly, 14 days free" },
