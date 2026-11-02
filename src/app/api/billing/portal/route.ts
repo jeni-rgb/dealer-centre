@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     if (!centre) return NextResponse.redirect(new URL("/signup/centre", env.appUrl()));
     const { data: row } = await supabaseAdmin().from("centres").select("stripe_customer_id").eq("id", centre.id).single();
     if (!row?.stripe_customer_id) return NextResponse.redirect(new URL(`/api/billing/centre-checkout?centre=${centre.id}`, env.appUrl()));
-    const s = await stripe.billingPortal.sessions.create({ customer: row.stripe_customer_id, return_url: `${env.appUrl()}/centre/settings?centre=${centre.id}` });
+    const s = await stripe.billingPortal.sessions.create({ customer: row.stripe_customer_id, return_url: `${env.appUrl()}/centre/settings?centre=${centre.id}`, ...(process.env.STRIPE_PORTAL_CENTRE ? { configuration: process.env.STRIPE_PORTAL_CENTRE } : {}) });
     return NextResponse.redirect(s.url);
   }
 

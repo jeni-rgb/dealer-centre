@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Logo, Mark } from "@/components/logo";
 import { Phone, Browser } from "@/components/devices";
-import { KitIllustration } from "@/components/kit";
 
 export const metadata: Metadata = {
   title: "Dealer Centre: stock, labels and sales for antique dealers and centres",
@@ -139,7 +138,10 @@ export default function Landing() {
           </div>
 
           <div className="mt-10 grid items-center gap-8 rounded-[28px] bg-white p-6 md:grid-cols-[1.15fr_0.85fr] md:p-10" style={{ border: "1px solid var(--dc-border)" }}>
-            <KitIllustration className="w-full" />
+            <figure className="relative">
+              <img src="/kit/register-kit.jpg" alt="Square Register Retail Kit: Register with customer display, cash drawer, receipt printer, barcode scanner and label printer" className="w-full rounded-[20px]" />
+              <span className="absolute left-4 top-4 rounded-full bg-accent px-4 py-2 text-center text-[12px] font-bold leading-4 text-cream"><span className="block tracking-[0.12em]">INCLUDED</span><span className="block font-semibold">with your subscription</span></span>
+            </figure>
             <div className="relative">
               <div className="hand text-[26px] leading-7 text-ink-muted">What it costs on its own</div>
               <div className="mt-1 flex items-baseline gap-3">

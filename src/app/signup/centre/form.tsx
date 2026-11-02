@@ -135,7 +135,7 @@ export function CentreSignupForm() {
           </div>
           {err && <p className="text-[13px] text-danger">{err}</p>}
           <button className="btn" disabled={busy} onClick={create}>{busy ? "Setting up…" : "Set up my centre"}</button>
-          <p className="text-[12px] text-ink-muted">£299 a month after a 14 day free trial; you add a card on the next screen. You can change any of this later in Settings.</p>
+          <p className="text-[12px] text-ink-muted">£299 a month on a 12 month subscription, Square Register kit included; you add a card on the next screen. You can change any of this later in Settings.</p>
         </Q>
       )}
     </div>

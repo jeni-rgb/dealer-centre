@@ -17,15 +17,15 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
         <div className="card mt-6 border-accent p-5">
           <div className="flex items-baseline justify-between"><span className="text-[15px] font-semibold">Dealer Centre for centres</span><span className="num text-[22px] font-bold">£299<span className="text-[13px] font-normal text-ink-muted"> /month</span></span></div>
           <ul className="mt-3 flex flex-col gap-1.5 text-[14px] text-ink-muted">
-            <li>Unlimited dealers, End of day, statements and dealer payouts worked out for you</li>
-            <li>Till screen and label printing, Square connection when you have one</li>
+            <li>Square Register Retail Kit on your counter, set up on site, yours after 12 months</li>
+            <li>Unlimited dealers, statements and dealer payouts worked out for you</li>
             <li>Your own online shop with every dealer&rsquo;s stock, run for you</li>
           </ul>
-          <p className="mt-3 text-[13px] text-ink-muted">14 days free. Card taken now, nothing charged until day 14, cancel any time.</p>
-          <a href={`/api/billing/centre-checkout?centre=${centre.id}`} className="btn mt-4">Add card and start trial</a>
+          <p className="mt-3 text-[13px] text-ink-muted">12 month subscription, Square Register Retail Kit included and set up on site. First payment today, then monthly.</p>
+          <a href={`/api/billing/centre-checkout?centre=${centre.id}`} className="btn mt-4">Subscribe and book set up</a>
         </div>
       ) : paid === "1" ? (
-        <div className="card mt-6 flex items-center justify-between p-4 text-[14px]"><span>Trial started. First payment in 14 days, email three days before.</span><span className="pill pill-success">Paid</span></div>
+        <div className="card mt-6 flex items-center justify-between p-4 text-[14px]"><span>Subscribed. We will be in touch within a day to book your set up.</span><span className="pill pill-success">Paid</span></div>
       ) : null}
 
       <div className="card mt-6 p-5">
