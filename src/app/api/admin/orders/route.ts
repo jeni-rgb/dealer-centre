@@ -8,7 +8,7 @@ import { notifyMissing } from "@/lib/fulfilment/missing";
 
 const Input = z.object({
   sale_ids: z.array(z.string().min(1).max(64)).min(1).max(200),
-  status: z.enum(["new", "collected", "at_unit", "despatched", "missing"]),
+  status: z.enum(["new", "collected", "at_unit", "labelled", "despatched", "missing"]),
   carrier: z.string().max(40).optional(), tracking: z.string().max(80).optional(), note: z.string().max(500).optional(),
 });
 
@@ -24,7 +24,7 @@ export async function PATCH(req: Request) {
   const db = supabaseAdmin();
   const now = new Date().toISOString();
   const { data: sales } = await db.from("sales").select("id, centre_id, external_order_id, channel_id").in("id", p.data.sale_ids);
-  const stamp = { collected: { collected_at: now }, at_unit: { at_unit_at: now }, despatched: { despatched_at: now }, new: {}, missing: {} }[p.data.status];
+  const stamp = { collected: { collected_at: now }, at_unit: { at_unit_at: now }, labelled: { labelled_at: now }, despatched: { despatched_at: now }, new: {}, missing: {} }[p.data.status];
   let shopifyOk = 0, shopifyFailed = 0;
   for (const sale of sales ?? []) {
     const { data: row } = await db.from("fulfilments").upsert({

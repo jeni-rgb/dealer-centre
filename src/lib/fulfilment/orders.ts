@@ -2,7 +2,7 @@ import type { Admin } from "@/lib/supabase/server";
 import { displaySku } from "@/lib/sku";
 import type { ShopifyAddress } from "@/lib/channels/shopify";
 
-export type OrderStatus = "new" | "collected" | "at_unit" | "despatched" | "missing" | "refunded";
+export type OrderStatus = "new" | "collected" | "at_unit" | "labelled" | "despatched" | "missing" | "refunded";
 export type OnlineOrder = {
   sale_id: string; sold_at: string; amount_pence: number; ticket: string | null; title: string; delivery: string;
   dealer: string | null; dealer_code: string | null; pitches: string[];
@@ -47,7 +47,7 @@ export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sin
     .filter((o) => !opts.openOnly || !["despatched", "refunded"].includes(o.status));
 }
 
-export const STATUS_LABEL: Record<OrderStatus, string> = { new: "To collect", collected: "Collected", at_unit: "Postage applied", despatched: "Despatched", missing: "Missing", refunded: "Refunded" };
+export const STATUS_LABEL: Record<OrderStatus, string> = { new: "To collect", collected: "Collected", at_unit: "Postage applied", labelled: "Label generated", despatched: "Despatched", missing: "Missing", refunded: "Refunded" };
 
 /** Only orders that still need something from us. */
-export const isOpen = (s: OrderStatus) => s === "new" || s === "collected" || s === "at_unit" || s === "missing";
+export const isOpen = (s: OrderStatus) => s === "new" || s === "collected" || s === "at_unit" || s === "labelled" || s === "missing";

@@ -5,8 +5,6 @@ import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import { renderDespatchNotes, mergeLabelsAndNotes } from "@/lib/fulfilment/slips";
 import { fetchPending, provider } from "@/lib/fulfilment/postage";
 import { sampleBuy } from "@/lib/fulfilment/sample";
-import { shopifyFulfil } from "@/lib/channels/shopify";
-import type { ChannelRow } from "@/lib/channels/types";
 
 /** Stored labels and despatch notes for the selected orders (?ids=). ?only=labels or ?only=notes for one printer. Nothing is bought. */
 export async function GET(req: Request) {
@@ -23,9 +21,7 @@ export async function GET(req: Request) {
     if (r && r.ok) {
       const now = new Date().toISOString(); const path = `labels/orders/${o.sale_id}.pdf`;
       await db.storage.from("files").upload(path, Buffer.from(r.labelPdf), { contentType: "application/pdf", upsert: true });
-      await db.from("fulfilments").update({ status: "despatched", despatched_at: now, label_path: path, tracking: r.tracking, carrier: r.carrier ?? null, carrier_reference: r.orderIdentifier, note: null, updated_at: now }).eq("sale_id", o.sale_id);
-      const { data: sale } = await db.from("sales").select("external_order_id, channel_id").eq("id", o.sale_id).single();
-      if (sale?.external_order_id.startsWith("gid://shopify/Order/")) { const { data: channel } = await db.from("channels").select("*").eq("id", sale.channel_id).single(); try { if (channel && await shopifyFulfil(channel as ChannelRow, sale.external_order_id, r.tracking, r.carrier ?? "Royal Mail")) await db.from("fulfilments").update({ shopify_fulfilled: true }).eq("sale_id", o.sale_id); } catch {} }
+      await db.from("fulfilments").update({ status: "labelled", labelled_at: now, label_path: path, tracking: r.tracking, carrier: r.carrier ?? null, carrier_reference: r.orderIdentifier, note: null, updated_at: now }).eq("sale_id", o.sale_id);
     }
   }
   orders = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id));

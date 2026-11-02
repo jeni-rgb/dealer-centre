@@ -19,11 +19,11 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
     <>
       <div className="mb-5">
         <h1 className="text-[24px] font-semibold">Online orders</h1>
-        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. At the unit: weigh, pick the service, buy postage. The paid label and the despatch note print together, the buyer is emailed the tracking, and the order is despatched.</p>
+        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. At the unit: weigh, pick the service, Generate labels, print and pack. Mark despatched when it leaves; that is when the buyer gets the tracking email.</p>
       </div>
       <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
         <Kpi label="To collect" value={String(n("new"))} sub={overdue ? `${overdue} waiting over 2 days` : "Next run"} tone={overdue ? "warning" : undefined} />
-        <Kpi label="At the unit" value={String(n("collected") + n("at_unit"))} sub="Collected, not yet despatched" />
+        <Kpi label="Ready for postage" value={String(n("collected") + n("at_unit") + n("labelled"))} sub={`${n("labelled")} labelled, waiting to go`} />
         <Kpi label="Despatched, 60 days" value={String(n("despatched"))} />
         <Kpi label="Missing" value={String(n("missing"))} tone={n("missing") ? "danger" : undefined} />
         <Kpi label="Online sales, 60 days" value={money(all.filter((o) => o.status !== "refunded").reduce((a, o) => a + o.amount_pence, 0))} />

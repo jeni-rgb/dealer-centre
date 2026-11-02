@@ -6,8 +6,6 @@ import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import type { PackageFormat } from "@/lib/fulfilment/clickdrop";
 import { buy, provider } from "@/lib/fulfilment/postage";
 import { renderDespatchNotes, mergeLabelsAndNotes } from "@/lib/fulfilment/slips";
-import { shopifyFulfil } from "@/lib/channels/shopify";
-import type { ChannelRow } from "@/lib/channels/types";
 
 const Input = z.object({ parcels: z.array(z.object({ sale_id: z.string().min(1).max(64), format: z.enum(["largeLetter", "smallParcel", "mediumParcel"]), weight_grams: z.number().int().min(1).max(30000), service_code: z.string().min(1).max(20) })).min(1).max(100) });
 
@@ -48,17 +46,10 @@ export async function POST(req: Request) {
     await db.storage.from("files").upload(path, Buffer.from(r.labelPdf), { contentType: "application/pdf", upsert: true });
     const { data: seq } = await db.rpc("next_despatch_note_no");
     await db.from("fulfilments").upsert({
-      sale_id: o.sale_id, centre_id: o.centre_id, status: "despatched", despatched_at: now, carrier: r.carrier ?? (provider() === "clickdrop" ? "Royal Mail" : null), tracking: r.tracking, carrier_reference: r.orderIdentifier, postage_provider: provider(), note: null,
+      sale_id: o.sale_id, centre_id: o.centre_id, status: "labelled", labelled_at: now, carrier: r.carrier ?? (provider() === "clickdrop" ? "Royal Mail" : null), tracking: r.tracking, carrier_reference: r.orderIdentifier, postage_provider: provider(), note: null,
       label_path: path, package_format: parcel.format, weight_grams: parcel.weight_grams, service_code: parcel.service_code, despatch_note_no: o.despatch_note_no ?? (seq as number | null) ?? null, slip_printed_at: now, updated_by: me.id, updated_at: now,
     }, { onConflict: "sale_id" });
     labels.push(r.labelPdf);
-    if (o.sale_id && !o.shopify_fulfilled) {
-      const { data: sale } = await db.from("sales").select("external_order_id, channel_id").eq("id", o.sale_id).single();
-      if (sale?.external_order_id.startsWith("gid://shopify/Order/")) {
-        const { data: channel } = await db.from("channels").select("*").eq("id", sale.channel_id).single();
-        try { if (channel && await shopifyFulfil(channel as ChannelRow, sale.external_order_id, r.tracking, r.carrier ?? "Royal Mail")) await db.from("fulfilments").update({ shopify_fulfilled: true }).eq("sale_id", o.sale_id); } catch (e) { console.error("[postage] shopify", e); }
-      }
-    }
   }
   // Labels go to the thermal printer, notes to the A4 printer: two print jobs, both reachable from Reprint.
   const done = provider() === "sample" ? ids : (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id) && o.label_path).map((o) => o.sale_id);

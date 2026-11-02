@@ -6,7 +6,7 @@ import { STATUS_LABEL, type OnlineOrder, type OrderStatus } from "@/lib/fulfilme
 import { FORMATS, type PackageFormat } from "@/lib/fulfilment/clickdrop";
 import { deliveryOf } from "@/lib/items/delivery";
 
-const TONE: Record<OrderStatus, string> = { new: "pill-warning", collected: "pill-accent", at_unit: "pill-neutral", despatched: "pill-success", missing: "pill-danger", refunded: "pill-danger" };
+const TONE: Record<OrderStatus, string> = { new: "pill-warning", collected: "pill-accent", at_unit: "pill-neutral", labelled: "pill-success", despatched: "pill-success", missing: "pill-danger", refunded: "pill-danger" };
 type Tab = "collect" | "unit" | "done" | "all";
 
 /** The desk: tick orders, act on them together. Run sheets for the runner, packing slips for the bench, statuses as things move. */
@@ -34,12 +34,12 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
     if (!r.ok) { setMsg(j.error ?? "Could not buy postage"); return; }
     setPrint({ labels: j.labels_url, notes: j.notes_url });
     if (j.labels_url) window.open(j.labels_url, "_blank");
-    setMsg(`Postage applied and ${j.bought} label${j.bought === 1 ? "" : "s"} generated. Orders marked despatched; buyers emailed the tracking by Shopify.${j.errors?.length ? ` Not generated: ${j.errors.join(" | ")}` : ""}`);
+    setMsg(`${j.bought} label${j.bought === 1 ? "" : "s"} generated. Print, pack, then tick them and Mark despatched when they go.${j.errors?.length ? ` Not generated: ${j.errors.join(" | ")}` : ""}`);
     setSel(new Set()); router.refresh();
   }
 
   const shown = useMemo(() => orders.filter((o) =>
-    tab === "collect" ? o.status === "new" || o.status === "missing" : tab === "unit" ? o.status === "collected" || o.status === "at_unit" : tab === "done" ? o.status === "despatched" || o.status === "refunded" : true), [orders, tab]);
+    tab === "collect" ? o.status === "new" || o.status === "missing" : tab === "unit" ? o.status === "collected" || o.status === "at_unit" || o.status === "labelled" : tab === "done" ? o.status === "despatched" || o.status === "refunded" : true), [orders, tab]);
   const byCentre = useMemo(() => shown.reduce<Record<string, OnlineOrder[]>>((m, o) => { (m[o.centre] ??= []).push(o); return m; }, {}), [shown]);
   const ids = Array.from(sel).filter((id) => shown.some((o) => o.sale_id === id));
   const allShown = shown.length > 0 && shown.every((o) => sel.has(o.sale_id));
@@ -57,7 +57,7 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
     setSel(new Set()); router.refresh();
   }
   const count = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
-  const tabs: [Tab, string, number][] = [["collect", "To collect", count("new") + count("missing")], ["unit", "Ready for postage", count("collected") + count("at_unit")], ["done", "Despatched", count("despatched") + count("refunded")], ["all", "All", orders.length]];
+  const tabs: [Tab, string, number][] = [["collect", "To collect", count("new") + count("missing")], ["unit", "Ready for postage", count("collected") + count("at_unit") + count("labelled")], ["done", "Despatched", count("despatched") + count("refunded")], ["all", "All", orders.length]];
   const q = centreFilter ? `&centre=${centreFilter}` : "";
 
   return (
@@ -76,9 +76,10 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
           <button className="text-[13px] font-medium text-danger disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("missing")}>Mark missing</button>
         </>}
         {tab === "unit" && <>
-          <button className="btn-sm" disabled={busy || !ids.length} onClick={buyAndPrint}>Generate labels</button>
-          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/slips?ids=${ids.join(",")}`} target="_blank">Despatch notes only</a>
-          <button className="btn-sm-secondary" disabled={busy || !ids.length} onClick={() => act("at_unit")}>Mark at the unit</button>
+          <button className="btn-sm" disabled={busy || !ids.length || shown.filter((o) => ids.includes(o.sale_id)).every((o) => o.status === "labelled")} onClick={buyAndPrint}>Generate labels</button>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=labels`} target="_blank">Download labels</a>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=notes`} target="_blank">Despatch notes</a>
+          <button className="btn-sm" disabled={busy || !ids.length} onClick={() => act("despatched")}>Mark despatched</button>
           {!tracking && <button className="text-[13px] font-medium text-ink-muted disabled:opacity-40" disabled={busy || !ids.length} onClick={() => setTracking({ carrier: "Royal Mail", tracking: "" })}>Sent another way</button>}
           {tracking && <span className="flex items-center gap-2">
             <input className="field !h-9 !w-28 !text-[13px]" value={tracking.carrier} onChange={(e) => setTracking({ ...tracking, carrier: e.target.value })} placeholder="Carrier" />
@@ -86,15 +87,14 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
             <button className="btn-sm" disabled={busy} onClick={() => act("despatched", tracking)}>Despatched</button>
             <button className="text-ink-muted" onClick={() => setTracking(null)}>Cancel</button>
           </span>}
-          <span className="ml-auto text-[12px] text-ink-muted">Set format, weight and service on each row, tick them, Generate labels. Postage goes on the {providerName} account.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : providerName.includes("Shiptheory") ? " Shiptheory manifests Royal Mail and books courier collections." : ""}</span>
+          <span className="ml-auto text-[12px] text-ink-muted">Set format, weight and service, tick, Generate labels, print, pack. Mark despatched when it leaves: that is when the buyer is told. Postage goes on the {providerName} account.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : providerName.includes("Shiptheory") ? " Shiptheory manifests Royal Mail and books courier collections." : ""}</span>
         </>}
         {(tab === "done" || tab === "all") && <>
-          <a className={`btn-sm ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=labels`} target="_blank">Download labels{ids.length > 1 ? ` (${ids.length})` : ""}</a>
-          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=notes`} target="_blank">Download despatch notes</a>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}`} target="_blank">Reprint label and note</a>
           <button className="text-[13px] font-medium text-ink-muted disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("new")}>Back to collect</button>
         </>}
         {msg && <span className="w-full text-[12px] text-ink-muted">{msg}</span>}
-        {print && (print.labels || print.notes) && <span className="flex w-full items-center gap-2 text-[12px]">{print.labels && <a className="btn-sm" href={print.labels} target="_blank">Download labels</a>}{print.notes && <a className="btn-sm-secondary" href={print.notes} target="_blank">Download despatch notes</a>}<span className="text-ink-muted">Labels to the label printer, notes to A4.</span></span>}
+        {print && (print.labels || print.notes) && <span className="flex w-full items-center gap-2 text-[12px]">{print.labels && <a className="btn-sm" href={print.labels} target="_blank">Download labels</a>}{print.notes && <a className="btn-sm-secondary" href={print.notes} target="_blank">Download despatch notes</a>}<span className="text-ink-muted">Labels to the label printer, notes to A4. If the pop up was blocked, use these.</span></span>}
       </div>
 
       {shown.length === 0 && <p className="card p-8 text-center text-[14px] text-ink-muted">{tab === "collect" ? "Nothing to collect." : tab === "unit" ? "Nothing at the unit." : "Nothing here."}</p>}
@@ -115,14 +115,15 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
                   {o.note && <div className="mt-1 italic">Note: {o.note}</div>}
                 </div>
                 <div className="text-right text-[12px] text-ink-muted">
-                  {tab === "unit" && (
+                  {tab === "unit" && o.status !== "labelled" && (
                     <span className="flex flex-wrap items-center justify-end gap-1.5">
                       <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).format} onChange={(e) => setParcelField(o.sale_id, o, "format", e.target.value)}>{FORMATS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
                       <input className="field !h-8 !w-20 !px-2 !text-[12px]" inputMode="numeric" placeholder="grams" value={parcelFor(o).weight} onChange={(e) => setParcelField(o.sale_id, o, "weight", e.target.value.replace(/\D/g, ""))} />
                       <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).service} onChange={(e) => setParcelField(o.sale_id, o, "service", e.target.value)}>{services.map((sv) => <option key={sv.code} value={sv.code}>{sv.label}</option>)}</select>
                     </span>
                   )}
-                  {o.status === "despatched" && <>{o.carrier ?? ""} {o.tracking ?? ""}{o.despatch_note_no ? ` · DN-${o.despatch_note_no}` : ""}<br />{o.despatched_at ? new Date(o.despatched_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""} · <a className="font-medium text-accent" href={`/api/admin/orders/labels?ids=${o.sale_id}&only=labels`} target="_blank">Download label</a></>}
+                  {o.status === "labelled" && <><a className="font-medium text-accent" href={`/api/admin/orders/labels?ids=${o.sale_id}&only=labels`} target="_blank">Download label</a><br />{o.carrier ?? ""} {o.tracking ?? ""}</>}
+                  {o.status === "despatched" && <>{o.carrier ?? ""} {o.tracking ?? ""}{o.despatch_note_no ? ` · DN-${o.despatch_note_no}` : ""}<br />{o.despatched_at ? new Date(o.despatched_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}</>}
                   {o.status === "collected" && o.collected_at && <>Collected {new Date(o.collected_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</>}
                   {o.fulfil_note === "Label pending from carrier" && <span className="text-warning">Label pending, press Reprint</span>}
                   {o.status === "missing" && <span className="text-danger">Centre told</span>}
