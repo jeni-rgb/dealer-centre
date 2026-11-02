@@ -60,6 +60,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ centreId
   const me = await getMe();
   if (!me) return NextResponse.json({ error: "sign in" }, { status: 401 });
   const { centreId } = await params;
+  const sb = await supabaseServer();
+  const { data: owns } = await sb.from("centre_owners").select("centre_id").eq("centre_id", centreId).maybeSingle();
+  if (!owns && !me.is_platform_admin) return NextResponse.json({ error: "not your centre" }, { status: 403 });
   const db = supabaseAdmin();
   // Recent floor sales for the "Recorded this week" list (client refresh after Record, Edit, Undo)
   if (new URL(req.url).searchParams.get("recent")) {

@@ -6,7 +6,7 @@ import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 export async function GET(req: Request) {
   const u = new URL(req.url);
   const code = u.searchParams.get("code");
-  let next = u.searchParams.get("next") ?? "/app";
+  let next = safeNext(u.searchParams.get("next"));
   const sb = await supabaseServer();
   if (code) {
     const { data } = await sb.auth.exchangeCodeForSession(code);
@@ -29,4 +29,10 @@ export async function GET(req: Request) {
     }
   }
   return NextResponse.redirect(new URL(next, env.appUrl()));
+}
+
+/** Only paths on this site. Anything absolute, protocol relative or odd goes to /app. */
+function safeNext(n: string | null) {
+  if (!n || !n.startsWith("/") || n.startsWith("//") || n.startsWith("/\\") || /[\r\n]/.test(n)) return "/app";
+  return n;
 }

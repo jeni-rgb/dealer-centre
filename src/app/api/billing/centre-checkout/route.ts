@@ -16,16 +16,20 @@ export async function GET(req: Request) {
   if (!priceId) return NextResponse.json({ error: "STRIPE_PRICE_CENTRE is not set. Create the £299/month price in Stripe and add its id to Vercel." }, { status: 500 });
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-  const { data: row } = await supabaseAdmin().from("centres").select("stripe_customer_id").eq("id", centre.id).single();
+  const { data: row } = await supabaseAdmin().from("centres").select("stripe_customer_id, till").eq("id", centre.id).single();
+  // Already on Square: plain monthly, 14 days free, cancel any time. Needs a till: 12 month minimum, Register kit included.
+  const withKit = row?.till !== "square";
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: row?.stripe_customer_id ?? undefined,
     customer_email: row?.stripe_customer_id ? undefined : me.email,
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { metadata: { centre_id: centre.id, minimum_term_months: "12" }, description: "Dealer Centre for centres: 12 month minimum, Square Register kit included" },
+    subscription_data: withKit
+      ? { metadata: { centre_id: centre.id, minimum_term_months: "12", kit: "register" }, description: "Dealer Centre for centres: 12 month minimum, Square Register kit included" }
+      : { trial_period_days: 14, metadata: { centre_id: centre.id, minimum_term_months: "0", kit: "none" }, description: "Dealer Centre for centres, monthly" },
     payment_method_collection: "always",
     metadata: { centre_id: centre.id },
-    consent_collection: { terms_of_service: "required" },
+    ...(withKit && process.env.STRIPE_TERMS_URL ? { consent_collection: { terms_of_service: "required" } } : {}),
     success_url: `${env.appUrl()}/centre/welcome?centre=${centre.id}&paid=1`,
     cancel_url: `${env.appUrl()}/centre/welcome?centre=${centre.id}`,
     locale: "en-GB",

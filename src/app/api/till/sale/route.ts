@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { checkTillPin } from "@/lib/till/pin";
+import { checkTillPin, clientIp } from "@/lib/till/pin";
 import { recordSale } from "@/lib/sales/record";
 import type { ChannelRow } from "@/lib/channels/types";
 
@@ -12,7 +12,9 @@ export async function POST(req: Request) {
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   const db = supabaseAdmin();
-  if (!(await checkTillPin(db, p.data.centre_id, p.data.pin))) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
+  const ok = await checkTillPin(db, p.data.centre_id, p.data.pin, clientIp(req));
+  if (ok === "locked") return NextResponse.json({ error: "Too many wrong PINs. Try again in 15 minutes." }, { status: 429 });
+  if (!ok) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
   const { data: chId } = await db.rpc("ensure_manual_channel", { p_centre_id: p.data.centre_id });
   const { data: channel } = await db.from("channels").select("*").eq("id", chId).single();
   const now = new Date().toISOString();

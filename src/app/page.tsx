@@ -36,7 +36,7 @@ const faqs = [
   ["What happens to dealers who do not want the app?", "They carry on as they are. The centre gives them a line in the system with the code already on their tickets, and their sales still get recorded and still get a statement."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
   ["What does the centre pay?", "£299 a month on a 12 month subscription, and the Square Register Retail Kit is included: till, cash drawer, receipt printer, scanner and label printer, set up on site and yours to keep after 12 months. Unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission."],
-  ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Centres: 12 months, because the Register is included; after that it is monthly and the kit is yours."],
+  ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Centres that take the Register kit: 12 months, then monthly and the kit is yours. Centres already on Square: monthly, no commitment."],
 ];
 
 const amazonTag = process.env.NEXT_PUBLIC_AMAZON_TAG ?? "";
@@ -239,8 +239,12 @@ export default function Landing() {
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
-              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month, 12 months, Square Register included</span></div>
-              <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">The full Register kit on your counter from day one, set up on site. Unlimited dealers, statements and payouts worked out, and your own online shop run for you at 20% commission.</p>
+              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month</span></div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[12px] bg-white/10 p-3"><div className="text-[14px] font-semibold">Need a till</div><div className="text-[13px] text-[#DCE8DD]">12 months. Square Register Retail Kit included, set up on site, yours after that.</div></div>
+                <div className="rounded-[12px] bg-white/10 p-3"><div className="text-[14px] font-semibold">Already on Square</div><div className="text-[13px] text-[#DCE8DD]">Monthly, 14 days free, cancel any time. We connect it and load your dealers.</div></div>
+              </div>
+              <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both: unlimited dealers, statements and payouts worked out, and your own online shop run for you at 20% commission.</p>
             </div>
             <Link href="/signin?next=/signup/centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
           </div>

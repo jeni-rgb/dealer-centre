@@ -112,13 +112,13 @@ export function CentreSignupForm() {
       )}
 
       {steps[step] === "till" && (
-        <Q {...q} title="How do customers pay?" sub="This decides how sales get into the app.">
+        <Q {...q} title="Do you already have a Square till?" sub="This decides which of the two centre options you get.">
           <div className="flex flex-col gap-2">
             <Choice on={till === "ordinary"} onClick={() => setTill("ordinary")}>
-              <span className="flex flex-col py-2"><span>An ordinary till or card machine</span><span className="text-[12px] font-normal text-ink-muted">The customer brings the item's ticket to the till. At the end of the day you type or scan the tickets into the app, two minutes. Most centres.</span></span>
+              <span className="flex flex-col py-2"><span>No, an ordinary till or card machine</span><span className="text-[12px] font-normal text-ink-muted">We include the Square Register Retail Kit and set it up on site. £299 a month on a 12 month subscription, kit yours after that. Most centres.</span></span>
             </Choice>
             <Choice on={till === "square"} onClick={() => setTill("square")}>
-              <span className="flex flex-col py-2"><span>Square</span><span className="text-[12px] font-normal text-ink-muted">You already take payments through Square. Sales flow in automatically when you connect it later in Settings.</span></span>
+              <span className="flex flex-col py-2"><span>Yes, we have Square</span><span className="text-[12px] font-normal text-ink-muted">We connect it and load every dealer. £299 a month, 14 days free, no commitment.</span></span>
             </Choice>
           </div>
           <button className="btn" disabled={!till} onClick={next}>Continue</button>
@@ -135,7 +135,7 @@ export function CentreSignupForm() {
           </div>
           {err && <p className="text-[13px] text-danger">{err}</p>}
           <button className="btn" disabled={busy} onClick={create}>{busy ? "Setting up…" : "Set up my centre"}</button>
-          <p className="text-[12px] text-ink-muted">£299 a month on a 12 month subscription, Square Register kit included; you add a card on the next screen. You can change any of this later in Settings.</p>
+          <p className="text-[12px] text-ink-muted">{till === "square" ? "£299 a month, 14 days free, cancel any time; you add a card on the next screen." : "£299 a month on a 12 month subscription, Square Register kit included; you add a card on the next screen."} You can change any of this later in Settings.</p>
         </Q>
       )}
     </div>

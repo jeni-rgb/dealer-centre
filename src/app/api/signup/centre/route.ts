@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import crypto from "node:crypto";
+import { hashPin, newPin } from "@/lib/till/pin";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
     if (!unclaimed) return NextResponse.json({ error: "That centre has already been claimed" }, { status: 409 });
     const { data: c, error: cErr } = await db.from("centres").update({ ...fields, status: "active" }).eq("id", unclaimed.id).select("id, invite_code").single();
     if (cErr) return NextResponse.json({ error: cErr.message }, { status: 400 });
-    const pin = String(Math.floor(1000 + Math.random() * 9000));
-    await db.from("centres").update({ till_pin_hash: crypto.createHash("sha256").update(`${c.id}:${pin}`).digest("hex"), till_pin_plain: pin }).eq("id", c.id);
+    const pin = newPin();
+    await db.from("centres").update({ till_pin_hash: hashPin(c.id, pin), till_pin_plain: pin }).eq("id", c.id);
     await db.from("centre_owners").insert({ user_id: me.id, centre_id: c.id });
     if (me.role === "dealer" && !me.dealer_id) await db.from("users").update({ role: "centre_owner" }).eq("id", me.id);
     return NextResponse.json({ centre_id: c.id, invite_code: c.invite_code, claimed: true });
@@ -58,9 +58,8 @@ export async function POST(req: Request) {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   // Till PIN: generated, shown in Settings, only needed if they ever use the till screen.
-  const pin = p.data.pin ?? String(Math.floor(1000 + Math.random() * 9000));
-  const hash = crypto.createHash("sha256").update(`${centre.id}:${pin}`).digest("hex");
-  await db.from("centres").update({ till_pin_hash: hash, till_pin_plain: pin }).eq("id", centre.id);
+  const pin = p.data.pin && p.data.pin.length >= 6 ? p.data.pin : newPin();
+  await db.from("centres").update({ till_pin_hash: hashPin(centre.id, pin), till_pin_plain: pin }).eq("id", centre.id);
   await db.from("centre_owners").insert({ user_id: me.id, centre_id: centre.id });
   if (me.role === "dealer" && !me.dealer_id) await db.from("users").update({ role: "centre_owner" }).eq("id", me.id);
   return NextResponse.json({ centre_id: centre.id, invite_code: centre.invite_code });

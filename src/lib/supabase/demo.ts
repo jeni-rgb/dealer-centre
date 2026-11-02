@@ -88,6 +88,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "s28", item_id: null, dealer_id: IDS.dealer, centre_id: null, channel_id: IDS.ch_shopify, external_order_id: "hist8", amount_pence: 26000, listed_price_pence: 26000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140318", sold_at: d(1, 17, 5), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "s29", item_id: null, dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "hist9", amount_pence: 14000, listed_price_pence: 14000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140315", sold_at: d(1, 18, 5), voided_at: null, corrected_at: null, original_amount_pence: null },
   ],
+  till_attempts: [],
   printers: [
     { id: IDS.printer_centre, owner_type: "centre", owner_id: IDS.centre, centre_id: IDS.centre, name: "Till printer", provider: "printnode", provider_id: "7391", status: "ready", source: "centre" },
     { id: IDS.printer_own, owner_type: "dealer", owner_id: IDS.dealer, centre_id: null, name: "Brother QL at home", provider: "browser", provider_id: null, status: "ready", source: "own" },

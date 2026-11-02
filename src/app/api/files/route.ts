@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const me = await getMe();
   if (!me) return new NextResponse("sign in", { status: 401 });
   const path = new URL(req.url).searchParams.get("path") ?? "";
+  if (path.includes("..") || path.includes("//") || path.startsWith("/")) return new NextResponse("no", { status: 400 });
   const allowed = me.is_platform_admin || (me.dealer_id && (path.startsWith(`labels/${me.dealer_id}/`) || path.startsWith(`statements/${me.dealer_id}/`)));
   if (!allowed) return new NextResponse("no", { status: 403 });
   const { data } = await supabaseAdmin().storage.from("files").createSignedUrl(path, 300);

@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 export async function GET(req: Request) {
   const me = await getMe();
   if (!me) return NextResponse.json({ error: "sign in" }, { status: 401 });
-  const q = (new URL(req.url).searchParams.get("q") ?? "").trim();
+  const q = (new URL(req.url).searchParams.get("q") ?? "").replace(/[,()*%\\]/g, " ").trim();
   if (q.length < 2) return NextResponse.json({ centres: [] });
   const { data } = await supabaseAdmin().from("centres").select("id, name, address, status").in("status", ["active", "unclaimed"]).or(`name.ilike.%${q}%,address.ilike.%${q}%`).limit(8);
   return NextResponse.json({ centres: (data ?? []).map((c) => ({ ...c, unclaimed: c.status === "unclaimed" })) });

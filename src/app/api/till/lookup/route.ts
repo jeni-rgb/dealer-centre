@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { checkTillPin } from "@/lib/till/pin";
+import { checkTillPin, clientIp } from "@/lib/till/pin";
 import { normaliseSku, ticketCandidates } from "@/lib/sku";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,9 @@ export async function GET(req: Request) {
   const u = new URL(req.url);
   const centreId = u.searchParams.get("centre") ?? ""; const pin = u.searchParams.get("pin") ?? ""; const raw = u.searchParams.get("ticket") ?? "";
   const db = supabaseAdmin();
-  if (!centreId || !(await checkTillPin(db, centreId, pin))) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
+  const ok = centreId ? await checkTillPin(db, centreId, pin, clientIp(req)) : false;
+  if (ok === "locked") return NextResponse.json({ error: "Too many wrong PINs. Try again in 15 minutes." }, { status: 429 });
+  if (!ok) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
   if (normaliseSku(raw).length < 3) return NextResponse.json({ item: null });
   const cands = ticketCandidates(raw);
   const { data } = await db.from("items").select("id, sku, title, price_pence, status, dealers(name, code)").eq("centre_id", centreId).in("sku", cands);

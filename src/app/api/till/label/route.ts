@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { createItem } from "@/lib/items/create";
-import crypto from "node:crypto";
+import { checkTillPin, clientIp } from "@/lib/till/pin";
 
 const Input = z.object({
   centre_id: z.string().uuid(),
@@ -23,9 +23,9 @@ export async function POST(req: Request) {
   const { centre_id, pin, dealer_id, title, price_pence, ticket_no } = parsed.data;
   const db = supabaseAdmin();
 
-  const { data: centre } = await db.from("centres").select("till_pin_hash").eq("id", centre_id).single();
-  const hash = crypto.createHash("sha256").update(`${centre_id}:${pin}`).digest("hex");
-  if (!centre?.till_pin_hash || centre.till_pin_hash !== hash) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
+  const ok = await checkTillPin(db, centre_id, pin, clientIp(req));
+  if (ok === "locked") return NextResponse.json({ error: "Too many wrong PINs. Try again in 15 minutes." }, { status: 429 });
+  if (!ok) return NextResponse.json({ error: "wrong PIN" }, { status: 401 });
 
   const { data: link } = await db.from("dealer_centres").select("id").eq("centre_id", centre_id).eq("dealer_id", dealer_id).is("left_at", null).maybeSingle();
   if (!link) return NextResponse.json({ error: "dealer not at this centre" }, { status: 403 });

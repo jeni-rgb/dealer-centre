@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireDealer } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { ChannelLabel, DaysBand, DealerNav, Pill, Screen, Sku, money, when } from "@/components/ui";
 import { ItemActions } from "./actions";
 import { MarginCard } from "./margin";
@@ -9,7 +9,8 @@ import { MarginCard } from "./margin";
 export default async function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
   const me = await requireDealer();
   const { id } = await params;
-  const sb = await supabaseServer();
+  // Server client: cost_pence is hidden from sessions, and the dealer_id filter keeps this to their own stock.
+  const sb = supabaseAdmin();
   const { data: item } = await sb
     .from("items")
     .select("*, centres(name, commission_bps, online_commission_bps), item_listings(status, last_error, channels:channel_id(type, owner_type)), sales(id, amount_pence, listed_price_pence, payment_type, sold_at, corrected_at, original_amount_pence, channels:channel_id(type, owner_type)), print_jobs(status)")
