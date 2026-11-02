@@ -71,7 +71,7 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
         <label className="flex items-center gap-2"><input type="checkbox" checked={allShown} onChange={toggleAll} /> <span className="font-medium">{ids.length ? `${ids.length} selected` : "Select all"}</span></label>
         <span className="mx-1 h-5 w-px bg-border" />
         {tab === "collect" && <>
-          <a className="btn-sm" href={`/admin/orders/run?${ids.length ? `ids=${ids.join(",")}` : `all=1${q}`}`} target="_blank">Print run sheet{ids.length ? "" : " (all to collect)"}</a>
+          <a className="btn-sm" href={`/ops/orders/run?${ids.length ? `ids=${ids.join(",")}` : `all=1${q}`}`} target="_blank">Print run sheet{ids.length ? "" : " (all to collect)"}</a>
           <button className="btn-sm-secondary" disabled={busy || !ids.length} onClick={() => act("collected")}>Mark collected</button>
           <button className="text-[13px] font-medium text-danger disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("missing")}>Mark missing</button>
         </>}

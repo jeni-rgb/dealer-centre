@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMe } from "@/lib/auth";
+import { getMe, isOps } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import { renderDespatchNotes } from "@/lib/fulfilment/slips";
@@ -7,7 +7,7 @@ import { renderDespatchNotes } from "@/lib/fulfilment/slips";
 /** Despatch notes for the selected orders (?ids=a,b,c), one page each, before postage is bought (for picking at the bench). */
 export async function GET(req: Request) {
   const me = await getMe();
-  if (!me?.is_platform_admin) return new NextResponse("admin only", { status: 403 });
+  if (!isOps(me)) return new NextResponse("staff only", { status: 403 });
   const ids = (new URL(req.url).searchParams.get("ids") ?? "").split(",").filter(Boolean);
   const db = supabaseAdmin();
   const orders = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id));

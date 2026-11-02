@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMe } from "@/lib/auth";
+import { getMe, isOps } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import { renderDespatchNotes, mergeLabelsAndNotes } from "@/lib/fulfilment/slips";
@@ -9,7 +9,7 @@ import { sampleBuy } from "@/lib/fulfilment/sample";
 /** Stored labels and despatch notes for the selected orders (?ids=). ?only=labels or ?only=notes for one printer. Nothing is bought. */
 export async function GET(req: Request) {
   const me = await getMe();
-  if (!me?.is_platform_admin) return new NextResponse("admin only", { status: 403 });
+  if (!isOps(me)) return new NextResponse("staff only", { status: 403 });
   const u = new URL(req.url);
   const ids = (u.searchParams.get("ids") ?? "").split(",").filter(Boolean);
   const only = u.searchParams.get("only");

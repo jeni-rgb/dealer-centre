@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getMe } from "@/lib/auth";
+import { getMe, isOps } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import type { PackageFormat } from "@/lib/fulfilment/clickdrop";
@@ -16,7 +16,7 @@ const Input = z.object({ parcels: z.array(z.object({ sale_id: z.string().min(1).
  */
 export async function POST(req: Request) {
   const me = await getMe();
-  if (!me?.is_platform_admin) return NextResponse.json({ error: "admin only" }, { status: 403 });
+  if (!isOps(me)) return NextResponse.json({ error: "staff only" }, { status: 403 });
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   const db = supabaseAdmin();
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     if (!r.ok) {
       errors.push(`${o.order_name ?? o.ticket ?? o.sale_id.slice(0, 8)}: ${r.error}`);
       // booked but label not back yet: keep the parcel details so Reprint can finish it
-      if (r.pending) await db.from("fulfilments").upsert({ sale_id: o.sale_id, centre_id: o.centre_id, status: "at_unit", postage_provider: provider(), package_format: parcel.format, weight_grams: parcel.weight_grams, service_code: parcel.service_code, note: "Label pending from carrier", updated_by: me.id, updated_at: now }, { onConflict: "sale_id" });
+      if (r.pending) await db.from("fulfilments").upsert({ sale_id: o.sale_id, centre_id: o.centre_id, status: "at_unit", postage_provider: provider(), package_format: parcel.format, weight_grams: parcel.weight_grams, service_code: parcel.service_code, note: "Label pending from carrier", updated_by: me!.id, updated_at: now }, { onConflict: "sale_id" });
       continue;
     }
     const path = `labels/orders/${o.sale_id}.pdf`;
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const { data: seq } = await db.rpc("next_despatch_note_no");
     await db.from("fulfilments").upsert({
       sale_id: o.sale_id, centre_id: o.centre_id, status: "labelled", labelled_at: now, carrier: r.carrier ?? (provider() === "clickdrop" ? "Royal Mail" : null), tracking: r.tracking, carrier_reference: r.orderIdentifier, postage_provider: provider(), note: null,
-      label_path: path, package_format: parcel.format, weight_grams: parcel.weight_grams, service_code: parcel.service_code, despatch_note_no: o.despatch_note_no ?? (seq as number | null) ?? null, slip_printed_at: now, updated_by: me.id, updated_at: now,
+      label_path: path, package_format: parcel.format, weight_grams: parcel.weight_grams, service_code: parcel.service_code, despatch_note_no: o.despatch_note_no ?? (seq as number | null) ?? null, slip_printed_at: now, updated_by: me!.id, updated_at: now,
     }, { onConflict: "sale_id" });
     labels.push(r.labelPdf);
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getMe } from "@/lib/auth";
+import { getMe, isOps } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { shopifyFulfil } from "@/lib/channels/shopify";
 import type { ChannelRow } from "@/lib/channels/types";
@@ -18,7 +18,7 @@ const Input = z.object({
  */
 export async function PATCH(req: Request) {
   const me = await getMe();
-  if (!me?.is_platform_admin) return NextResponse.json({ error: "admin only" }, { status: 403 });
+  if (!isOps(me)) return NextResponse.json({ error: "staff only" }, { status: 403 });
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   const db = supabaseAdmin();
@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
     const { data: row } = await db.from("fulfilments").upsert({
       sale_id: sale.id, centre_id: sale.centre_id, status: p.data.status, ...stamp,
       ...(p.data.carrier !== undefined ? { carrier: p.data.carrier || null } : {}), ...(p.data.tracking !== undefined ? { tracking: p.data.tracking || null } : {}), ...(p.data.note !== undefined ? { note: p.data.note || null } : {}),
-      updated_by: me.id, updated_at: now,
+      updated_by: me!.id, updated_at: now,
     }, { onConflict: "sale_id" }).select("shopify_fulfilled, tracking, carrier").single();
     if (p.data.status === "missing") await notifyMissing(db, sale.id).catch((e) => console.error("[missing]", e));
     if (p.data.status === "despatched" && row && !row.shopify_fulfilled && sale.external_order_id.startsWith("gid://shopify/Order/")) {
