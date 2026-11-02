@@ -6,7 +6,7 @@ export default async function Admin() {
   const db = supabaseAdmin();
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const [{ data: centres }, { data: dealers }, { data: sales }, { data: channels }] = await Promise.all([
-    db.from("centres").select("id, name, invite_code, status, created_at, plan, stripe_customer_id"),
+    db.from("centres").select("id, name, invite_code, status, created_at, plan, stripe_customer_id, till"),
     db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at, monthly_sold_limit"),
     db.from("sales").select("dealer_id, centre_id, amount_pence").is("voided_at", null).gte("sold_at", monthStart.toISOString()),
     db.from("channels").select("owner_type, owner_id, type, status, last_webhook_at"),
@@ -19,9 +19,9 @@ export default async function Admin() {
   }
   const paying = (dealers ?? []).filter((d) => d.plan === "pro").length;
   const trial = (dealers ?? []).filter((d) => d.plan === "trial").length;
-  const priceFor = (limit: number) => (limit > 50 ? 15000 : limit > 25 ? 10000 : 2500);
+  const priceFor = (limit: number) => (limit >= 100000 ? 15000 : limit > 25 ? 10000 : 2500);
   const dealerMrr = (dealers ?? []).filter((d) => d.plan === "pro").reduce((a, d) => a + priceFor(d.monthly_sold_limit ?? 25), 0);
-  const centreMrr = (centres ?? []).filter((c) => c.plan === "pro").length * 29900;
+  const centreMrr = (centres ?? []).filter((c) => c.plan === "pro").reduce((a, c) => a + ((c as { till?: string }).till === "ordinary" ? 29900 : 24900), 0);
   const mrr = dealerMrr + centreMrr;
 
   return (
@@ -42,12 +42,12 @@ export default async function Admin() {
             const ch = (channels ?? []).find((x) => x.owner_type === "centre" && x.owner_id === c.id && x.type === "square");
             return (
               <tr key={c.id} className="border-b border-border">
-                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/centre?centre=${c.id}`}>{c.name}</a></td>
+                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/admin/centres/${c.id}`}>{c.name}</a></td>
                 <td className="ticket py-2 text-[12px]">{c.invite_code}</td>
                 <td className="py-2 text-xs">{c.status === "unclaimed" ? <Pill kind="neutral">Added by dealers</Pill> : c.plan === "pro" ? <Pill kind="success">Paying</Pill> : c.plan === "comp" ? <Pill kind="accent">Free</Pill> : c.stripe_customer_id ? <Pill kind="warning">Trial</Pill> : <Pill kind="danger">No card</Pill>}</td>
                 <td className="py-2 text-xs">{ch ? `${ch.status}${ch.last_webhook_at ? `, ${new Date(ch.last_webhook_at).toLocaleString("en-GB")}` : ""}` : <Pill kind="danger">Not connected</Pill>}</td>
                 <td className="num py-2 text-right">{money(byCentre.get(c.id) ?? 0)}</td>
-                <td className="py-2 text-right"><a className="text-xs underline" href={`/api/admin/export?centre=${c.id}`}>CSV</a></td>
+                <td className="py-2 text-right text-xs"><a className="underline" href={`/centre?centre=${c.id}`}>Open</a> · <a className="underline" href={`/api/admin/export?centre=${c.id}`}>CSV</a></td>
               </tr>
             );
           })}
@@ -62,7 +62,7 @@ export default async function Admin() {
             const sh = (channels ?? []).find((x) => x.owner_type === "dealer" && x.owner_id === d.id && x.type === "shopify");
             return (
               <tr key={d.id} className="border-b border-border">
-                <td className="px-5 py-2 font-medium">{d.name}</td>
+                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/admin/dealers/${d.id}`}>{d.name}</a></td>
                 <td className="ticket py-2 text-[12px]">{d.code}</td>
                 <td className="py-2">{d.plan}{d.plan === "trial" && d.trial_ends_at ? ` to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</td>
                 <td className="py-2 text-xs">{sh ? sh.status : "–"}</td>

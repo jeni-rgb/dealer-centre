@@ -121,6 +121,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { sale_id: "o3", centre_id: IDS.centre, status: "despatched", collected_at: d(1), at_unit_at: d(1), despatched_at: d(1, 15, 0), slip_printed_at: d(1), carrier: "Royal Mail", tracking: "RM123456789GB", note: null, shopify_fulfilled: true },
     { sale_id: "o4", centre_id: IDS.centre, status: "despatched", collected_at: d(4), at_unit_at: d(4), despatched_at: d(4), slip_printed_at: d(4), carrier: "Royal Mail", tracking: "RM123456001GB", note: null, shopify_fulfilled: true },
   ],
+  admin_actions: [],
   centre_commissions: [
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
