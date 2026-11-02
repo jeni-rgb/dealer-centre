@@ -2,10 +2,11 @@ import { Resend } from "resend";
 import { env } from "@/lib/env";
 import type { Admin } from "@/lib/supabase/server";
 import { displaySku } from "@/lib/sku";
+import { pushToDealer } from "@/lib/push/send";
 
 /**
- * Sale notification. Day one: email to every user on the dealer account.
- * Push arrives with the Capacitor build; the message text is the same.
+ * Sale notification: a push to every device the dealer turned notifications on in, and an email
+ * to every user on the dealer account. Same words in both.
  */
 export async function sendSaleNotification(
   db: Admin,
@@ -23,6 +24,8 @@ export async function sendSaleNotification(
     line = `Sold: ticket ${p.ticket_no ? displaySku(p.ticket_no) : "unknown"}, £${((p.amount_pence ?? 0) / 100).toFixed(2)}, at the till`;
   }
   const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" });
+
+  await pushToDealer(db, p.dealer_id, { title: line.split(", ")[0], body: `${line.split(", ").slice(1).join(", ")}, ${time}`, url: p.item_id ? `/app/items/${p.item_id}` : "/app/stock?f=sold", tag: `sale-${p.item_id ?? p.ticket_no ?? time}` }).catch((e) => console.error("[push]", e));
 
   if (!process.env.RESEND_API_KEY) {
     console.log("[notify]", line, time);

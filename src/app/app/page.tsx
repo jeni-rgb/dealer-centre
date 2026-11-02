@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mark } from "@/components/logo";
+import { NotificationsCard } from "@/components/notifications";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
@@ -61,6 +62,7 @@ export default async function Today() {
           <Link href="/app/labels" className="btn-secondary !h-12 !gap-1.5 !px-2 !text-[14px]">{Icon.printer} Labels{printCount > 0 && <span className="pill pill-warning !h-5 !rounded-full whitespace-nowrap !px-1.5 !text-[11px]">{printCount} to print</span>}</Link>
         </div>
 
+        <NotificationsCard vapidPublicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
         {dealer && dealer.monthly_sold_limit < 100000 && (s.items_sold_month ?? 0) >= dealer.monthly_sold_limit && (
           <Link href="/api/billing/portal" className="card flex items-center justify-between border-accent p-4 text-[14px]"><span><span className="block font-medium">Good month: {s.items_sold_month} sold</span><span className="text-[12px] text-ink-muted">That is past the {dealer.monthly_sold_limit} on your plan. Nothing stops, but please move up a tier.</span></span><span className="text-[13px] font-medium text-accent">Upgrade</span></Link>
         )}
