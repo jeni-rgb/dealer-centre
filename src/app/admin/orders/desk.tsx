@@ -17,6 +17,7 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [tracking, setTracking] = useState<{ carrier: string; tracking: string } | null>(null);
+  const [print, setPrint] = useState<{ labels: string | null; notes: string | null } | null>(null);
   // Parcel details per order for the bench: format, weight, service. Defaults by value; editable per row.
   const [parcel, setParcel] = useState<Record<string, { format: PackageFormat; weight: string; service: string }>>({});
   const parcelFor = (o: OnlineOrder) => { const d = deliveryOf(o.delivery); return parcel[o.sale_id] ?? { format: (o.package_format as PackageFormat) ?? (d.format === "courier" ? "mediumParcel" : d.format), weight: o.weight_grams ? String(o.weight_grams) : String(d.grams), service: o.service_code ?? defaults[o.sale_id] ?? services[0]?.code ?? "auto" }; };
@@ -29,12 +30,11 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
     setBusy(true); setMsg("Buying postage…");
     const r = await fetch("/api/admin/orders/postage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ parcels: chosen.map((o) => ({ sale_id: o.sale_id, format: parcelFor(o).format, weight_grams: parseInt(parcelFor(o).weight), service_code: parcelFor(o).service })) }) });
     setBusy(false);
-    if (!r.ok) { const j = await r.json().catch(() => ({})); setMsg(j.error ?? "Could not buy postage"); return; }
-    const bought = r.headers.get("x-postage-bought") ?? "0";
-    const errs = decodeURIComponent(r.headers.get("x-postage-errors") ?? "");
-    const blob = await r.blob();
-    window.open(URL.createObjectURL(blob), "_blank");
-    setMsg(`${bought} label${bought === "1" ? "" : "s"} bought and marked despatched; buyers emailed by Shopify.${errs ? ` Not bought: ${errs}` : ""}`);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setMsg(j.error ?? "Could not buy postage"); return; }
+    setPrint({ labels: j.labels_url, notes: j.notes_url });
+    if (j.labels_url) window.open(j.labels_url, "_blank");
+    setMsg(`${j.bought} label${j.bought === 1 ? "" : "s"} bought and marked despatched; buyers emailed the tracking by Shopify.${j.errors?.length ? ` Not bought: ${j.errors.join(" | ")}` : ""}`);
     setSel(new Set()); router.refresh();
   }
 
@@ -89,10 +89,12 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
           <span className="ml-auto text-[12px] text-ink-muted">Labels are bought through {providerName} and print with the despatch notes.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : " Shiptheory manifests Royal Mail and books courier collections."}</span>
         </>}
         {(tab === "done" || tab === "all") && <>
-          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}`} target="_blank">Reprint labels and notes</a>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=labels`} target="_blank">Reprint labels</a>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=notes`} target="_blank">Reprint despatch notes</a>
           <button className="text-[13px] font-medium text-ink-muted disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("new")}>Back to collect</button>
         </>}
         {msg && <span className="w-full text-[12px] text-ink-muted">{msg}</span>}
+        {print && (print.labels || print.notes) && <span className="flex w-full items-center gap-2 text-[12px]">{print.labels && <a className="btn-sm" href={print.labels} target="_blank">Labels (label printer)</a>}{print.notes && <a className="btn-sm-secondary" href={print.notes} target="_blank">Despatch notes (A4)</a>}<span className="text-ink-muted">If a window was blocked, use these.</span></span>}
       </div>
 
       {shown.length === 0 && <p className="card p-8 text-center text-[14px] text-ink-muted">{tab === "collect" ? "Nothing to collect." : tab === "unit" ? "Nothing at the unit." : "Nothing here."}</p>}

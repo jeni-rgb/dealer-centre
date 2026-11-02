@@ -106,19 +106,6 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             <span className="text-[12px] font-normal text-ink-muted">Only you see this one</span>
           </label>
           {(own || shop) && (
-            <div className="flex flex-col gap-1.5">
-              <span className="field-label">How does it ship? Sets the delivery charge the buyer sees</span>
-              <div className="card divide-y divide-border">
-                {DELIVERY.map((d) => (
-                  <button type="button" key={d.id} onClick={() => setDelivery(d.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px]">
-                    <span className="flex flex-col"><span className="font-medium">{d.label}</span><span className="text-[12px] text-ink-muted">{d.hint}</span></span>
-                    <span className={`h-5 w-5 shrink-0 rounded-full border ${delivery === d.id ? "border-accent bg-accent" : "border-border"}`} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {(own || shop) && (
             <label className="flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-border bg-white px-4 py-3 text-[14px]">
               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setShopFiles(Array.from(e.target.files ?? []))} />
               <span className="flex flex-col"><span className="font-medium">Photos for online</span><span className="text-[12px] text-ink-muted">{shopFiles.length > 0 ? `${shopFiles.length} chosen, first one is the cover` : "Up to 10. These go to your Shopify and the centre shop."}</span></span>
@@ -162,8 +149,24 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             <span className="field-label">Also list on</span>
             <ToggleGroup>
               <Toggle on={own} onChange={setOwn} label="Your Shopify" hint={hasOwnShopify ? "Photo and price go to your own shop" : "Connect Shopify in Settings first"} disabled={!hasOwnShopify} />
-              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasShop ? "The centre's Shopify store, they ship it. 20% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop || starter} />}
+              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasShop ? "The centre's Shopify store, we pack and post it. 20% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop || starter} />}
             </ToggleGroup>
+            {/* Opens the moment an online toggle goes on: how it ships sets the buyer's delivery charge */}
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${own || shop ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+              <div className="overflow-hidden">
+                <div className="mt-3 flex flex-col gap-1.5">
+                  <span className="field-label">How does it ship? Sets the delivery charge the buyer sees</span>
+                  <div className="card divide-y divide-border">
+                    {DELIVERY.map((d) => (
+                      <button type="button" key={d.id} onClick={() => setDelivery(d.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px]">
+                        <span className="flex flex-col"><span className="font-medium">{d.label}</span><span className="text-[12px] text-ink-muted">{d.hint}</span></span>
+                        <span className={`h-5 w-5 shrink-0 rounded-full border ${delivery === d.id ? "border-accent bg-accent" : "border-border"}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>

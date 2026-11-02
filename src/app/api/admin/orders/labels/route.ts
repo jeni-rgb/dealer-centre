@@ -7,11 +7,13 @@ import { fetchPending } from "@/lib/fulfilment/postage";
 import { shopifyFulfil } from "@/lib/channels/shopify";
 import type { ChannelRow } from "@/lib/channels/types";
 
-/** Reprint: stored labels and despatch notes for the selected orders (?ids=). Nothing is bought. */
+/** Stored labels and despatch notes for the selected orders (?ids=). ?only=labels or ?only=notes for one printer. Nothing is bought. */
 export async function GET(req: Request) {
   const me = await getMe();
   if (!me?.is_platform_admin) return new NextResponse("admin only", { status: 403 });
-  const ids = (new URL(req.url).searchParams.get("ids") ?? "").split(",").filter(Boolean);
+  const u = new URL(req.url);
+  const ids = (u.searchParams.get("ids") ?? "").split(",").filter(Boolean);
+  const only = u.searchParams.get("only");
   const db = supabaseAdmin();
   let orders = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id));
   // labels that were still being allocated when postage was bought
@@ -28,6 +30,8 @@ export async function GET(req: Request) {
   orders = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id));
   const labels: Uint8Array[] = [];
   for (const o of orders.filter((q) => q.label_path)) { const { data } = await db.storage.from("files").download(o.label_path!); if (data) labels.push(new Uint8Array(await data.arrayBuffer())); }
-  const pdf = await mergeLabelsAndNotes(labels, await renderDespatchNotes(orders));
-  return new NextResponse(Buffer.from(pdf), { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="labels-and-notes.pdf"` } });
+  const notes = only === "labels" ? null : await renderDespatchNotes(orders);
+  const pdf = only === "labels" ? await mergeLabelsAndNotes(labels, await renderDespatchNotes([])) : only === "notes" ? notes! : await mergeLabelsAndNotes(labels, notes!);
+  const name = only === "labels" ? "labels" : only === "notes" ? "despatch-notes" : "labels-and-notes";
+  return new NextResponse(Buffer.from(pdf), { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="${name}-${new Date().toISOString().slice(0, 10)}.pdf"` } });
 }

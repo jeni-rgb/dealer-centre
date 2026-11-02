@@ -63,7 +63,6 @@ export async function renderDespatchNotes(orders: OnlineOrder[]): Promise<Uint8A
     text(`Returns address: ${RETURNS_ADDRESS}`, M, 8, sans, MUTED);
     page.drawText(`Internal: dealer ${o.dealer ?? ""} ${o.dealer_code ? `(${o.dealer_code})` : ""} · pitch ${o.pitches.join(", ") || "?"} · ${o.centre} · collected ${dmy(o.collected_at) || "n/a"}`, { x: M, y: 16, size: 7, font: sans, color: MUTED });
   }
-  if (orders.length === 0) pdf.addPage([W, H]);
   return pdf.save();
 }
 
@@ -72,8 +71,10 @@ export async function mergeLabelsAndNotes(labels: Uint8Array[], notes: Uint8Arra
   const out = await PDFDocument.create();
   for (const bytes of [...labels, notes]) {
     const src = await PDFDocument.load(bytes);
+    if (src.getPageCount() === 0) continue;
     const pages = await out.copyPages(src, src.getPageIndices());
     pages.forEach((p) => out.addPage(p));
   }
+  if (out.getPageCount() === 0) out.addPage([419.53, 595.28]);
   return out.save();
 }

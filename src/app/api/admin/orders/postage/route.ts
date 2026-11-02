@@ -60,9 +60,8 @@ export async function POST(req: Request) {
       }
     }
   }
-  const after = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id) && o.label_path);
-  const notes = await renderDespatchNotes(after);
-  const pdf = await mergeLabelsAndNotes(labels, notes);
-  // Return the PDF and the outcome. Errors ride in a header so the desk can show them.
-  return new NextResponse(Buffer.from(pdf), { headers: { "content-type": "application/pdf", "x-postage-bought": String(results.filter((r) => r.ok).length), "x-postage-errors": encodeURIComponent(errors.join(" | ")) } });
+  // Labels go to the thermal printer, notes to the A4 printer: two print jobs, both reachable from Reprint.
+  const done = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id) && o.label_path).map((o) => o.sale_id);
+  void labels; void renderDespatchNotes; void mergeLabelsAndNotes;
+  return NextResponse.json({ ok: true, bought: results.filter((r) => r.ok).length, errors, labels_url: done.length ? `/api/admin/orders/labels?ids=${done.join(",")}&only=labels` : null, notes_url: done.length ? `/api/admin/orders/labels?ids=${done.join(",")}&only=notes` : null });
 }
