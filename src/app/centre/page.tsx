@@ -30,7 +30,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
   return (
     <>
       <div className="mb-6 flex items-baseline justify-between">
-        <div><h1 className="text-[24px] font-semibold">{centre.name}</h1><p className="text-[13px] text-ink-muted">Centre code <span className="ticket">{centre.invite_code}</span> · {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p></div>
+        <div><h1 className="text-[28px] font-semibold">{centre.name}</h1><p className="flex items-center gap-2 text-[13px] text-ink-muted">Centre code <span className="tag !h-6 !text-[11px]">{centre.invite_code}</span> · {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p></div>
         <div className="flex items-center gap-2">
           <Link href={`/centre/codes?centre=${centre.id}`} className="btn-sm-secondary">Print code sheet</Link>
           <AddDealer centreId={centre.id} />
@@ -57,7 +57,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
               const ratio = r.rent_pence ? s / r.rent_pence : null;
               return (
                 <tr key={r.dealer_id} className="border-b border-border last:border-0">
-                  <td className="px-5 py-3"><span className="font-medium">{r.name}</span> <span className="ticket text-[12px] text-ink-muted">{r.code}</span>{r.placeholder && <Pill kind="neutral" className="ml-2">No app yet</Pill>}</td>
+                  <td className="px-5 py-3"><span className="flex items-center gap-2"><span className="tag !h-6 !text-[11px]">{r.code}</span><span className="font-medium">{r.name}</span>{r.placeholder && <Pill kind="neutral">No app yet</Pill>}</span></td>
                   <td className="py-3 text-ink-muted">{r.pitch_numbers.join(", ")}</td>
                   <td className="py-3"><div className="flex items-center gap-3"><div className="h-2 w-40 overflow-hidden rounded-full bg-surface-2"><div className="h-full rounded-full bg-accent" style={{ width: `${(s / maxSales) * 100}%` }} /></div><span className="num font-semibold">{money(s)}</span></div></td>
                   <td className="num py-3 text-right text-ink-muted">{money(r.rent_pence)}</td>

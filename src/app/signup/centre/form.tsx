@@ -146,7 +146,7 @@ function Q({ step, total, back, title, sub, children }: { step: number; total: n
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between text-[12px] text-ink-muted"><span>Question {step + 1} of {total}</span>{step > 0 && <button className="font-medium text-accent" onClick={back}>Back</button>}</div>
-      <div className="flex gap-1">{Array.from({ length: total }).map((_, i) => <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? "bg-accent" : "bg-surface-2"}`} />)}</div>
+      <div className="px-track">{Array.from({ length: total }).map((_, i) => <span key={i} className={`px-step ${i < step ? "px-step-on" : i === step ? "px-step-now" : ""}`} />)}</div>
       <div><h2 className="text-[22px] font-semibold leading-7">{title}</h2>{sub && <p className="mt-1.5 text-[14px] text-ink-muted">{sub}</p>}</div>
       {children}
     </div>

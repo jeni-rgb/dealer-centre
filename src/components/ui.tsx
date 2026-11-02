@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "./logo";
+import { Logo, Mark } from "./logo";
 import { displaySku } from "@/lib/sku";
 
 export const money = (pence: number) =>
@@ -14,7 +14,8 @@ export const when = (iso: string) => {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
-export function Sku({ sku, className = "" }: { sku: string; className?: string }) {
+export function Sku({ sku, className = "", tag = false }: { sku: string; className?: string; tag?: boolean }) {
+  if (tag) return <span className={`tag ${className}`}>{displaySku(sku)}</span>;
   return <span className={`ticket ${className}`}>{displaySku(sku)}</span>;
 }
 
@@ -55,12 +56,13 @@ export function ToggleGroup({ children }: { children: React.ReactNode }) {
 
 export function TicketCard({ sku, hint }: { sku: string; hint: string }) {
   return (
-    <div className="flex items-center justify-between rounded-[14px] bg-forest px-4 py-3.5 text-white">
-      <div className="flex flex-col gap-0.5">
+    <div className="relative flex items-center justify-between overflow-hidden rounded-[16px] bg-forest px-4 py-3.5 text-white">
+      <div className="flex flex-col gap-1.5">
         <span className="text-[12px] text-header-muted">Ticket number</span>
-        <span className="ticket text-[28px] leading-8">{displaySku(sku)}</span>
+        <span className="tag tag-lg tag-dark">{displaySku(sku)}</span>
       </div>
-      <span className="max-w-[120px] text-right text-[12px] leading-4 text-header-muted">{hint}</span>
+      <span className="relative max-w-[120px] text-right text-[12px] leading-4 text-header-muted">{hint}</span>
+      <Mark size={96} color="#FFFFFF" className="watermark" />
     </div>
   );
 }
@@ -85,7 +87,7 @@ export function DealerNav({ active }: { active: "today" | "stock" | "statement" 
     ["settings", "/app/settings", "settings", "Settings"],
   ];
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-border bg-white px-2 pb-6 pt-2">
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-border bg-surface/95 px-2 pb-6 pt-2 backdrop-blur">
       {items.map(([key, href, icon, label]) => (
         <Link key={key} href={href} aria-current={active === key ? "page" : undefined} className={`flex h-12 flex-col items-center justify-center gap-1 text-[11px] ${active === key ? "font-semibold text-accent" : "font-medium text-header-muted"}`}>
           {Icon[icon]}
@@ -97,7 +99,7 @@ export function DealerNav({ active }: { active: "today" | "stock" | "statement" 
 }
 
 export function Phone({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto min-h-screen max-w-[390px] bg-white pb-28">{children}</div>;
+  return <div className="mx-auto min-h-screen max-w-[390px] bg-surface pb-28">{children}</div>;
 }
 
 export function Screen({ title, back, children, right }: { title: string; back?: { href: string; label?: string }; children: React.ReactNode; right?: React.ReactNode }) {
@@ -115,8 +117,9 @@ export function Screen({ title, back, children, right }: { title: string; back?:
 
 export function Empty({ text, href, cta }: { text: string; href?: string; cta?: string }) {
   return (
-    <div className="card p-6 text-center text-[14px] text-ink-muted">
-      <p>{text}</p>
+    <div className="card relative overflow-hidden p-6 text-center text-[14px] text-ink-muted">
+      <Mark size={120} className="watermark" />
+      <p className="relative">{text}</p>
       {href && cta && <Link href={href} className="btn mt-4">{cta}</Link>}
     </div>
   );
@@ -146,7 +149,7 @@ export function Kpi({ label, value, sub, tone }: { label: string; value: string;
   return (
     <div className="kpi min-w-[200px]">
       <div className="text-[12px] font-medium text-ink-muted">{label}</div>
-      <div className={`num mt-1 text-[28px] font-semibold leading-8 ${tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : ""}`}>{value}</div>
+      <div className={`figure mt-1 text-[34px] leading-9 ${tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : ""}`}>{value}</div>
       {sub && <div className="mt-1 text-[12px] text-ink-muted">{sub}</div>}
     </div>
   );

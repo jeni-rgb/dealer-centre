@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { Logo, Mark } from "@/components/logo";
 
 export default function Landing() {
   return (
-    <main className="mx-auto max-w-2xl px-6 pb-16 pt-20">
+    <main className="relative mx-auto max-w-2xl overflow-hidden px-6 pb-16 pt-20">
+      <Mark size={420} className="pointer-events-none absolute -right-24 top-8 opacity-[0.06]" />
       <Logo size={44} />
-      <h1 className="mt-3 text-[40px] font-bold leading-[1.1] tracking-[-0.02em]">List it once. Label it once. Sell it on the floor or online. Never sell it twice.</h1>
+      <h1 className="relative mt-8 text-[44px] font-bold leading-[1.05] tracking-[-0.02em]">List it once. Label it once. Sell it on the floor or online. Never sell it twice.</h1>
       <p className="mt-5 text-[18px] text-ink-muted">For antique and vintage dealers who rent a pitch. One ticket number runs the centre's till, your Shopify and the label on the item.</p>
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         <Link href="/signin?next=/signup/dealer" className="block rounded-[20px] bg-accent p-6 text-cream">

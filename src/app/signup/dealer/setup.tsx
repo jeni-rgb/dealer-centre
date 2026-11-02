@@ -237,7 +237,7 @@ function StepHeader({ title, sub, idx, signup, step, next }: { title: string; su
   return (
     <div className="flex flex-col gap-2 px-5 pt-14">
       <div className="flex items-center justify-between text-[12px] text-ink-muted"><span>{signup ? `Sign up · ${idx + 2} of 3` : `Setup · ${idx - 1} of 5`}</span>{!signup && step !== "summary" && <button className="font-medium text-accent" onClick={next}>Skip</button>}</div>
-      <div className="flex gap-1">{STEPS.map((s, i) => <span key={s} className={`h-1 flex-1 rounded-full ${i <= idx ? "bg-accent" : "bg-surface-2"}`} />)}</div>
+      <div className="px-track">{STEPS.map((s, i) => <span key={s} className={`px-step ${i < idx ? "px-step-on" : i === idx ? "px-step-now" : ""}`} />)}</div>
       <h1 className="pt-3 text-[24px] font-semibold leading-7">{title}</h1>
       {sub && <p className="text-[14px] text-ink-muted">{sub}</p>}
     </div>

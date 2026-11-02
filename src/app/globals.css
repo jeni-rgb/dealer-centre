@@ -76,8 +76,8 @@ body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webki
 .field-label { @apply mb-1.5 block text-[13px] font-medium text-[#4A4737]; }
 
 /* Cards and rows */
-.card { @apply rounded-[16px] border border-border bg-white; }
-.row { @apply flex min-h-[68px] items-center gap-3 rounded-[14px] border border-border bg-white p-3; }
+.card { @apply rounded-[18px] border border-border bg-white; }
+.row { @apply flex min-h-[68px] items-center gap-3 rounded-[16px] border border-border bg-white p-3; }
 .toggle-row { @apply flex min-h-[68px] w-full items-center justify-between gap-4 bg-white px-4 py-3.5 text-left; }
 
 /* Pills: radius 8 */
@@ -97,3 +97,24 @@ body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webki
 .sidebar-link { @apply flex h-10 items-center rounded-full px-3 text-[14px] font-medium text-ink-muted hover:bg-surface-2; }
 .sidebar-link-active { @apply bg-accent-soft text-accent-text; }
 .kpi { @apply rounded-[16px] border border-border bg-white p-5; }
+
+/* Ticket tag: the swing tag every item wears, as a chip. Notch on the left like the hole in a real tag. */
+.tag { @apply relative inline-flex h-7 items-center rounded-[6px] bg-surface-2 pl-4 pr-2.5 text-[12px] text-ink; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em; }
+.tag::before { content: ""; @apply absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-white; box-shadow: inset 0 0 0 1px var(--dc-border); }
+.tag-lg { @apply h-10 rounded-[8px] pl-6 pr-4 text-[20px]; }
+.tag-lg::before { @apply left-2.5 h-2.5 w-2.5; }
+.tag-dark { @apply bg-white/15 text-cream; }
+.tag-dark::before { @apply bg-accent; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35); }
+
+/* Big figures take the display face */
+.figure { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+/* Pixel progress, from the mark */
+.px-track { @apply flex gap-1.5; }
+.px-step { @apply h-2.5 w-2.5 bg-surface-2; }
+.px-step-on { @apply bg-accent; }
+.px-step-now { @apply bg-gold; }
+
+/* Quiet watermark of the mark for empty states and headers */
+.watermark { position: absolute; right: -8px; bottom: -14px; opacity: 0.08; pointer-events: none; }
+.header-dark { position: relative; overflow: hidden; }

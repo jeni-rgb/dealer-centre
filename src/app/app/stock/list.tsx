@@ -46,7 +46,7 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="truncate text-[14px] font-medium">{r.title}</span>
                 <span className="flex flex-wrap items-center gap-1.5 text-[12px] text-ink-muted">
-                  <Sku sku={r.sku} className="!font-medium !tracking-normal" />
+                  <Sku sku={r.sku} tag className="!h-6 !text-[11px]" />
                   {mode === "live" ? (
                     <>
                       {r.floor && <Pill kind="neutral">Floor</Pill>}

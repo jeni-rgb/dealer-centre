@@ -30,14 +30,14 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
       <div>
         <h2 className="text-[20px] font-semibold leading-6">{item.title}</h2>
         <div className="mt-2 flex items-center gap-2 text-[12px] text-ink-muted">
-          <Sku sku={item.sku} className="text-[14px]" />
+          <Sku sku={item.sku} tag />
           {item.status === "sold" ? <Pill kind="success">Sold</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
           {centre && <span>{centre.name}</span>}
         </div>
       </div>
 
       <div className="card flex items-center justify-between p-4">
-        <div><div className="text-[12px] text-ink-muted">{item.status === "sold" ? "Sold for" : "Asking"}</div><div className="num text-[28px] font-bold leading-8">{money(sale?.amount_pence ?? item.price_pence)}</div></div>
+        <div><div className="text-[12px] text-ink-muted">{item.status === "sold" ? "Sold for" : "Asking"}</div><div className="figure text-[34px] leading-9">{money(sale?.amount_pence ?? item.price_pence)}</div></div>
         {sale && sale.listed_price_pence !== null && sale.amount_pence !== sale.listed_price_pence && (
           <div className="text-right"><div className="text-[12px] text-ink-muted">Listed at</div><div className="num text-[16px] text-ink-muted line-through">{money(sale.listed_price_pence)}</div></div>
         )}

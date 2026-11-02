@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mark } from "@/components/logo";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
@@ -30,7 +31,7 @@ export default async function Today() {
       <header className="header-dark flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[12px] text-header-muted">{dealer?.name} · {dealer?.code}{centreName ? ` · ${centreName}` : ""}</span>
+            <span className="flex items-center gap-2 text-[12px] text-header-muted"><span className="tag tag-dark !h-6 !text-[11px]">{dealer?.code}</span>{dealer?.name}{centreName ? ` · ${centreName}` : ""}</span>
             <span className="text-[20px] font-semibold capitalize">{greeting}, {firstName}</span>
           </div>
           <Link href="/app/settings" aria-label="Settings" className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10">{Icon.settings}</Link>
@@ -38,7 +39,7 @@ export default async function Today() {
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] text-header-muted">Sales this month</span>
           <div className="flex items-baseline gap-3">
-            <span className="num text-[44px] font-bold leading-[48px] tracking-[-0.03em]">{money(s.month ?? 0)}</span>
+            <span className="figure text-[52px] leading-[52px]">{money(s.month ?? 0)}</span>
             {s.last_month_to_date > 0 && (
               <span className={`inline-flex h-6 items-center gap-1 rounded-[8px] px-2 text-[12px] font-semibold ${delta >= 0 ? "bg-white/15 text-header-green" : "bg-white/10 text-header-muted"}`}>
                 {delta >= 0 && Icon.up}{money(Math.abs(delta))} vs last month
@@ -48,9 +49,10 @@ export default async function Today() {
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[["Today", money(s.today ?? 0)], ["Week", money(s.week ?? 0)], ["Sold", String(s.items_sold_month ?? 0)], ["Live", String(s.items_live ?? 0)]].map(([l, v]) => (
-            <div key={l} className="header-stat"><span className="num text-[16px] font-semibold leading-5">{v}</span><span className="text-[11px] text-header-muted">{l}</span></div>
+            <div key={l} className="header-stat"><span className="figure text-[18px] leading-5">{v}</span><span className="text-[11px] text-header-muted">{l}</span></div>
           ))}
         </div>
+        <Mark size={200} color="#FFFFFF" className="watermark" />
       </header>
 
       <div className="flex flex-col gap-4 px-5 pt-5">
