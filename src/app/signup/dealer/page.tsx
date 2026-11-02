@@ -7,10 +7,10 @@ import { DealerSetup } from "./setup";
  * Sign up is 3 steps (email, business, card). Setup is 5 and skippable
  * (centre and rent, till, printers, Shopify, summary). Step is driven by ?step=.
  */
-export default async function DealerSignup({ searchParams }: { searchParams: Promise<{ step?: string }> }) {
+export default async function DealerSignup({ searchParams }: { searchParams: Promise<{ step?: string; plan?: string }> }) {
   const me = await getMe();
   if (!me) redirect("/signin?next=/signup/dealer");
-  const { step } = await searchParams;
+  const { step, plan } = await searchParams;
   const sb = await supabaseServer();
   let dealer: { name: string; code: string; plan: string; stripe_customer_id: string | null } | null = null;
   let centres: { name: string; status: string }[] = [];
@@ -29,5 +29,5 @@ export default async function DealerSignup({ searchParams }: { searchParams: Pro
     ownPrinters = count ?? 0;
   }
   const initial = step ?? (!dealer ? "business" : !dealer.stripe_customer_id ? "card" : "centre");
-  return <DealerSetup email={me.email} initial={initial} dealer={dealer} centres={centres} hasShopify={hasShopify} ownPrinters={ownPrinters} />;
+  return <DealerSetup email={me.email} initial={initial} dealer={dealer} centres={centres} hasShopify={hasShopify} ownPrinters={ownPrinters} plan={plan} />;
 }

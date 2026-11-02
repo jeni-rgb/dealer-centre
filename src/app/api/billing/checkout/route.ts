@@ -6,8 +6,10 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 
 /** Starts a Stripe Checkout for the dealer's subscription. Web only, never from the native app. */
 export async function GET(req: Request) {
-  const t = new URL(req.url).searchParams.get("tier") ?? "150";
-  const tier = (["25", "100", "150"].includes(t) ? t : "150") as "25" | "100" | "150";
+  // No tier means the plan step was skipped: send them back to choose, never default to a plan.
+  const t = new URL(req.url).searchParams.get("tier") ?? "";
+  if (!["25", "100", "150"].includes(t)) return NextResponse.redirect(new URL("/signup/dealer?step=card", env.appUrl()));
+  const tier = t as "25" | "100" | "150";
   const priceId = env.stripe.price(tier);
   const describe = { "25": "Dealer Centre Starter: up to 25 items sold a month, £25 a month + VAT", "100": "Dealer Centre Trade: 26 to 50 items sold a month, £100 a month + VAT", "150": "Dealer Centre Pro: over 50 items sold a month, £150 a month + VAT" }[tier];
   const me = await getMe();

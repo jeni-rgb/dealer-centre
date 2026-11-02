@@ -1,4 +1,5 @@
 "use client";
+import { DELIVERY, type Delivery } from "@/lib/items/delivery";
 import { useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -16,6 +17,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
+  const [delivery, setDelivery] = useState<Delivery>("small");
   const [centre, setCentre] = useState(centres[0]?.id ?? "");
   const [own, setOwn] = useState(hasOwnShopify && defaults.own);
   const [shop, setShop] = useState(defaults.shop && !starter);
@@ -50,7 +52,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: title.trim(), price_pence: pence, cost_pence: cost ? Math.round(parseFloat(cost) * 100) : null,
-          centre_id: centre || null, photos, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop,
+          centre_id: centre || null, photos, delivery, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop,
           print_now: label && !!printer, printer_id: printer || null,
         }),
       });
@@ -103,6 +105,19 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             {files.length > 0 ? <span>Reference photo ready</span> : <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Quick snap for your records</>}
             <span className="text-[12px] font-normal text-ink-muted">Only you see this one</span>
           </label>
+          {(own || shop) && (
+            <div className="flex flex-col gap-1.5">
+              <span className="field-label">How does it ship? Sets the delivery charge the buyer sees</span>
+              <div className="card divide-y divide-border">
+                {DELIVERY.map((d) => (
+                  <button type="button" key={d.id} onClick={() => setDelivery(d.id)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[14px]">
+                    <span className="flex flex-col"><span className="font-medium">{d.label}</span><span className="text-[12px] text-ink-muted">{d.hint}</span></span>
+                    <span className={`h-5 w-5 shrink-0 rounded-full border ${delivery === d.id ? "border-accent bg-accent" : "border-border"}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {(own || shop) && (
             <label className="flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-border bg-white px-4 py-3 text-[14px]">
               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setShopFiles(Array.from(e.target.files ?? []))} />

@@ -17,10 +17,10 @@ export const SERVICES: { code: string; label: string }[] = [
   { code: process.env.RM_SERVICE_SPECIAL ?? "SD1", label: "Special Delivery by 1pm" },
 ];
 /** Default service by value: anything over £150 goes Special Delivery (insured), the rest Tracked 48. */
-export const defaultService = (amountPence: number) => (amountPence > 15000 ? SERVICES[2].code : SERVICES[0].code);
+
 
 export type PostageRequest = { order: OnlineOrder; format: PackageFormat; weightGrams: number; serviceCode: string };
-export type PostageResult = { sale_id: string; ok: true; orderIdentifier: string; tracking: string | null; labelPdf: Uint8Array } | { sale_id: string; ok: false; error: string };
+export type PostageResult = { sale_id: string; ok: true; orderIdentifier: string; tracking: string | null; labelPdf: Uint8Array; carrier?: string | null } | { sale_id: string; ok: false; error: string; pending?: boolean };
 
 export async function buyPostage(reqs: PostageRequest[]): Promise<PostageResult[]> {
   const key = process.env.CLICK_AND_DROP_API_KEY;

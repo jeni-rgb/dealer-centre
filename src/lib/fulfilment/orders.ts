@@ -4,7 +4,7 @@ import type { ShopifyAddress } from "@/lib/channels/shopify";
 
 export type OrderStatus = "new" | "collected" | "at_unit" | "despatched" | "missing" | "refunded";
 export type OnlineOrder = {
-  sale_id: string; sold_at: string; amount_pence: number; ticket: string | null; title: string;
+  sale_id: string; sold_at: string; amount_pence: number; ticket: string | null; title: string; delivery: string;
   dealer: string | null; dealer_code: string | null; pitches: string[];
   centre_id: string | null; centre: string;
   buyer: string | null; email: string | null; address: string | null; address_parts: { address1?: string; address2?: string; city?: string; province?: string; zip?: string; country_code?: string } | null; order_name: string | null; note: string | null;
@@ -19,7 +19,7 @@ const addr = (a: ShopifyAddress | null | undefined) => a ? [a.address1, a.addres
 /** Every centre shop sale with where it is. Admin wide, or one centre. */
 export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sinceDays?: number; openOnly?: boolean } = {}): Promise<OnlineOrder[]> {
   const since = new Date(Date.now() - (opts.sinceDays ?? 60) * 86400000).toISOString();
-  let q = db.from("sales").select("id, sold_at, amount_pence, ticket_no, raw, centre_id, dealer_id, items(title), dealers(name, code), centres(name), channels:channel_id(type, owner_type), fulfilments(status, collected_at, at_unit_at, despatched_at, slip_printed_at, carrier, tracking, note, shopify_fulfilled, package_format, weight_grams, service_code, label_path, despatch_note_no)")
+  let q = db.from("sales").select("id, sold_at, amount_pence, ticket_no, raw, centre_id, dealer_id, items(title, delivery), dealers(name, code), centres(name), channels:channel_id(type, owner_type), fulfilments(status, collected_at, at_unit_at, despatched_at, slip_printed_at, carrier, tracking, note, shopify_fulfilled, package_format, weight_grams, service_code, label_path, despatch_note_no)")
     .is("voided_at", null).gte("sold_at", since).order("sold_at", { ascending: false });
   if (opts.centreId) q = q.eq("centre_id", opts.centreId);
   const { data } = await q;
@@ -35,6 +35,7 @@ export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sin
       return {
         sale_id: s.id, sold_at: s.sold_at, amount_pence: s.amount_pence, ticket: s.ticket_no ? displaySku(s.ticket_no) : null,
         title: (s.items as unknown as { title: string } | null)?.title ?? raw.title ?? "Item",
+        delivery: (s.items as unknown as { delivery?: string } | null)?.delivery ?? "small",
         dealer: d?.name ?? null, dealer_code: d?.code ?? null, pitches: pitchesFor(s.dealer_id, s.centre_id),
         centre_id: s.centre_id, centre: (s.centres as unknown as { name: string } | null)?.name ?? "Centre",
         buyer: raw.order?.shipping_address?.name ?? null, email: raw.order?.email ?? null, address: addr(raw.order?.shipping_address), address_parts: raw.order?.shipping_address ? { address1: raw.order.shipping_address.address1, address2: raw.order.shipping_address.address2, city: raw.order.shipping_address.city, province: raw.order.shipping_address.province, zip: raw.order.shipping_address.zip, country_code: raw.order.shipping_address.country_code ?? "GB" } : null, order_name: raw.order?.name ?? null, note: raw.order?.note ?? null,

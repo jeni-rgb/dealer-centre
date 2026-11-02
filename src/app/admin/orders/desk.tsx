@@ -3,13 +3,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { money } from "@/components/ui";
 import { STATUS_LABEL, type OnlineOrder, type OrderStatus } from "@/lib/fulfilment/orders";
-import { FORMATS, SERVICES, defaultService, type PackageFormat } from "@/lib/fulfilment/clickdrop";
+import { FORMATS, type PackageFormat } from "@/lib/fulfilment/clickdrop";
+import { deliveryOf } from "@/lib/items/delivery";
 
 const TONE: Record<OrderStatus, string> = { new: "pill-warning", collected: "pill-accent", at_unit: "pill-neutral", despatched: "pill-success", missing: "pill-danger", refunded: "pill-danger" };
 type Tab = "collect" | "unit" | "done" | "all";
 
 /** The desk: tick orders, act on them together. Run sheets for the runner, packing slips for the bench, statuses as things move. */
-export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; centreFilter: string | null }) {
+export function OrdersDesk({ orders, centreFilter, services, providerName, defaults }: { orders: OnlineOrder[]; centreFilter: string | null; services: { code: string; label: string }[]; providerName: string; defaults: Record<string, string> }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("collect");
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -18,7 +19,7 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
   const [tracking, setTracking] = useState<{ carrier: string; tracking: string } | null>(null);
   // Parcel details per order for the bench: format, weight, service. Defaults by value; editable per row.
   const [parcel, setParcel] = useState<Record<string, { format: PackageFormat; weight: string; service: string }>>({});
-  const parcelFor = (o: OnlineOrder) => parcel[o.sale_id] ?? { format: (o.package_format as PackageFormat) ?? "smallParcel", weight: o.weight_grams ? String(o.weight_grams) : "", service: o.service_code ?? defaultService(o.amount_pence) };
+  const parcelFor = (o: OnlineOrder) => { const d = deliveryOf(o.delivery); return parcel[o.sale_id] ?? { format: (o.package_format as PackageFormat) ?? (d.format === "courier" ? "mediumParcel" : d.format), weight: o.weight_grams ? String(o.weight_grams) : String(d.grams), service: o.service_code ?? defaults[o.sale_id] ?? services[0]?.code ?? "auto" }; };
   const setParcelField = (id: string, o: OnlineOrder, k: "format" | "weight" | "service", v: string) => setParcel((m) => ({ ...m, [id]: { ...parcelFor(o), [k]: v } }));
 
   async function buyAndPrint() {
@@ -85,7 +86,7 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
             <button className="btn-sm" disabled={busy} onClick={() => act("despatched", tracking)}>Despatched</button>
             <button className="text-ink-muted" onClick={() => setTracking(null)}>Cancel</button>
           </span>}
-          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought from Royal Mail through Click &amp; Drop and print with the despatch notes. Manifest once a day in Click &amp; Drop for the collection.</span>
+          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought through {providerName} and print with the despatch notes.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : " Shiptheory manifests Royal Mail and books courier collections."}</span>
         </>}
         {(tab === "done" || tab === "all") && <>
           <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}`} target="_blank">Reprint labels and notes</a>
@@ -104,7 +105,7 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
               <div key={o.sale_id} className={`grid gap-2 border-b border-border px-4 py-3 last:border-0 md:grid-cols-[auto_1.2fr_1fr_auto] md:items-center ${sel.has(o.sale_id) ? "bg-surface-2" : ""}`}>
                 <input type="checkbox" className="mt-1 h-5 w-5 md:mt-0" checked={sel.has(o.sale_id)} onChange={() => toggle(o.sale_id)} />
                 <div>
-                  <div className="flex flex-wrap items-center gap-2 text-[14px]"><span className={`pill ${TONE[o.status]}`}>{STATUS_LABEL[o.status]}</span><span className="font-medium">{o.title}</span><span className="num font-semibold">{money(o.amount_pence)}</span>{o.status === "new" && age > 2 && <span className="pill pill-danger">{age} days</span>}</div>
+                  <div className="flex flex-wrap items-center gap-2 text-[14px]"><span className={`pill ${TONE[o.status]}`}>{STATUS_LABEL[o.status]}</span><span className="font-medium">{o.title}</span><span className="num font-semibold">{money(o.amount_pence)}</span>{(o.delivery === "large" || o.delivery === "furniture") && <span className="pill pill-warning">{o.delivery === "furniture" ? "Furniture: collect or quote" : "Large: courier"}</span>}{o.status === "new" && age > 2 && <span className="pill pill-danger">{age} days</span>}</div>
                   <div className="mt-0.5 text-[12px] text-ink-muted">{o.ticket && <span className="ticket">{o.ticket}</span>}{o.ticket ? " · " : ""}{o.dealer}{o.dealer_code ? ` (${o.dealer_code})` : ""}{o.pitches.length ? ` · pitch ${o.pitches.join(", ")}` : ""} · sold {new Date(o.sold_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{o.order_name ? ` · ${o.order_name}` : ""}{o.slip_printed_at ? " · slip printed" : ""}</div>
                 </div>
                 <div className="text-[12px] text-ink-muted">
@@ -116,11 +117,12 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
                     <span className="flex flex-wrap items-center justify-end gap-1.5">
                       <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).format} onChange={(e) => setParcelField(o.sale_id, o, "format", e.target.value)}>{FORMATS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
                       <input className="field !h-8 !w-20 !px-2 !text-[12px]" inputMode="numeric" placeholder="grams" value={parcelFor(o).weight} onChange={(e) => setParcelField(o.sale_id, o, "weight", e.target.value.replace(/\D/g, ""))} />
-                      <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).service} onChange={(e) => setParcelField(o.sale_id, o, "service", e.target.value)}>{SERVICES.map((sv) => <option key={sv.code} value={sv.code}>{sv.label}</option>)}</select>
+                      <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).service} onChange={(e) => setParcelField(o.sale_id, o, "service", e.target.value)}>{services.map((sv) => <option key={sv.code} value={sv.code}>{sv.label}</option>)}</select>
                     </span>
                   )}
                   {o.status === "despatched" && <>{o.carrier ?? ""} {o.tracking ?? ""}{o.despatch_note_no ? ` · DN-${o.despatch_note_no}` : ""}<br />{o.despatched_at ? new Date(o.despatched_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}</>}
                   {o.status === "collected" && o.collected_at && <>Collected {new Date(o.collected_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</>}
+                  {o.fulfil_note === "Label pending from carrier" && <span className="text-warning">Label pending, press Reprint</span>}
                   {o.status === "missing" && <span className="text-danger">Centre told</span>}
                 </div>
               </div>

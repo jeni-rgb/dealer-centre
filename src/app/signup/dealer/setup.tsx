@@ -11,7 +11,8 @@ const STEPS = ["business", "card", "centre", "printers", "shopify", "summary"] a
 type Step = (typeof STEPS)[number];
 type HP = { idx: number; signup: boolean; step: Step; next: () => void };
 
-export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number }) {
+export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, plan }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string }) {
+  const preselected = plan === "starter" ? "25" : plan === "trade" ? "100" : plan === "pro" ? "150" : null;
   const router = useRouter();
   const [step, setStep] = useState<Step>((STEPS as readonly string[]).includes(initial) ? (initial as Step) : "business");
   const go = (s: Step) => { setStep(s); router.replace(`/signup/dealer?step=${s}`); };
@@ -23,14 +24,14 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
 
   return (
     <Phone>
-      {step === "business" && <Business email={email} hp={hp} onDone={() => (window.location.href = "/api/billing/checkout")} />}
+      {step === "business" && <Business email={email} hp={hp} onDone={next} />}
       {step === "card" && (
         <>
           <StepHeader {...hp} title="Card and 14 day trial" sub="Nothing is charged today. First payment in 14 days, email three days before." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
               {[["25", "Up to 25 sold a month", "£25"], ["100", "26 to 50 sold a month", "£100"], ["150", "Over 50 sold a month", "£150"]].map(([t, a, b]) => (
-                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}<span className="font-normal text-ink-muted"> /mo + VAT</span></span><span className="text-accent">Choose</span></span></a>
+                <a key={t} href={`/api/billing/checkout?tier=${t}`} className={`flex h-[56px] items-center justify-between px-4 text-[14px] ${preselected === t ? "bg-surface-2" : ""}`}><span>{a}{preselected === t ? <span className="ml-2 pill pill-accent">Your pick</span> : null}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}<span className="font-normal text-ink-muted"> /mo + VAT</span></span><span className="text-accent">Choose</span></span></a>
               ))}
             </div>
             <p className="text-[12px] text-ink-muted">Prices are plus VAT. Plans are by what you sell, not what you list. List as much stock as you like. Taken on the web by Stripe; change or cancel any time from Settings.</p>

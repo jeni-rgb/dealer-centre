@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
+import { deliveryOf } from "@/lib/items/delivery";
 import { listingPhotos, type ChannelAdapter, type ChannelRow, type IncomingLine, type ItemRow, type ListingRef } from "./types";
 
 const API_VERSION = process.env.SHOPIFY_API_VERSION ?? "2025-10";
@@ -55,7 +56,7 @@ export const shopifyAdapter: ChannelAdapter = {
     void listingId;
     if (existing?.external_id) {
       await gql(channel, `mutation($product: ProductUpdateInput!) { productUpdate(product: $product) { userErrors { message } } }`,
-        { product: { id: existing.external_id, title: item.title, descriptionHtml: item.description ?? "" } });
+        { product: { id: existing.external_id, title: item.title, descriptionHtml: deliveryNote(item) } });
       const d = await gql<{ product: { variants: { nodes: { id: string }[] } } | null }>(channel,
         `query($id: ID!) { product(id: $id) { variants(first: 1) { nodes { id } } } }`, { id: existing.external_id });
       const vid = d.product?.variants.nodes[0]?.id;
@@ -79,9 +80,9 @@ export const shopifyAdapter: ChannelAdapter = {
       {
         product: {
           title: item.title,
-          descriptionHtml: item.description ?? "",
+          descriptionHtml: deliveryNote(item),
           status: "ACTIVE",
-          tags: ["dealer-centre", `sku:${item.sku}`],
+          tags: ["dealer-centre", `sku:${item.sku}`, `delivery:${deliveryOf(item.delivery).id}`],
         },
         media: listingPhotos(item).slice(0, 10).map((p) => ({ originalSource: p.url, mediaContentType: "IMAGE", alt: item.title })),
       },
@@ -101,7 +102,7 @@ export const shopifyAdapter: ChannelAdapter = {
           {
             id: variant.id,
             price: (item.price_pence / 100).toFixed(2),
-            inventoryItem: { sku: item.sku, tracked: true },
+            inventoryItem: { sku: item.sku, tracked: true, measurement: { weight: { unit: "KILOGRAMS", value: deliveryOf(item.delivery).shopifyKg } } },
             inventoryPolicy: "DENY",
           },
         ],
@@ -229,4 +230,13 @@ export async function shopifyFulfil(channel: ChannelRow, orderGid: string, track
     `mutation($f: FulfillmentV2Input!) { fulfillmentCreateV2(fulfillment: $f) { userErrors { message } } }`,
     { f: { lineItemsByFulfillmentOrder: open.map((f) => ({ fulfillmentOrderId: f.id })), notifyCustomer: true, trackingInfo: tracking ? { number: tracking, company: carrier ?? undefined } : undefined } });
   return (r.fulfillmentCreateV2.userErrors ?? []).length === 0;
+}
+
+/** Product description plus a plain delivery line, so the buyer knows before checkout. */
+function deliveryNote(item: ItemRow) {
+  const d = deliveryOf(item.delivery);
+  const line = d.id === "furniture" ? "<p><strong>Delivery:</strong> collect from the centre, or we quote delivery after you order.</p>"
+    : d.id === "large" ? "<p><strong>Delivery:</strong> by courier, charge shown at checkout.</p>"
+    : "<p><strong>Delivery:</strong> Royal Mail tracked, charge shown at checkout.</p>";
+  return `${item.description ?? ""}${line}`;
 }

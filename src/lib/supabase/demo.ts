@@ -65,7 +65,7 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   items: items.map(([id, sku, title, price, cost, age, status, shop, centreShop]) => ({
     id, dealer_id: IDS.dealer, centre_id: IDS.centre, sku, alt_skus: [], title, description: null, price_pence: price, listed_price_pence: price, cost_pence: cost,
-    photos: [], status, listed_at: d(age), sold_at: status === "sold" ? d(age - (age > 20 ? 18 : 8)) : null, on_own_shopify: shop, on_centre_shopify: centreShop,
+    photos: [], delivery: price > 30000 ? "furniture" : price > 10000 ? "large" : price > 4000 ? "medium" : "small", status, listed_at: d(age), sold_at: status === "sold" ? d(age - (age > 20 ? 18 : 8)) : null, on_own_shopify: shop, on_centre_shopify: centreShop,
   })),
   item_listings: [
     { id: "l1", item_id: "i01", channel_id: IDS.ch_shopify, status: "live", external_id: "gid://shopify/Product/1", external_variant_id: "v1", last_error: null },

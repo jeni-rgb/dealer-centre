@@ -3,11 +3,14 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { Kpi, money } from "@/components/ui";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import { OrdersDesk } from "./desk";
+import { listServices, providerLabel, defaultService } from "@/lib/fulfilment/postage";
 
 /** Shop manager's desk: every online order across every centre, where it is, and what to do next, in bulk. */
 export default async function Orders({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
   const { centre } = await searchParams;
   const all = await listOnlineOrders(supabaseAdmin(), { centreId: centre || undefined });
+  const services = await listServices();
+  const defaults = Object.fromEntries(all.map((o) => [o.sale_id, defaultService(o.amount_pence, services)]));
   const centres = Array.from(new Map(all.map((o) => [o.centre_id, o.centre])).entries());
   const overdue = all.filter((o) => o.status === "new" && Date.now() - new Date(o.sold_at).getTime() > 2 * 86400000).length;
   const n = (s: string) => all.filter((o) => o.status === s).length;
@@ -16,7 +19,7 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
     <>
       <div className="mb-5">
         <h1 className="text-[24px] font-semibold">Online orders</h1>
-        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. At the unit: weigh, pick the service, buy postage. The paid Royal Mail label and the despatch note print together, the buyer is emailed the tracking, and the order is despatched. Manifest once a day in Click &amp; Drop for the collection.</p>
+        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. At the unit: weigh, pick the service, buy postage. The paid label and the despatch note print together, the buyer is emailed the tracking, and the order is despatched.</p>
       </div>
       <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
         <Kpi label="To collect" value={String(n("new"))} sub={overdue ? `${overdue} waiting over 2 days` : "Next run"} tone={overdue ? "warning" : undefined} />
@@ -31,7 +34,7 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
           {centres.map(([id, name]) => <Link key={id} href={`/admin/orders?centre=${id}`} className={`pill ${centre === id ? "pill-accent" : "pill-neutral"}`}>{name}</Link>)}
         </div>
       )}
-      <OrdersDesk orders={all} centreFilter={centre ?? null} />
+      <OrdersDesk orders={all} centreFilter={centre ?? null} services={services} providerName={providerLabel()} defaults={defaults} />
     </>
   );
 }

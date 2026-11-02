@@ -5,6 +5,7 @@ import { enqueue } from "@/lib/jobs/queue";
 export const CreateItemInput = z.object({
   title: z.string().min(2).max(120),
   description: z.string().max(2000).optional(),
+  delivery: z.enum(["small", "medium", "large", "furniture"]).default("small"),
   price_pence: z.number().int().min(0),
   centre_id: z.string().uuid().nullable().optional(),
   photos: z.array(z.object({ path: z.string(), url: z.string().optional(), role: z.enum(["reference", "listing"]).optional() })).default([]),
@@ -43,6 +44,7 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
       sku,
       title: input.title,
       description: input.description ?? null,
+      delivery: input.delivery,
       price_pence: input.price_pence,
       listed_price_pence: input.price_pence,
       cost_pence: input.cost_pence ?? null,

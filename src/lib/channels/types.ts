@@ -26,6 +26,7 @@ export type ItemRow = {
   status: "draft" | "live" | "sold" | "withdrawn";
   on_own_shopify: boolean;
   on_centre_shopify: boolean;
+  delivery?: "small" | "medium" | "large" | "furniture" | null;
 };
 
 export type ListingRef = { external_id: string; external_variant_id: string | null };

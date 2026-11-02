@@ -22,7 +22,8 @@ export async function renderDespatchNotes(orders: OnlineOrder[]): Promise<Uint8A
     const text = (s: string, x: number, size: number, font: PDFFont = sans, color = INK, right = false) => { const w = font.widthOfTextAtSize(s, size); page.drawText(s, { x: right ? x - w : x, y, size, font, color }); };
     const rule = (dy = 4) => page.drawLine({ start: { x: M, y: y - dy }, end: { x: W - M, y: y - dy }, thickness: 0.6, color: LINE });
     const kv = (k: string, v: string, x: number) => { page.drawText(k, { x, y, size: 7.5, font: bold, color: MUTED }); page.drawText(v, { x, y: y - 11, size: 9.5, font: sans, color: INK }); };
-    const service = SERVICES.find((s) => s.code === o.service_code)?.label ?? o.service_code ?? "";
+    const rm = SERVICES.find((s) => s.code === o.service_code)?.label;
+    const service = rm ? `Royal Mail ${rm}` : o.carrier ?? "";
     const format = FORMATS.find(([k]) => k === o.package_format)?.[1] ?? "";
 
     text("DESPATCH NOTE", M, 13, bold); text(o.despatch_note_no ? `DN-${o.despatch_note_no}` : "", W - M, 13, bold, INK, true);
@@ -36,7 +37,7 @@ export async function renderDespatchNotes(orders: OnlineOrder[]): Promise<Uint8A
     for (const l of [o.buyer ?? "", ...(o.address ?? "").split(", ")].filter(Boolean)) { text(l, M, 9.5); y -= 12; }
     const yAfterAddr = y;
     y = yTop;
-    for (const l of [service ? `Royal Mail ${service}` : "Not yet booked", o.tracking ? `Tracking ${o.tracking}` : "", format ? `${format}${o.weight_grams ? `, ${o.weight_grams} g` : ""}` : ""].filter(Boolean)) { text(l, M + 200, 9.5); y -= 12; }
+    for (const l of [service || "Not yet booked", o.tracking ? `Tracking ${o.tracking}` : "", format ? `${format}${o.weight_grams ? `, ${o.weight_grams} g` : ""}` : ""].filter(Boolean)) { text(l, M + 200, 9.5); y -= 12; }
     y = Math.min(y, yAfterAddr) - 8; rule(); y -= 16;
 
     text("SKU", M, 7.5, bold, MUTED); text("DESCRIPTION", M + 70, 7.5, bold, MUTED); text("QTY", M + 270, 7.5, bold, MUTED, true); text("UNIT", M + 320, 7.5, bold, MUTED, true); text("TOTAL", W - M, 7.5, bold, MUTED, true);

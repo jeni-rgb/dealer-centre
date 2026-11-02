@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   const { data: printer } = await db.from("printers").select("id").eq("owner_type", "centre").eq("owner_id", centre_id).eq("status", "ready").limit(1).maybeSingle();
 
-  const item = await createItem(db, dealer_id, { title, price_pence, centre_id, photos: [], on_own_shopify: false, on_centre_shopify: false, print_now: true, printer_id: printer?.id ?? null, source: "till" });
+  const item = await createItem(db, dealer_id, { title, price_pence, centre_id, photos: [], delivery: "small", on_own_shopify: false, on_centre_shopify: false, print_now: true, printer_id: printer?.id ?? null, source: "till" });
   if (ticket_no) await db.from("items").update({ alt_skus: [ticket_no.toUpperCase().replace(/[^A-Z0-9]/g, "")] }).eq("id", item.id);
   return NextResponse.json({ sku: item.sku, item_id: item.id, printed_to: printer?.id ?? null });
 }
