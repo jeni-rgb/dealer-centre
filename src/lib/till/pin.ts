@@ -8,6 +8,12 @@ export function hashPin(centreId: string, pin: string) {
   return `scrypt$${salt}$${h}`;
 }
 
+/** Store (or replace) a centre's PIN hash. Only ever called with the service role. */
+export async function setTillPin(db: Admin, centreId: string, pin: string) {
+  const { error } = await db.from("centre_till_pins").upsert({ centre_id: centreId, pin_hash: hashPin(centreId, pin), updated_at: new Date().toISOString() }, { onConflict: "centre_id" });
+  if (error) throw new Error(error.message);
+}
+
 export function newPin() {
   return String(crypto.randomInt(100000, 999999));
 }
@@ -33,11 +39,11 @@ const MAX_FAILURES = 10, LOCK_MINUTES = 15;
 export async function checkTillPin(db: Admin, centreId: string, pin: string, source = "unknown"): Promise<boolean | "locked"> {
   const { data: att } = await db.from("till_attempts").select("failures, locked_until").eq("centre_id", centreId).eq("source", source).maybeSingle();
   if (att?.locked_until && new Date(att.locked_until) > new Date()) return "locked";
-  const { data: centre } = await db.from("centres").select("till_pin_hash").eq("id", centreId).single();
-  const ok = !!centre?.till_pin_hash && verify(centreId, pin, centre.till_pin_hash);
+  const { data: row } = await db.from("centre_till_pins").select("pin_hash").eq("centre_id", centreId).maybeSingle();
+  const ok = !!row?.pin_hash && verify(centreId, pin, row.pin_hash);
   if (ok) {
     if (att) await db.from("till_attempts").delete().eq("centre_id", centreId).eq("source", source);
-    if (!centre!.till_pin_hash!.startsWith("scrypt$")) await db.from("centres").update({ till_pin_hash: hashPin(centreId, pin) }).eq("id", centreId);
+    if (!row!.pin_hash.startsWith("scrypt$")) await setTillPin(db, centreId, pin);
     return true;
   }
   const failures = (att?.failures ?? 0) + 1;

@@ -30,6 +30,7 @@ select expect_fail('select * from items', 'anon reads items');
 select expect_fail('select * from items_centre_view', 'anon reads items view');
 select expect_fail('select * from sales', 'anon reads sales');
 select expect_fail('select * from centres', 'anon reads centres');
+select expect_fail('select * from centre_till_pins', 'anon reads till pins');
 select expect_fail('select dealer_summary(''dddddddd-0000-0000-0000-00000000000a'')', 'anon calls dealer_summary');
 reset role;
 
@@ -38,6 +39,7 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', 'bbbbbbbb-0000-0000-0000-000000000002', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select expect_rows('select id from items where dealer_id = ''dddddddd-0000-0000-0000-00000000000a''', 0, 'B sees A items');
+select expect_fail('select * from centre_till_pins', 'session reads till pins');
 select expect_rows('select id from sales where dealer_id = ''dddddddd-0000-0000-0000-00000000000a''', 0, 'B sees A sales');
 select expect_rows('select id from dealers where id = ''dddddddd-0000-0000-0000-00000000000a''', 0, 'B sees dealer A');
 select expect_fail('select cost_pence from items', 'B selects cost_pence');

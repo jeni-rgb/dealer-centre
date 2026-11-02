@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { currentCentre } from "@/lib/centre";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Pill } from "@/components/ui";
+import { ResetPin } from "./pin";
 import { CentrePrinterForm, CentreTermsForm } from "./forms";
 
 export default async function CentreSettings({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
@@ -47,8 +48,9 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
       </Card>
 
       <Card title="Quick label screen, optional">
-        <p className="text-[14px] text-ink-muted">For dealers who do not use the app. Whoever is on the till opens <a className="font-medium text-accent" href={`/till?centre=${centre.id}`}>this page</a> on a phone or tablet, picks the dealer, types a price, and a barcode label prints or downloads. It is protected by a four digit PIN so only staff can use it.</p>
-        <p className="mt-3 text-[14px]">Your till PIN: <span className="ticket text-[20px]">{centre.till_pin_plain ?? "set in sign up"}</span></p>
+        <p className="text-[14px] text-ink-muted">For dealers who do not use the app. Whoever is on the till opens <a className="font-medium text-accent" href={`/till?centre=${centre.id}`}>this page</a> on a phone or tablet, picks the dealer, types a price, and a barcode label prints or downloads. It is protected by a six digit PIN so only staff can use it.</p>
+        <p className="mt-3 text-[14px] text-ink-muted">The till PIN was shown once when the centre was set up. Lost it? Reset it here and give the new one to whoever runs the till.</p>
+        <ResetPin centreId={centre.id} />
       </Card>
     </div>
   );

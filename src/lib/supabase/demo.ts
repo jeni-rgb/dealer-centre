@@ -48,7 +48,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, created_at: d(55) },
   ],
   centres: [
-    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", till_pin_plain: "4821", till_pin_hash: "49f4fac109d015150d1c755098642a70f2956ed629a3cdd7089a889bf658a9c2", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
+    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
@@ -89,6 +89,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "s29", item_id: null, dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "hist9", amount_pence: 14000, listed_price_pence: 14000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140315", sold_at: d(1, 18, 5), voided_at: null, corrected_at: null, original_amount_pence: null },
   ],
   till_attempts: [],
+  centre_till_pins: [{ centre_id: IDS.centre, pin_hash: "49f4fac109d015150d1c755098642a70f2956ed629a3cdd7089a889bf658a9c2" }],
   printers: [
     { id: IDS.printer_centre, owner_type: "centre", owner_id: IDS.centre, centre_id: IDS.centre, name: "Till printer", provider: "printnode", provider_id: "7391", status: "ready", source: "centre" },
     { id: IDS.printer_own, owner_type: "dealer", owner_id: IDS.dealer, centre_id: null, name: "Brother QL at home", provider: "browser", provider_id: null, status: "ready", source: "own" },

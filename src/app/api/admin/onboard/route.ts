@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { hashPin, newPin } from "@/lib/till/pin";
+import { setTillPin, newPin } from "@/lib/till/pin";
 import { getMe } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     : await db.from("centres").insert(fields).select("id, invite_code").single();
   if (cErr || !centre) return NextResponse.json({ error: cErr?.message ?? "centre failed" }, { status: 400 });
   const pin = newPin();
-  await db.from("centres").update({ till_pin_hash: hashPin(centre.id, pin), till_pin_plain: pin }).eq("id", centre.id);
+  await setTillPin(db, centre.id, pin);
   await db.from("centre_owners").upsert({ user_id: userId, centre_id: centre.id }, { onConflict: "user_id,centre_id", ignoreDuplicates: true });
 
   // Dealers with their existing ticket codes
