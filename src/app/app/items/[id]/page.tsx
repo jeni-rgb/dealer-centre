@@ -44,7 +44,7 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         )}
       </div>
 
-      <MarginCard pricePence={sale?.amount_pence ?? item.price_pence} costPence={item.cost_pence} commissionBps={sale?.channels?.type && ["shopify", "ebay"].includes(sale.channels.type) && sale.channels.owner_type === "centre" ? (centre?.online_commission_bps ?? 2000) : (centre?.commission_bps ?? 0)} sold={item.status === "sold"} />
+      <MarginCard pricePence={sale?.amount_pence ?? item.price_pence} costPence={item.cost_pence} commissionBps={sale?.channels?.type === "shopify" && sale.channels.owner_type === "centre" ? (centre?.online_commission_bps ?? 2000) : (centre?.commission_bps ?? 0)} sold={item.status === "sold"} />
 
       <div>
         <h3 className="mb-2 text-[15px] font-semibold">Channels</h3>

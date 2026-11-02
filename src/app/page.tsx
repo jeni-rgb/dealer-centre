@@ -1,23 +1,28 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Logo, Mark } from "@/components/logo";
 import { Phone, Browser } from "@/components/devices";
 
 export const metadata: Metadata = {
   title: "Dealer Centre: stock, labels and sales for antique dealers and centres",
-  description: "List an item once, print its label, and the ticket number runs the centre's till, your Shopify and the centre's online shop. A buzz on your phone when it sells. Statements that add themselves up. From £25 a month for dealers, £299 a month for centres.",
+  description: "List an item once, print its label, and the ticket number runs the centre's till, your Shopify and the centre's online shop. A buzz on your phone when it sells. Statements that add themselves up. From £25 a month + VAT for dealers, £299 a month + VAT for centres.",
   alternates: { canonical: "https://thedealercentre.co.uk" },
   openGraph: { title: "Dealer Centre", description: "List it once. Label it once. Sell it on the floor or online. Never sell it twice.", url: "https://thedealercentre.co.uk", siteName: "Dealer Centre", images: ["/screens/dealer-today.jpg"], locale: "en_GB", type: "website" },
 };
 
+/** Proof strip under the hero. Rendered only once these are filled in. */
+const PROOF: { liveAt: string; founder: string } | null = null;
+// const PROOF = { liveAt: "Live at [centre name], [town]", founder: "Built with my dad, a dealer for [N] years" };
+
 const dealerPlans = [
-  { name: "Starter", price: "£25", who: "Up to 25 items sold a month", forWho: "A pitch you top up at weekends", bits: ["Unlimited stock listed", "Ticket numbers and labels", "Centre till, End of day, notifications", "Your own Shopify", "Margin on every item", "Monthly statement with PDF"], not: ["Centre online shop and eBay", "More than one centre"] },
-  { name: "Trade", price: "£100", who: "Up to 50 items sold a month", forWho: "Full time at one centre", bits: ["Everything in Starter", "Centre online shop and eBay", "Priority support"], not: ["More than one centre"], featured: true },
-  { name: "Pro", price: "£150", who: "Over 100 items sold a month", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
+  { name: "Starter", price: "£25", who: "Up to 25 items sold a month", forWho: "A pitch you top up at weekends", bits: ["Unlimited stock listed", "Ticket numbers and labels", "Centre till, End of day, notifications", "Your own Shopify", "Margin on every item", "Monthly statement with PDF"], not: ["Centre online shop", "More than one centre"] },
+  { name: "Trade", price: "£100", who: "26 to 50 items sold a month", forWho: "Full time at one centre", bits: ["Everything in Starter", "Centre online shop", "Priority support"], not: ["More than one centre"], featured: true },
+  { name: "Pro", price: "£150", who: "Over 50 items sold a month", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
 ];
 
 const compare: [string, string, string, string][] = [
-  ["Items sold a month", "Up to 25", "Up to 50", "Unlimited"],
+  ["Items sold a month", "Up to 25", "26 to 50", "Over 50"],
   ["Stock you can list", "Unlimited", "Unlimited", "Unlimited"],
   ["Centres you sell at", "One", "One", "Any number"],
   ["Ticket numbers and labels", "✓", "✓", "✓"],
@@ -25,7 +30,7 @@ const compare: [string, string, string, string][] = [
   ["Your own Shopify", "✓", "✓", "✓"],
   ["Margin and haggle guide on every item", "✓", "✓", "✓"],
   ["Monthly statement with PDF", "✓", "✓", "✓"],
-  ["Centre online shop and eBay", "–", "✓", "✓"],
+  ["Centre online shop", "–", "✓", "✓"],
   ["Export for your accountant", "–", "–", "✓"],
   ["Support", "Email", "Priority email", "Priority email and phone"],
 ];
@@ -35,8 +40,11 @@ const faqs = [
   ["We have an ordinary till. Do we have to change it?", "When a centre subscribes, the Square Register comes with it and replaces the old till on day one, set up by us. Card payments move to Square at 1.75%. If your dealers are on the app before you subscribe, their sales can still be recorded at End of day in the meantime."],
   ["What happens to dealers who do not want the app?", "They carry on as they are. The centre gives them a line in the system with the code already on their tickets, and their sales still get recorded and still get a statement."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
-  ["What does the centre pay?", "£299 a month on a 12 month subscription, and the Square Register Retail Kit is included: till, cash drawer, receipt printer, scanner and label printer, set up on site and yours to keep after 12 months. Unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission."],
+  ["What does the centre pay?", "£299 a month + VAT either way. No Square till yet: a 12 month subscription with the Square Register Retail Kit included, set up on site and yours to keep after 12 months, no free trial. Already on Square: monthly, 14 days free, cancel any time. Both include unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission (15% to Dealer Centre, 5% to the centre)."],
   ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Centres that take the Register kit: 12 months, then monthly and the kit is yours. Centres already on Square: monthly, no commitment."],
+  ["Can I get my data out?", "Yes. Your stock list exports as a spreadsheet from Stock, every statement downloads as a PDF, and centres can export dealers and sales as CSV. If you leave, email hello@thedealercentre.co.uk and we send you everything."],
+  ["Who can see what I paid?", "Only you. Cost prices are never shown to the centre, to other dealers, or on any shop. The centre sees your stock, your sales and your statement, nothing more."],
+  ["Who is behind Dealer Centre?", "Dealer Centre Ltd, Hardwick House, Agricultural Hall Plain, Norwich NR1 3FS. Built in Norfolk with a family of antique dealers."],
 ];
 
 const amazonTag = process.env.NEXT_PUBLIC_AMAZON_TAG ?? "";
@@ -47,7 +55,8 @@ const kit = [
 ];
 
 const faqJsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
-const productJsonLd = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Dealer Centre", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android", description: "Stock, labels and sales for antique dealers and antiques centres.", offers: [{ "@type": "Offer", price: "25", priceCurrency: "GBP", name: "Starter" }, { "@type": "Offer", price: "100", priceCurrency: "GBP", name: "Trade" }, { "@type": "Offer", price: "150", priceCurrency: "GBP", name: "Pro" }, { "@type": "Offer", price: "299", priceCurrency: "GBP", name: "Centre" }] };
+const offer = (name: string, price: string) => ({ "@type": "Offer", name, price, priceCurrency: "GBP", priceSpecification: { "@type": "UnitPriceSpecification", price, priceCurrency: "GBP", valueAddedTaxIncluded: false, billingIncrement: 1, unitCode: "MON", referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" } } });
+const productJsonLd = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Dealer Centre", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android", description: "Stock, labels and sales for antique dealers and antiques centres.", provider: { "@type": "Organization", name: "Dealer Centre Ltd", address: { "@type": "PostalAddress", streetAddress: "Hardwick House, Agricultural Hall Plain", addressLocality: "Norwich", postalCode: "NR1 3FS", addressCountry: "GB" } }, offers: [offer("Starter", "25"), offer("Trade", "100"), offer("Pro", "150"), offer("Centre", "299")] };
 
 export default function Landing() {
   return (
@@ -59,8 +68,8 @@ export default function Landing() {
           <a href="#dealers">For dealers</a><a href="#centres">For centres</a><a href="#pricing">Pricing</a><a href="#kit">Kit</a><Link href="/guides/dealers">Guides</Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/signin" className="hidden text-[14px] font-medium md:inline">Sign in</Link>
-          <Link href="/signup" className="btn-sm">Get started</Link>
+          <Link href="/signin" className="text-[14px] font-medium">Sign in</Link>
+          <Link href="/signup" className="btn-sm">Start free</Link>
         </div>
       </header>
 
@@ -69,34 +78,42 @@ export default function Landing() {
         <Mark size={640} className="pointer-events-none absolute -right-40 -top-10 opacity-[0.05]" />
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_0.9fr]">
           <div className="relative">
-            <span className="text-[15px] font-semibold text-accent">For antique and vintage dealers who rent a pitch</span>
-            <h1 className="mt-5 text-[44px] leading-[1.0] tracking-[-0.03em] md:text-[66px]">List it once.<br />Label it once.<br />Never sell it twice.</h1>
-            <p className="mt-6 max-w-xl text-[19px] leading-8 text-ink-muted">One ticket number runs the centre&rsquo;s till, your Shopify and the centre&rsquo;s online shop. Your phone buzzes when it sells. Your statement adds itself up.</p>
+            <span className="text-[15px] font-semibold text-accent">For antique and vintage centres and their dealers</span>
+            <h1 className="mt-5 text-[40px] leading-[1.0] tracking-[-0.03em] md:text-[66px]">One ticket.<br />Sold once.<br />Everywhere.</h1>
+            <p className="mt-6 max-w-xl text-[19px] leading-8 text-ink-muted">Dealer Centre runs your antiques centre&rsquo;s till, labels, online shop and dealer statements from a single ticket number. Dealers list from their phone and hear the moment it sells.</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/signup?as=dealer" className="btn !w-auto !px-7">List my first item</Link>
-              <Link href="/signup?as=centre" className="btn-outline !w-auto !px-7">Set up my centre</Link>
+              <Link href="/signup?as=centre" className="btn !w-auto !px-7">I run a centre</Link>
+              <Link href="/signup?as=dealer" className="btn-outline !w-auto !px-7">I&rsquo;m a dealer</Link>
             </div>
-            <p className="mt-4 text-[13px] text-ink-muted">From £25 a month. No contract. Works today with an ordinary till.</p>
+            <p className="mt-4 text-[13px] text-ink-muted">Dealers from £25 a month + VAT. Centres £299 a month + VAT. 14 days free for dealers and centres already on Square.</p>
           </div>
-          <div className="relative mx-auto flex items-start justify-center">
-            <Phone src="/screens/dealer-today.jpg" alt="Today screen: sales this month, recent sales" className="w-[260px] -rotate-3 md:w-[300px]" />
-            <Phone src="/screens/dealer-item.jpg" alt="An item with its margin and channels" className="-ml-10 hidden w-[250px] translate-y-20 rotate-3 md:block" />
+          <div className="relative order-first mx-auto flex items-start justify-center md:order-none">
+            <Phone src="/screens/dealer-today.webp" alt="Today screen: sales this month, recent sales" className="w-[220px] -rotate-3 md:w-[300px]" priority />
+            <Phone src="/screens/dealer-item.webp" alt="An item with its margin and channels" className="-ml-10 hidden w-[250px] translate-y-20 rotate-3 md:block" />
           </div>
         </div>
+        {PROOF && (
+          <div className="mt-10 flex flex-wrap items-center gap-x-10 gap-y-2 border-t border-border pt-6 text-[14px] font-semibold text-ink-muted">
+            <span>{PROOF.liveAt}</span><span>{PROOF.founder}</span>
+          </div>
+        )}
       </section>
 
       {/* How it works */}
       <section className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="max-w-2xl text-[36px] leading-[1.08] md:text-[44px]">List it on your phone. It sells anywhere. You hear, and the statement writes itself.</h2>
+          <h2 className="max-w-2xl text-[36px] leading-[1.08] md:text-[44px]">List it. Sell it anywhere. It comes off everywhere else.</h2>
           <div className="mt-12 grid gap-10 md:grid-cols-3">
             {[
-              ["List it on your phone", "Photo, title, price. The app gives it a ticket number and prints the barcoded label at the centre.", "/screens/dealer-list.jpg"],
-              ["It sells, anywhere", "On the floor the till scans the ticket. Online it sells on your Shopify or the centre shop. The other places close instantly.", "/screens/dealer-sold.jpg"],
-              ["You hear, the statement writes itself", "A buzz on your phone with what sold and for how much. Commission, rent and payouts worked out at month end.", "/screens/dealer-statement.jpg"],
-            ].map(([t, b, img]) => (
+              ["List it on your phone", "Photo, title, price. The app gives it a ticket number and prints the barcoded label at the centre.", "/screens/dealer-list.webp"],
+              ["It sells, anywhere", "On the floor the till scans the ticket. Online it sells on your Shopify or the centre shop. The other places close instantly.", "/screens/dealer-sold.webp"],
+              ["You hear, the statement writes itself", "A buzz on your phone with what sold and for how much. Commission, rent and payouts worked out at month end.", "/screens/dealer-statement.webp"],
+            ].map(([t, b, img], i) => (
               <div key={t} className="flex flex-col items-start">
-                <Phone src={img} alt={t} className="w-[200px]" />
+                <div className="flex items-end gap-4">
+                  <Phone src={img} alt={t} className="w-[200px]" />
+                  {i === 1 && <SoldEverywhere />}
+                </div>
                 <h3 className="mt-6 text-[22px] font-bold leading-7">{t}</h3>
                 <p className="mt-2 text-[15px] leading-6 text-ink-muted">{b}</p>
               </div>
@@ -109,7 +126,7 @@ export default function Landing() {
       <section id="dealers" className="py-24">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 md:grid-cols-2">
           <div className="order-2 flex justify-center md:order-1">
-            <Phone src="/screens/dealer-item.jpg" alt="An item with its margin and channels" className="w-[280px] -rotate-2" />
+            <Phone src="/screens/dealer-item.webp" alt="An item with its margin and channels" className="w-[280px] -rotate-2" />
           </div>
           <div className="order-1 md:order-2">
             <h2 className="text-[36px] leading-[1.08] md:text-[44px]">Your stock, your margin, your statement. In your pocket.</h2>
@@ -132,16 +149,14 @@ export default function Landing() {
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
               <h2 className="text-[40px] leading-[1.02] text-cream md:text-[56px]">The till is included.</h2>
-              <p className="mt-5 text-[18px] leading-8 text-[#E6E0BD]">Sign up as a centre and the Square Register arrives: cash drawer, receipt printer, barcode scanner, and a Brother label printer every dealer can print to from their phone. We set it up on site with every dealer loaded. £299 a month, nothing else.</p>
-              <div className="mt-8 flex items-end gap-6">
-                <div><div className="hand text-[24px] text-[#E6E0BD]">on its own</div><div className="swipe figure text-[44px] leading-none text-[#E6E0BD]">£1,429</div></div>
-                <div><div className="hand text-[24px] text-gold">with Dealer Centre</div><div className="figure text-[64px] leading-none text-gold">£0</div></div>
-              </div>
-              <p className="hand mt-5 text-[22px] leading-6 text-[#E6E0BD]">12 month subscription at £299. That is it. No till to buy, no books to keep.</p>
+              <p className="mt-5 text-[18px] leading-8 text-[#E6E0BD]">Square Register Retail Kit included on the 12 month plan: Register, cash drawer, receipt printer, barcode scanner and a Brother label printer every dealer can print to from their phone. Set up on site with every dealer loaded. Yours to keep after 12 months.</p>
+              <p className="mt-4 text-[16px] leading-7 text-cream">Already on Square? Go monthly with 14 days free.</p>
+              <p className="hand mt-6 text-[26px] leading-7 text-gold">£299 a month + VAT. No till to buy, no books to keep.</p>
+              <p className="mt-4 text-[13px] text-[#E6E0BD]">Barcode label printing on Square needs Square&rsquo;s Retail Plus plan. Dealer Centre prints labels to the Brother from any phone without it.</p>
               <Link href="/signup?as=centre" className="btn-secondary mt-6 !w-auto !px-8">Set up my centre</Link>
             </div>
             <figure className="relative overflow-hidden rounded-[24px] bg-white p-6">
-              <img src="/kit/register-kit.jpg" alt="Square Register Retail Kit: Register with customer display, cash drawer, receipt printer, barcode scanner and label printer" className="w-full" />
+              <Image src="/kit/register-kit.jpg" alt="Square Register Retail Kit: Register with customer display, cash drawer, receipt printer, barcode scanner and label printer" width={439} height={191} sizes="(max-width: 768px) 100vw, 540px" className="h-auto w-full" />
               <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[13px] font-semibold text-ink">{["Square Register", "Cash drawer", "Receipt printer", "Barcode scanner", "Brother label printer", "Set up on site", "Yours after 12 months"].map((b) => <span key={b}>{b}</span>)}</figcaption>
             </figure>
           </div>
@@ -152,13 +167,13 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="max-w-3xl text-[36px] leading-[1.08] md:text-[44px]">Sixty dealers. Sixty statements. Two minutes a day.</h2>
           <div className="mt-12">
-            <Browser src="/screens/centre-dashboard.jpg" alt="Centre dashboard: month to date, dealers ranked, rent against sales" />
+            <Browser src="/screens/centre-dashboard.webp" alt="Centre dashboard: month to date, dealers ranked, rent against sales" />
           </div>
           <div className="mt-14 grid gap-10 md:grid-cols-3">
             {[
               ["Every sale recorded by the till", "Dealers on the app: scan the barcode. Dealers not on the app: tap their name, type the price. Cash or card, the Register does the rest. Nothing written in a book, ever."],
               ["Dealers and statements", "Unlimited dealers, on the app or not. Statements worked out: sales, commission, rent, net. Payouts listed, PDF per dealer. Dealers ranked: sales against rent, who has gone quiet."],
-              ["Your online shop, run for you", "Your own Shopify and eBay, stocked by your dealers. We list, answer customers, pick, pack and post. No monthly cost: 20% commission on what sells. Items come off the floor the moment they sell online."],
+              ["Your online shop, run for you", "Your own online shop, stocked by your dealers. We list, answer customers, pick, pack and post. No monthly cost: 20% commission on what sells online (15% Dealer Centre, 5% to your centre). Items come off the floor the moment they sell online."],
             ].map(([t, b]) => <div key={t}><h3 className="text-[20px] font-bold leading-7">{t}</h3><p className="mt-2 text-[15px] leading-6 text-ink-muted">{b}</p></div>)}
           </div>
         </div>
@@ -183,9 +198,11 @@ export default function Landing() {
           </div>
           <div>
             <div className="grid grid-cols-3 gap-3">
-              {[["£299", "a month, till included"], ["£5", "per dealer, at 60"], ["0 min", "a day on the books"]].map(([n, l]) => <div key={l} className="rounded-[16px] bg-white/10 px-4 py-5"><div className="figure text-[32px]">{n}</div><div className="mt-1 text-[12px] font-semibold text-[#C9DCCF]">{l}</div></div>)}
+              {[["£299", "+ VAT a month"], ["Unlimited", "dealers"], ["Month end", "statements done"]].map(([n, l]) => <div key={l} className="rounded-[16px] bg-white/10 px-4 py-5"><div className="figure text-[28px]">{n}</div><div className="mt-1 text-[12px] font-semibold text-[#C9DCCF]">{l}</div></div>)}
             </div>
-            <p className="mt-6 text-[16px] leading-7 text-[#DCE8DD]">A centre taking £20,000 a week spends more than £299 a month on the person who adds up the books. The online shop, run for you, is where most centres find it pays for itself in the first month.</p>
+            {/* [PLACEHOLDER] a real line about what a centre spends on the books today, from Jeni:
+            <p className="mt-6 text-[16px] leading-7 text-[#DCE8DD]">...</p> */}
+            <p className="mt-6 text-[16px] leading-7 text-[#DCE8DD]">The till records every sale, the statements add themselves up at month end, and the online shop is run for you. One price, and the kit is included.</p>
             <Link href="/guides/centres" className="mt-6 inline-block text-[15px] font-bold text-white underline decoration-gold underline-offset-4">Read the centre guide</Link>
           </div>
         </div>
@@ -195,13 +212,13 @@ export default function Landing() {
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-[36px] leading-[1.08] md:text-[44px]">Dealers pay by what they sell. Centres pay one price, till included.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">List as much stock as you like. 14 days free on every plan, card at sign up, nothing charged until day 14, cancel any time.</p>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">14 days free on every plan, card at sign up, nothing charged until day 14, cancel any time. List as much stock as you like. All prices + VAT.</p>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {dealerPlans.map((p) => (
               <div key={p.name} className={`card relative flex flex-col p-7 ${p.featured ? "border-accent ring-1 ring-accent" : ""}`}>
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Most dealers</span>}
                 <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
-                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">/month</span></div>
+                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">/month + VAT</span></div>
                 <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
                 <div className="text-[13px] text-ink-muted">{p.forWho}</div>
                 <ul className="mt-5 flex flex-col gap-2 text-[14px] font-medium">{p.bits.map((b) => <li key={b} className="border-b border-border pb-2 last:border-0">{b}</li>)}</ul>
@@ -214,7 +231,7 @@ export default function Landing() {
             <div className="border-b border-border px-6 py-4"><h4 className="text-[16px] font-semibold">What is in each plan</h4><p className="text-[13px] text-ink-muted">The only things that change between plans are how much you sell, where, and whether you use the centre&rsquo;s online shop.</p></div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-[14px]">
-                <thead><tr className="border-b border-border text-left text-[13px] font-bold text-ink-muted"><th className="px-6 py-3 font-semibold">&nbsp;</th><th className="py-3 font-semibold">Starter £25</th><th className="py-3 font-semibold text-accent">Trade £100</th><th className="py-3 font-semibold">Pro £150</th></tr></thead>
+                <thead><tr className="border-b border-border text-left text-[13px] font-bold text-ink-muted"><th className="px-6 py-3 font-semibold">&nbsp;</th><th className="py-3 font-semibold">Starter £25 + VAT</th><th className="py-3 font-semibold text-accent">Trade £100 + VAT</th><th className="py-3 font-semibold">Pro £150 + VAT</th></tr></thead>
                 <tbody>{compare.map(([k, a, b, c]) => <tr key={k} className="border-b border-border last:border-0"><td className="px-6 py-3 font-semibold">{k}</td>{[a, b, c].map((v, i) => <td key={i} className={`py-3 ${v === "✓" ? "font-bold text-forest" : v === "–" ? "text-ink-muted" : "font-medium"}`}>{v === "✓" ? "Included" : v === "–" ? "Not included" : v}</td>)}</tr>)}</tbody>
               </table>
             </div>
@@ -222,12 +239,12 @@ export default function Landing() {
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
-              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month</span></div>
+              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month + VAT</span></div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[12px] bg-white/10 p-3"><div className="text-[14px] font-semibold">Need a till</div><div className="text-[13px] text-[#DCE8DD]">12 months. Square Register Retail Kit included, set up on site, yours after that.</div></div>
+                <div className="rounded-[12px] bg-white/10 p-3"><div className="text-[14px] font-semibold">Need a till</div><div className="text-[13px] text-[#DCE8DD]">12 months. Square Register Retail Kit included, set up on site, yours after that. No free trial on the kit plan.</div></div>
                 <div className="rounded-[12px] bg-white/10 p-3"><div className="text-[14px] font-semibold">Already on Square</div><div className="text-[13px] text-[#DCE8DD]">Monthly, 14 days free, cancel any time. We connect it and load your dealers.</div></div>
               </div>
-              <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both: unlimited dealers, statements and payouts worked out, and your own online shop run for you at 20% commission.</p>
+              <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both: unlimited dealers, statements and payouts worked out, and your own online shop run for you at 20% commission (15% Dealer Centre, 5% to your centre).</p>
             </div>
             <Link href="/signup?as=centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
           </div>
@@ -260,7 +277,7 @@ export default function Landing() {
       {/* FAQ */}
       <section className="py-24">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-[36px] leading-[1.08] md:text-[44px]">Questions dealers ask</h2>
+          <h2 className="text-[36px] leading-[1.08] md:text-[44px]">Questions dealers and centres ask</h2>
           <div className="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
             {faqs.map(([q, a]) => <div key={q}><h3 className="text-[17px] font-bold leading-6">{q}</h3><p className="mt-2 text-[15px] leading-6 text-ink-muted">{a}</p></div>)}
           </div>
@@ -271,18 +288,36 @@ export default function Landing() {
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="relative overflow-hidden rounded-[24px] bg-accent px-8 py-14 text-center text-cream">
           <Mark size={320} color="#FFFFFF" className="pointer-events-none absolute -right-16 -bottom-24 opacity-10" />
-          <h2 className="relative text-[36px] text-cream md:text-[44px]">Your first item takes a minute</h2>
-          <p className="relative mx-auto mt-3 max-w-lg text-[16px] text-header-muted">Sign in with your email, name your business, list something. The label prints at the centre the moment you press List.</p>
-          <div className="relative mt-7 flex flex-wrap justify-center gap-3"><Link href="/signup?as=dealer" className="btn-secondary !w-auto !px-7">List my first item</Link><Link href="/guides/dealers" className="btn-outline !w-auto !border-white/30 !bg-transparent !px-7 !text-cream">Read the guide</Link></div>
+          <h2 className="relative text-[36px] text-cream md:text-[44px]">Start with one item, or one centre.</h2>
+          <p className="relative mx-auto mt-3 max-w-lg text-[16px] text-header-muted">Sign in with your email and you are listing, or setting up your centre, in a minute.</p>
+          <div className="relative mt-7 flex flex-wrap justify-center gap-3"><Link href="/signup?as=centre" className="btn-secondary !w-auto !px-7">I run a centre</Link><Link href="/signup?as=dealer" className="btn-outline !w-auto !border-white/30 !bg-transparent !px-7 !text-cream">I&rsquo;m a dealer</Link></div>
         </div>
       </section>
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-10 text-[13px] text-ink-muted md:flex-row md:items-center">
-          <div className="flex flex-col gap-2"><Logo size={26} /><span>Dealer Centre Ltd, Norwich. hello@thedealercentre.co.uk</span></div>
-          <nav className="flex flex-wrap gap-5"><Link href="/guides/dealers">Dealer guide</Link><Link href="/guides/centres">Centre guide</Link><a href="#pricing">Pricing</a><Link href="/signin">Sign in</Link></nav>
+          <div className="flex flex-col gap-2"><Logo size={26} /><span>Dealer Centre Ltd, Hardwick House, Agricultural Hall Plain, Norwich NR1 3FS. hello@thedealercentre.co.uk</span><span>All prices shown are plus VAT.</span></div>
+          <nav className="flex flex-wrap gap-5"><Link href="/guides/dealers">Dealer guide</Link><Link href="/guides/centres">Centre guide</Link><a href="#pricing">Pricing</a><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/signin">Sign in</Link></nav>
         </div>
       </footer>
     </main>
+  );
+}
+
+/** Two frames: the item sells on the floor, and the online listing greys out. */
+function SoldEverywhere() {
+  return (
+    <div className="hidden w-[160px] flex-col gap-2 pb-6 sm:flex" aria-hidden="true">
+      <div className="rounded-[12px] border border-border bg-surface p-3 text-[11px]">
+        <div className="flex items-center justify-between"><span className="font-semibold">TD00042</span><span className="whitespace-nowrap rounded-full bg-forest px-2 py-0.5 text-[9px] font-bold text-white">Sold on the floor</span></div>
+        <div className="mt-1 text-ink-muted">Georgian sugar tongs</div>
+        <div className="font-semibold">£65</div>
+      </div>
+      <div className="rounded-[12px] border border-dashed border-border bg-surface-2 p-3 text-[11px] text-ink-muted opacity-60">
+        <div className="flex items-center justify-between"><span className="font-semibold">Online shop</span><span className="text-[10px] font-bold">Closed</span></div>
+        <div className="mt-1 line-through">Georgian sugar tongs</div>
+        <div className="line-through">£65</div>
+      </div>
+    </div>
   );
 }

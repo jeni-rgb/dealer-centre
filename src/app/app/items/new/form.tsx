@@ -5,10 +5,10 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { displaySku } from "@/lib/sku";
 import { Icon, Phone, Pill, TicketCard, Toggle, ToggleGroup } from "@/components/ui";
 
-type Centre = { id: string; name: string; hasShop: boolean; hasEbay: boolean };
+type Centre = { id: string; name: string; hasShop: boolean };
 type Props = {
   dealerCode: string; nextNumber: number; centres: Centre[]; hasOwnShopify: boolean;
-  defaults: { own: boolean; shop: boolean; ebay: boolean }; printers: { id: string; name: string }[]; starter?: boolean;
+  defaults: { own: boolean; shop: boolean }; printers: { id: string; name: string }[]; starter?: boolean;
 };
 
 export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers, starter = false }: Props) {
@@ -19,7 +19,6 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [centre, setCentre] = useState(centres[0]?.id ?? "");
   const [own, setOwn] = useState(hasOwnShopify && defaults.own);
   const [shop, setShop] = useState(defaults.shop && !starter);
-  const [ebay, setEbay] = useState(defaults.ebay && !starter);
   const [label, setLabel] = useState(printers.length > 0);
   const [printer, setPrinter] = useState(printers[0]?.id ?? "");
   const [files, setFiles] = useState<File[]>([]);
@@ -51,7 +50,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: title.trim(), price_pence: pence, cost_pence: cost ? Math.round(parseFloat(cost) * 100) : null,
-          centre_id: centre || null, photos, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop, on_centre_ebay: ebay && !!c?.hasEbay,
+          centre_id: centre || null, photos, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop,
           print_now: label && !!printer, printer_id: printer || null,
         }),
       });
@@ -78,7 +77,6 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             {c && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Floor, {c.name}</span><Pill kind="success">On the till</Pill></div>}
             <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Your Shopify</span>{status(own)}</div>
             {c?.hasShop && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">{c.name} online shop</span>{status(shop)}</div>}
-            {c?.hasEbay && <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">{c.name} eBay store</span>{status(ebay)}</div>}
             <div className="flex h-[52px] items-center justify-between px-4"><span className="text-[15px] font-medium">Label</span>{label && printer ? <Pill kind="accent">Printing</Pill> : <Pill kind="neutral">Not printed</Pill>}</div>
           </div>
           <div className="mt-auto flex flex-col gap-2.5">
@@ -105,10 +103,10 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             {files.length > 0 ? <span>Reference photo ready</span> : <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Quick snap for your records</>}
             <span className="text-[12px] font-normal text-ink-muted">Only you see this one</span>
           </label>
-          {(own || shop || ebay) && (
+          {(own || shop) && (
             <label className="flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-border bg-white px-4 py-3 text-[14px]">
               <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setShopFiles(Array.from(e.target.files ?? []))} />
-              <span className="flex flex-col"><span className="font-medium">Photos for online</span><span className="text-[12px] text-ink-muted">{shopFiles.length > 0 ? `${shopFiles.length} chosen, first one is the cover` : "Up to 10. These go to Shopify, the centre shop and eBay."}</span></span>
+              <span className="flex flex-col"><span className="font-medium">Photos for online</span><span className="text-[12px] text-ink-muted">{shopFiles.length > 0 ? `${shopFiles.length} chosen, first one is the cover` : "Up to 10. These go to your Shopify and the centre shop."}</span></span>
               <span className="pill pill-accent">{shopFiles.length > 0 ? "Change" : "Add"}</span>
             </label>
           )}
@@ -150,7 +148,6 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             <ToggleGroup>
               <Toggle on={own} onChange={setOwn} label="Your Shopify" hint={hasOwnShopify ? "Photo and price go to your own shop" : "Connect Shopify in Settings first"} disabled={!hasOwnShopify} />
               {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasShop ? "The centre's Shopify store, they ship it. 20% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop || starter} />}
-              {c && <Toggle on={ebay} onChange={setEbay} label={`${c.name} eBay store`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasEbay ? "Buy it now at your price, centre handles postage" : "Centre has not connected eBay yet"} disabled={!c.hasEbay || starter} />}
             </ToggleGroup>
           </div>
 

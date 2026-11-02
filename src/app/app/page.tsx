@@ -64,7 +64,7 @@ export default async function Today() {
 
         <NotificationsCard vapidPublicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
         {dealer && dealer.monthly_sold_limit < 100000 && (s.items_sold_month ?? 0) >= dealer.monthly_sold_limit && (
-          <Link href="/api/billing/portal" className="card flex items-center justify-between border-accent p-4 text-[14px]"><span><span className="block font-medium">Good month: {s.items_sold_month} sold</span><span className="text-[12px] text-ink-muted">That is past the {dealer.monthly_sold_limit} on your plan. Nothing stops, but please move up a tier.</span></span><span className="text-[13px] font-medium text-accent">Upgrade</span></Link>
+          <Link href="/api/billing/portal" className="card flex items-center justify-between border-accent p-4 text-[14px]"><span><span className="block font-medium">Good month: {s.items_sold_month} sold</span><span className="text-[12px] text-ink-muted">That is the {dealer.monthly_sold_limit} on your plan. Nothing stops, but please move up a tier before the next one.</span></span><span className="text-[13px] font-medium text-accent">Upgrade</span></Link>
         )}
         {dealer?.plan === "trial" && dealer.trial_ends_at && (
           <p className="text-[12px] text-ink-muted">Trial ends {new Date(dealer.trial_ends_at).toLocaleDateString("en-GB")}. <Link className="text-accent" href="/api/billing/portal">Manage plan</Link></p>

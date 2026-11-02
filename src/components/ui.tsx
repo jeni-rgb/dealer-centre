@@ -25,7 +25,6 @@ export function Pill({ kind, children, className = "" }: { kind: "neutral" | "ac
 
 export function ChannelLabel({ type, ownerType }: { type: string | null | undefined; ownerType?: string | null }) {
   if (type === "shopify") return <>{ownerType === "centre" ? "Centre shop" : "Shopify"}</>;
-  if (type === "ebay") return <>eBay</>;
   return <>Floor</>;
 }
 

@@ -11,7 +11,6 @@ export const CreateItemInput = z.object({
   cost_pence: z.number().int().min(0).nullable().optional(),
   on_own_shopify: z.boolean().default(true),
   on_centre_shopify: z.boolean().default(false),
-  on_centre_ebay: z.boolean().default(false),
   print_now: z.boolean().default(true),
   printer_id: z.string().uuid().nullable().optional(),
   source: z.enum(["app", "till"]).default("app"),
@@ -28,8 +27,8 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   // Plans are by items sold a month, not items listed. Listing is never blocked; the Today screen
   // nudges an upgrade when a dealer has sold past their tier this month. Only a lapsed plan stops listing.
   const { data: dealer } = await db.from("dealers").select("plan, monthly_sold_limit").eq("id", dealerId).single();
-  // Centre shop and eBay are Trade and above
-  if (dealer && (dealer.monthly_sold_limit ?? 25) <= 25) { input.on_centre_shopify = false; input.on_centre_ebay = false; }
+  // The centre online shop is Trade and above
+  if (dealer && (dealer.monthly_sold_limit ?? 25) <= 25) input.on_centre_shopify = false;
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }
@@ -52,7 +51,6 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
       price_source: input.source,
       on_own_shopify: input.on_own_shopify,
       on_centre_shopify: input.on_centre_shopify,
-      on_centre_ebay: input.on_centre_ebay,
     })
     .select("*")
     .single();
@@ -66,7 +64,6 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
     for (const c of data ?? []) {
       if (c.type === "square") targets.push(c.id);
       if (c.type === "shopify" && input.on_centre_shopify) targets.push(c.id);
-      if (c.type === "ebay" && input.on_centre_ebay) targets.push(c.id);
     }
   }
   const { data: own } = await db.from("channels").select("id, type").eq("owner_type", "dealer").eq("owner_id", dealerId).eq("status", "active");

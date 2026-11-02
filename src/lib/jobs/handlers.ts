@@ -2,13 +2,12 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow, ItemRow } from "@/lib/channels/types";
 import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
-import { ebayAdapter } from "@/lib/channels/ebay";
 import { renderLabelPdf } from "@/lib/labels/render";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
 
-const adapters = { square: squareAdapter, shopify: shopifyAdapter, ebay: ebayAdapter } as const;
+const adapters = { square: squareAdapter, shopify: shopifyAdapter } as const;
 const adapterFor = (t: string) => adapters[t as keyof typeof adapters];
 
 async function getChannel(db: Admin, id: string) {
@@ -125,13 +124,12 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
 
   async backfill_channel(db, p) {
     const channel = await getChannel(db, p.channel_id as string);
-    let q = db.from("items").select("id, on_own_shopify, on_centre_shopify, on_centre_ebay").eq("status", "live");
+    let q = db.from("items").select("id, on_own_shopify, on_centre_shopify").eq("status", "live");
     q = channel.owner_type === "dealer" ? q.eq("dealer_id", channel.owner_id) : q.eq("centre_id", channel.owner_id);
     const { data: items } = await q;
     for (const it of items ?? []) {
       if (channel.owner_type === "dealer" && channel.type === "shopify" && !it.on_own_shopify) continue;
       if (channel.owner_type === "centre" && channel.type === "shopify" && !it.on_centre_shopify) continue;
-      if (channel.owner_type === "centre" && channel.type === "ebay" && !it.on_centre_ebay) continue;
       const { data: l } = await db
         .from("item_listings")
         .upsert({ item_id: it.id, channel_id: channel.id }, { onConflict: "item_id,channel_id", ignoreDuplicates: true })

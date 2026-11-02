@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
 
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
-type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; default_own_shopify: boolean; default_centre_shopify: boolean; default_centre_ebay: boolean };
+type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; default_own_shopify: boolean; default_centre_shopify: boolean };
 
 export function SettingsView({ email, dealer, shopify, square, centres, printers }: {
   email: string; dealer: Dealer; shopify: Channel; square: Channel;
@@ -17,11 +17,11 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
   const [shop, setShop] = useState("");
   const [printerName, setPrinterName] = useState("");
   const [printerModel, setPrinterModel] = useState<string>(PRINTER_MODELS[0].id);
-  const [d, setD] = useState({ own: dealer.default_own_shopify, shop: dealer.default_centre_shopify, ebay: dealer.default_centre_ebay });
+  const [d, setD] = useState({ own: dealer.default_own_shopify, shop: dealer.default_centre_shopify });
 
   async function saveDefaults(next: typeof d) {
     setD(next);
-    await fetch("/api/dealers/me", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ default_own_shopify: next.own, default_centre_shopify: next.shop, default_centre_ebay: next.ebay }) });
+    await fetch("/api/dealers/me", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ default_own_shopify: next.own, default_centre_shopify: next.shop }) });
   }
   async function addPrinter(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +34,7 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
       <Section title="Account">
         <div className="card divide-y divide-border">
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{dealer.name}</span><span className="text-[12px] text-ink-muted">{email}</span></span><span className="ticket text-[16px]">{dealer.code}</span></div>
-          <Link href="/api/billing/portal" className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealer.plan === "trial" ? `Trial, ends ${dealer.trial_ends_at ? new Date(dealer.trial_ends_at).toLocaleDateString("en-GB") : ""}` : dealer.plan} · {dealer.monthly_sold_limit >= 100000 ? "over 100" : `up to ${dealer.monthly_sold_limit}`} items sold a month</span></span><span className="text-[13px] font-medium text-accent">Manage online</span></Link>
+          <Link href="/api/billing/portal" className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealer.plan === "trial" ? `Trial, ends ${dealer.trial_ends_at ? new Date(dealer.trial_ends_at).toLocaleDateString("en-GB") : ""}` : dealer.plan} · {dealer.monthly_sold_limit >= 100000 ? "over 50" : dealer.monthly_sold_limit > 25 ? "26 to 50" : `up to ${dealer.monthly_sold_limit}`} items sold a month</span></span><span className="text-[13px] font-medium text-accent">Manage online</span></Link>
         </div>
       </Section>
 
@@ -54,7 +54,6 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
         <ToggleGroup>
           <Toggle on={d.own} onChange={(v) => saveDefaults({ ...d, own: v })} label="Your Shopify" disabled={!shopify} />
           <Toggle on={d.shop} onChange={(v) => saveDefaults({ ...d, shop: v })} label="Centre online shop" hint="20% commission, centre ships it" />
-          <Toggle on={d.ebay} onChange={(v) => saveDefaults({ ...d, ebay: v })} label="Centre eBay store" hint="Buy it now at your price" />
         </ToggleGroup>
       </Section>
 

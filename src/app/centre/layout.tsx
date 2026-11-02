@@ -10,7 +10,7 @@ export default async function CentreLayout({ children }: { children: React.React
   const { data: owned } = await sb.from("centre_owners").select("centre_id, centres(name, plan, stripe_customer_id)").eq("user_id", me.id);
   if (!owned?.length && !me.is_platform_admin) redirect("/signup/centre");
   const c = owned?.[0]?.centres as unknown as { name: string; plan: string; stripe_customer_id: string | null } | undefined;
-  const banner = c && !c.stripe_customer_id ? { text: "Subscribe to get your Square Register and set up day booked. £299 a month, 12 months.", cta: "Add card", href: `/api/billing/centre-checkout?centre=${owned?.[0]?.centre_id}` }
+  const banner = c && !c.stripe_customer_id ? { text: "Subscribe to get your Square Register and set up day booked. £299 a month + VAT, 12 months.", cta: "Add card", href: `/api/billing/centre-checkout?centre=${owned?.[0]?.centre_id}` }
     : c && (c.plan === "lapsed" || c.plan === "cancelled") ? { text: "Your centre subscription has lapsed. Update your card to keep End of day and statements running.", cta: "Update card", href: "/api/billing/portal?centre=1" } : null;
   return (
     <div className="min-h-screen bg-surface">

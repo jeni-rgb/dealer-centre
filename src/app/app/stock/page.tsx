@@ -31,7 +31,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
     return {
       id: i.id, sku: i.sku, title: i.title, price_pence: i.price_pence, listed_price_pence: i.listed_price_pence,
       listed_at: i.listed_at, sold_at: i.sold_at, status: i.status,
-      floor: !!i.centre_id, ownShopify: live("shopify", "dealer"), centreShop: live("shopify", "centre"), ebay: live("ebay"),
+      floor: !!i.centre_id, ownShopify: live("shopify", "dealer"), centreShop: live("shopify", "centre"),
       noLabel: !pj || pj.status === "not_printed",
       photo: (i.photos as { url?: string }[])[0]?.url ?? null,
       sold_amount: sale?.amount_pence ?? null, sold_channel: sale?.channels ?? null,

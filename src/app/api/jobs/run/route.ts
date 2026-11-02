@@ -6,7 +6,8 @@ import { handlers } from "@/lib/jobs/handlers";
 
 /** Worker. Called every minute by Vercel cron or Supabase cron with the JOBS_SECRET. */
 export async function POST(req: Request) {
-  if (!process.env.JOBS_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.JOBS_SECRET}`) return new NextResponse("no", { status: 401 });
+  const auth = req.headers.get("authorization");
+  if (!process.env.JOBS_SECRET || (auth !== `Bearer ${process.env.JOBS_SECRET}` && auth !== `Bearer ${process.env.CRON_SECRET}`)) return new NextResponse("no", { status: 401 });
   const db = supabaseAdmin();
   const jobs = await claimJobs(db);
   const results: Record<string, number> = { done: 0, failed: 0 };

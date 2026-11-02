@@ -3,7 +3,7 @@ import { useState } from "react";
 import { PRINTER_MODELS } from "@/lib/labels/models";
 import { useRouter } from "next/navigation";
 
-export function CentreTermsForm({ centreId, initial }: { centreId: string; initial: { commission: number; online: number; share: number; handling: number; rent_day: number; statement_day: number } }) {
+export function CentreTermsForm({ centreId, initial }: { centreId: string; initial: { commission: number; online: number; share: number; rent_day: number; statement_day: number } }) {
   const router = useRouter();
   const [f, setF] = useState(initial);
   const [saved, setSaved] = useState(false);
@@ -16,9 +16,7 @@ export function CentreTermsForm({ centreId, initial }: { centreId: string; initi
   return (
     <form onSubmit={save} className="flex flex-wrap items-end gap-4">
       <Field value={f.commission} onChange={set("commission")} label="Floor commission" suffix="%" />
-      <Field value={f.online} onChange={set("online")} label="Online commission" suffix="%" />
-      <Field value={f.share} onChange={set("share")} label="Your share of online" suffix="%" />
-      <Field value={f.handling} onChange={set("handling")} label="Handling fee, buyer pays" suffix="£" />
+      <div className="flex flex-col gap-1 text-[13px]"><span className="text-ink-muted">Online commission</span><span className="font-medium">{f.online}% ({f.online - f.share}% Dealer Centre, {f.share}% your centre)</span></div>
       <Field value={f.rent_day} onChange={set("rent_day")} label="Rent day (1 to 28, or 1 = Monday, 5 = Friday for weekly)" suffix="" />
       <Field value={f.statement_day} onChange={set("statement_day")} label="Statement day" suffix="" />
       <button className="btn-sm">{saved ? "Saved" : "Save"}</button>

@@ -4,8 +4,7 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 
 const Input = z.object({
-  commission: z.number().min(0).max(50), online: z.number().min(0).max(50), share: z.number().min(0).max(20),
-  handling: z.number().min(0).max(20), rent_day: z.number().int().min(1).max(28), statement_day: z.number().int().min(1).max(28),
+  commission: z.number().min(0).max(50), rent_day: z.number().int().min(1).max(28), statement_day: z.number().int().min(1).max(28),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ centreId: string }> }) {
@@ -18,8 +17,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ centre
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   await supabaseAdmin().from("centres").update({
-    commission_bps: Math.round(p.data.commission * 100), online_commission_bps: Math.round(p.data.online * 100), centre_online_share_bps: Math.round(p.data.share * 100),
-    handling_fee_pence: Math.round(p.data.handling * 100), rent_day: p.data.rent_day, statement_day: p.data.statement_day,
+    // Online commission is fixed at 20% (15% Dealer Centre, 5% the centre) and is not editable here.
+    commission_bps: Math.round(p.data.commission * 100), rent_day: p.data.rent_day, statement_day: p.data.statement_day,
   }).eq("id", centreId);
   return NextResponse.json({ ok: true });
 }

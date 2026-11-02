@@ -8,7 +8,8 @@ import { cookies } from "next/headers";
 const d = (daysAgo: number, h = 11, m = 20) => { const x = new Date(); x.setDate(x.getDate() - daysAgo); x.setHours(h, m, 0, 0); return x.toISOString(); };
 const monthDay = (day: number) => { const x = new Date(); x.setDate(day); x.setHours(10, 0, 0, 0); return x.toISOString(); };
 
-export const IDS = {
+export const periodOf = (offset: number) => { const n = new Date(); const p = new Date(n.getFullYear(), n.getMonth() + offset, 1); return `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, "0")}-01`; };
+const IDS = {
   user_dealer: "00000000-0000-0000-0000-00000000d001",
   user_centre: "00000000-0000-0000-0000-00000000c001",
   user_admin: "00000000-0000-0000-0000-00000000a001",
@@ -38,17 +39,17 @@ const items = [
 
 const T: Record<string, Record<string, unknown>[]> = {
   users: [
-    { id: IDS.user_dealer, email: "dad@bloomantiques.co.uk", role: "dealer", is_platform_admin: false, dealer_id: IDS.dealer },
+    { id: IDS.user_dealer, email: "sam@bloomantiques.co.uk", role: "dealer", is_platform_admin: false, dealer_id: IDS.dealer },
     { id: IDS.user_centre, email: "thedealercentre@gmail.com", role: "centre_owner", is_platform_admin: false, dealer_id: null },
     { id: IDS.user_admin, email: "jeni@thedealercentre.com", role: "platform_admin", is_platform_admin: true, dealer_id: null },
   ],
   dealers: [
-    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: d(-26), stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, default_own_shopify: true, default_centre_shopify: false, default_centre_ebay: false, created_at: d(4) },
+    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: d(-26), stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, default_own_shopify: true, default_centre_shopify: false, created_at: d(4) },
     { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, placeholder: false, monthly_sold_limit: 50, created_at: d(40) },
     { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, created_at: d(55) },
   ],
   centres: [
-    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
+    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
@@ -62,7 +63,7 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   items: items.map(([id, sku, title, price, cost, age, status, shop, centreShop]) => ({
     id, dealer_id: IDS.dealer, centre_id: IDS.centre, sku, alt_skus: [], title, description: null, price_pence: price, listed_price_pence: price, cost_pence: cost,
-    photos: [], status, listed_at: d(age), sold_at: status === "sold" ? d(age - (age > 20 ? 18 : 8)) : null, on_own_shopify: shop, on_centre_shopify: centreShop, on_centre_ebay: false,
+    photos: [], status, listed_at: d(age), sold_at: status === "sold" ? d(age - (age > 20 ? 18 : 8)) : null, on_own_shopify: shop, on_centre_shopify: centreShop,
   })),
   item_listings: [
     { id: "l1", item_id: "i01", channel_id: IDS.ch_shopify, status: "live", external_id: "gid://shopify/Product/1", external_variant_id: "v1", last_error: null },
@@ -103,8 +104,11 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "p6", item_id: "i06", dealer_id: IDS.dealer, printer_id: IDS.printer_centre, status: "printed", created_at: d(128), updated_at: d(128) },
   ],
   statements: [
-    { id: "st1", dealer_id: IDS.dealer, centre_id: IDS.centre, period: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString(), gross_pence: 241000, commission_pence: 24100, rent_pence: 39000, net_pence: 177900, fees_pence: 0, status: "paid", pdf_path: "statements/demo.pdf" },
-    { id: "st2", dealer_id: IDS.dealer, centre_id: IDS.centre, period: new Date(new Date().getFullYear(), new Date().getMonth() - 2, 1).toISOString(), gross_pence: 198500, commission_pence: 19850, rent_pence: 39000, net_pence: 139650, fees_pence: 0, status: "paid", pdf_path: "statements/demo.pdf" },
+    { id: "st1", dealer_id: IDS.dealer, centre_id: IDS.centre, period: periodOf(-1), gross_pence: 241000, commission_pence: 24100, rent_pence: 39000, net_pence: 177900, status: "paid", paid_at: d(3), pdf_path: null },
+    { id: "st2", dealer_id: IDS.dealer, centre_id: IDS.centre, period: periodOf(-2), gross_pence: 198500, commission_pence: 19850, rent_pence: 39000, net_pence: 139650, status: "paid", paid_at: d(33), pdf_path: null },
+  ],
+  centre_commissions: [
+    { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
   sku_counters: [{ dealer_id: IDS.dealer, next_number: 373 }],
   webhook_log: [
@@ -159,7 +163,18 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
   gte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) >= String(v)); return this; }
   lte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) <= String(v)); return this; }
   lt(c: string, v: unknown) { this.filters.push((r) => String(r[c]) < String(v)); return this; }
-  or(expr: string) { const parts = expr.split(","); this.filters.push((r) => parts.some((p) => { const [c, , v] = p.split("."); return String(r[c] ?? "").toLowerCase().includes(String(v).replace(/%/g, "").toLowerCase()); })); return this; }
+  or(expr: string) {
+    const parts = expr.split(",");
+    this.filters.push((r) => parts.some((p) => {
+      const [c, op, ...rest] = p.split("."); const v = rest.join(".");
+      if (op === "is") return v === "null" ? r[c] == null : String(r[c]) === v;
+      if (op === "gte") return String(r[c] ?? "") >= v;
+      if (op === "lt") return String(r[c] ?? "") < v;
+      if (op === "eq") return String(r[c]) === v;
+      return String(r[c] ?? "").toLowerCase().includes(v.replace(/%/g, "").toLowerCase());
+    }));
+    return this;
+  }
   contains() { return this; }
   order(c: string, o?: { ascending?: boolean }) { this.orderBy = { col: c, asc: o?.ascending ?? true }; return this; }
   limit(n: number) { this.lim = n; return this; }

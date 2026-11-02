@@ -22,18 +22,18 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
       <h1 className="text-[24px] font-semibold">{centre.name} settings</h1>
 
       <Card title="Terms">
-        <CentreTermsForm centreId={centre.id} initial={{ commission: centre.commission_bps / 100, online: centre.online_commission_bps / 100, share: centre.centre_online_share_bps / 100, handling: centre.handling_fee_pence / 100, rent_day: centre.rent_day, statement_day: centre.statement_day }} />
+        <CentreTermsForm centreId={centre.id} initial={{ commission: centre.commission_bps / 100, online: centre.online_commission_bps / 100, share: centre.centre_online_share_bps / 100, rent_day: centre.rent_day, statement_day: centre.statement_day }} />
         <p className="mt-3 text-[12px] text-ink-muted">Centre code for dealers: <span className="ticket">{centre.invite_code}</span></p>
       </Card>
 
       <Card title="Connections">
         <div className="divide-y divide-border">
-          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, centre.till === "square" ? "Floor sales and items flow in automatically" : "Not needed. You record sales in End of day. Connect this only if you move to Square."], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"], ["ebay", "Centre eBay store", `/api/oauth/ebay?id=${centre.id}`, "Buy it now listings, you handle postage. Coming soon"]].map(([t, label, href, hint]) => {
+          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, centre.till === "square" ? "Floor sales and items flow in automatically" : "Not needed. You record sales in End of day. Connect this only if you move to Square."], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"]].map(([t, label, href, hint]) => {
             const c = ch(t!);
             return (
               <div key={t} className="flex items-center justify-between py-3">
                 <span className="flex flex-col"><span className="text-[15px] font-medium">{label}</span><span className="text-[12px] text-ink-muted">{c ? `${c.external_account_id}${c.last_webhook_at ? ` · last event ${new Date(c.last_webhook_at).toLocaleString("en-GB")}` : ""}` : hint}</span></span>
-                {c ? <Pill kind="success">Connected</Pill> : t === "shopify" ? <ShopifyConnect centreId={centre.id} /> : t === "ebay" ? <Pill kind="neutral">Later</Pill> : <a className={centre.till === "square" ? "btn-sm" : "btn-sm-secondary"} href={href!}>Connect</a>}
+                {c ? <Pill kind="success">Connected</Pill> : t === "shopify" ? <ShopifyConnect centreId={centre.id} /> : <a className={centre.till === "square" ? "btn-sm" : "btn-sm-secondary"} href={href!}>Connect</a>}
               </div>
             );
           })}

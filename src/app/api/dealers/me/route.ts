@@ -6,7 +6,6 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 const Patch = z.object({
   default_own_shopify: z.boolean().optional(),
   default_centre_shopify: z.boolean().optional(),
-  default_centre_ebay: z.boolean().optional(),
   name: z.string().min(2).max(80).optional(),
 });
 

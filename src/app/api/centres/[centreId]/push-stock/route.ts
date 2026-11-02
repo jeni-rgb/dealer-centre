@@ -3,7 +3,7 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { enqueue } from "@/lib/jobs/queue";
 
-/** Phase 2: push every live item at the centre to its Square till (and centre shop or eBay) without re-adding. */
+/** Phase 2: push every live item at the centre to its Square till (and centre shop) without re-adding. */
 export async function POST(_req: Request, { params }: { params: Promise<{ centreId: string }> }) {
   const me = await getMe();
   if (!me) return NextResponse.json({ error: "sign in" }, { status: 401 });

@@ -15,7 +15,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
 
       {needsCard ? (
         <div className="card mt-6 border-accent p-5">
-          <div className="flex items-baseline justify-between"><span className="text-[15px] font-semibold">Dealer Centre for centres</span><span className="num text-[22px] font-bold">£299<span className="text-[13px] font-normal text-ink-muted"> /month</span></span></div>
+          <div className="flex items-baseline justify-between"><span className="text-[15px] font-semibold">Dealer Centre for centres</span><span className="num text-[22px] font-bold">£299<span className="text-[13px] font-normal text-ink-muted"> /month + VAT</span></span></div>
           <ul className="mt-3 flex flex-col gap-1.5 text-[14px] text-ink-muted">
             {centre.till === "square" ? <li>You already have Square: we connect it and load every dealer</li> : <li>Square Register Retail Kit on your counter, set up on site, yours after 12 months</li>}
             <li>Unlimited dealers, statements and dealer payouts worked out for you</li>

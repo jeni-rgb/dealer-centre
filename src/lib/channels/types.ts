@@ -1,6 +1,6 @@
 export type ChannelRow = {
   id: string;
-  type: "square" | "shopify" | "ebay" | "manual";
+  type: "square" | "shopify" | "manual";
   owner_type: "dealer" | "centre";
   owner_id: string;
   external_account_id: string;
@@ -26,7 +26,6 @@ export type ItemRow = {
   status: "draft" | "live" | "sold" | "withdrawn";
   on_own_shopify: boolean;
   on_centre_shopify: boolean;
-  on_centre_ebay: boolean;
 };
 
 export type ListingRef = { external_id: string; external_variant_id: string | null };

@@ -29,11 +29,11 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
           <StepHeader {...hp} title="Card and 14 day trial" sub="Nothing is charged today. First payment in 14 days, email three days before." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
-              {[["25", "Up to 25 sold a month", "£25"], ["100", "Up to 50 sold a month", "£100"], ["150", "Over 100 sold a month", "£150"]].map(([t, a, b]) => (
-                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}<span className="font-normal text-ink-muted"> /mo</span></span><span className="text-accent">Choose</span></span></a>
+              {[["25", "Up to 25 sold a month", "£25"], ["100", "26 to 50 sold a month", "£100"], ["150", "Over 50 sold a month", "£150"]].map(([t, a, b]) => (
+                <a key={t} href={`/api/billing/checkout?tier=${t}`} className="flex h-[56px] items-center justify-between px-4 text-[14px]"><span>{a}</span><span className="flex items-center gap-3"><span className="num font-semibold">{b}<span className="font-normal text-ink-muted"> /mo + VAT</span></span><span className="text-accent">Choose</span></span></a>
               ))}
             </div>
-            <p className="text-[12px] text-ink-muted">Plans are by what you sell, not what you list. List as much stock as you like. Taken on the web by Stripe; change or cancel any time from Settings.</p>
+            <p className="text-[12px] text-ink-muted">Prices are plus VAT. Plans are by what you sell, not what you list. List as much stock as you like. Taken on the web by Stripe; change or cancel any time from Settings.</p>
           </div>
         </>
       )}

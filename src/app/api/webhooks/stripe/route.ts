@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-/** "Over 100 a month" has no cap; stored as a large number so comparisons stay simple. */
+/** Pro ("over 50 a month") has no cap; stored as a large number so comparisons stay simple. */
 const UNLIMITED = 100000;
 
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       // Centre plan, £299 a month
       await db.from("centres").update({ plan: planFor(s), trial_ends_at: trialEnds }).eq("stripe_customer_id", customer);
     } else {
-      // Dealer tiers by items sold a month: 25 / 50 / over 100 (no cap)
+      // Dealer tiers by items sold a month: Starter up to 25, Trade 26 to 50, Pro over 50 (no cap). All + VAT.
       const byPrice: Record<string, number> = { [env.stripe.price("25")]: 25, [env.stripe.price("100")]: 50, [env.stripe.price("150")]: UNLIMITED };
       const meta = Number(s.items.data[0]?.price?.metadata?.monthly_sold_limit ?? 0);
       const limit = meta || (priceId ? byPrice[priceId] : undefined) || undefined;

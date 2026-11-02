@@ -11,6 +11,7 @@ export function CentreNav({ centreName }: { centreName: string }) {
     ["Dealers", `/centre${q}`, path === "/centre"],
     ["Mapping", `/centre/mapping${q}`, path.startsWith("/centre/mapping")],
     ["Online shop", `/centre/online${q}`, path.startsWith("/centre/online")],
+    ["Statements", `/centre/statements${q}`, path.startsWith("/centre/statements")],
     ["Settings", `/centre/settings${q}`, path.startsWith("/centre/settings")],
     ["Till screen", `/till${q}`, false],
   ];

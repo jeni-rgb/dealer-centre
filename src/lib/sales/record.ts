@@ -88,9 +88,9 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
   if (m.kind === "item") {
     const { data: itemRow } = await db.from("items").select("listed_price_pence, price_pence").eq("id", m.item.item_id).single();
     const listed = itemRow?.listed_price_pence ?? itemRow?.price_pence ?? null;
-    // Centre online channels: the centre's online commission and handling are fees on the sale
+    // Centre online shop: the 20% online commission (15% Dealer Centre, 5% the centre) is a fee on the sale
     let channelFee = 0;
-    if (channel.owner_type === "centre" && (channel.type === "shopify" || channel.type === "ebay")) {
+    if (channel.owner_type === "centre" && channel.type === "shopify") {
       const { data: c } = await db.from("centres").select("online_commission_bps").eq("id", channel.owner_id).single();
       channelFee = Math.round((line.amount_pence * (c?.online_commission_bps ?? 2000)) / 10000);
     }

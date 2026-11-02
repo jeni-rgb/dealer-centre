@@ -7,5 +7,5 @@ export async function secondCentreBlocked(db: Admin, dealerId: string, centreId?
   if (others.length === 0) return null;
   const { data: dealer } = await db.from("dealers").select("monthly_sold_limit, plan").eq("id", dealerId).single();
   if ((dealer?.monthly_sold_limit ?? 0) >= 100000) return null;
-  return "Selling at more than one centre is on the Pro plan (£150 a month). Upgrade in Settings, then add the centre.";
+  return "Selling at more than one centre is on the Pro plan (£150 a month + VAT). Upgrade in Settings, then add the centre.";
 }

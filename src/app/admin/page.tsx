@@ -44,7 +44,7 @@ export default async function Admin() {
               <tr key={c.id} className="border-b border-border">
                 <td className="px-5 py-2"><a className="font-medium text-accent" href={`/centre?centre=${c.id}`}>{c.name}</a></td>
                 <td className="ticket py-2 text-[12px]">{c.invite_code}</td>
-                <td className="py-2 text-xs">{c.status === "unclaimed" ? <Pill kind="neutral">Added by dealers</Pill> : c.plan === "pro" ? <Pill kind="success">£299</Pill> : c.plan === "comp" ? <Pill kind="accent">Free</Pill> : c.stripe_customer_id ? <Pill kind="warning">Trial</Pill> : <Pill kind="danger">No card</Pill>}</td>
+                <td className="py-2 text-xs">{c.status === "unclaimed" ? <Pill kind="neutral">Added by dealers</Pill> : c.plan === "pro" ? <Pill kind="success">£299 + VAT</Pill> : c.plan === "comp" ? <Pill kind="accent">Free</Pill> : c.stripe_customer_id ? <Pill kind="warning">Trial</Pill> : <Pill kind="danger">No card</Pill>}</td>
                 <td className="py-2 text-xs">{ch ? `${ch.status}${ch.last_webhook_at ? `, ${new Date(ch.last_webhook_at).toLocaleString("en-GB")}` : ""}` : <Pill kind="danger">Not connected</Pill>}</td>
                 <td className="num py-2 text-right">{money(byCentre.get(c.id) ?? 0)}</td>
                 <td className="py-2 text-right"><a className="text-xs underline" href={`/api/admin/export?centre=${c.id}`}>CSV</a></td>

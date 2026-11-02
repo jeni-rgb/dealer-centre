@@ -29,11 +29,15 @@ export const Recorded = forwardRef<RecordedHandle, { centreId: string; initial: 
     setBusy(false); setEditing(null); setFlash("Price updated. The dealer's statement follows it."); onChanged?.(); await reload();
   }
   async function undo(id: string) {
-    setBusy(true);
-    const r = await fetch(`/api/sales/${id}`, { method: "DELETE" });
-    setBusy(false); setConfirming(null); setEditing(null);
-    setFlash(r.ok ? "Sale undone. The item is back on sale." : "Could not undo that sale.");
-    onChanged?.(); await reload();
+    // Optimistic: the row goes straight away and the banner clears; the server catches up behind it.
+    const before = sales;
+    setSales(before.filter((s) => s.id !== id));
+    setConfirming(null); setEditing(null); setBusy(false);
+    setFlash("Sale undone. The item is back on sale.");
+    onChanged?.();
+    const r = await fetch(`/api/sales/${id}`, { method: "DELETE" }).catch(() => null);
+    if (!r || !r.ok) { setSales(before); setFlash("Could not undo that sale. It is still recorded."); return; }
+    reload();
   }
   if (sales.length === 0 && !flash) return null;
 
