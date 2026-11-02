@@ -232,6 +232,7 @@ const rpc = async (fn: string, args: Record<string, unknown>) => {
     { dealer_id: "x2", name: "R & M Collectables", code: "RM", pitch_numbers: ["7", "8"], rent_pence: 26000, sales_month_pence: 0, items_live: 44, last_sale_at: null },
   ], error: null };
   if (fn === "next_sku") return { data: "B140373", error: null };
+  if (fn === "next_despatch_note_no") return { data: 1042, error: null };
   void args;
   return { data: null, error: null };
 };

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { money } from "@/components/ui";
 import { STATUS_LABEL, type OnlineOrder, type OrderStatus } from "@/lib/fulfilment/orders";
+import { FORMATS, SERVICES, defaultService, type PackageFormat } from "@/lib/fulfilment/clickdrop";
 
 const TONE: Record<OrderStatus, string> = { new: "pill-warning", collected: "pill-accent", at_unit: "pill-neutral", despatched: "pill-success", missing: "pill-danger", refunded: "pill-danger" };
 type Tab = "collect" | "unit" | "done" | "all";
@@ -15,6 +16,26 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [tracking, setTracking] = useState<{ carrier: string; tracking: string } | null>(null);
+  // Parcel details per order for the bench: format, weight, service. Defaults by value; editable per row.
+  const [parcel, setParcel] = useState<Record<string, { format: PackageFormat; weight: string; service: string }>>({});
+  const parcelFor = (o: OnlineOrder) => parcel[o.sale_id] ?? { format: (o.package_format as PackageFormat) ?? "smallParcel", weight: o.weight_grams ? String(o.weight_grams) : "", service: o.service_code ?? defaultService(o.amount_pence) };
+  const setParcelField = (id: string, o: OnlineOrder, k: "format" | "weight" | "service", v: string) => setParcel((m) => ({ ...m, [id]: { ...parcelFor(o), [k]: v } }));
+
+  async function buyAndPrint() {
+    const chosen = shown.filter((o) => ids.includes(o.sale_id));
+    const missing = chosen.filter((o) => !parcelFor(o).weight || !(parseInt(parcelFor(o).weight) > 0));
+    if (missing.length) { setMsg(`Enter a weight for ${missing.length} parcel${missing.length === 1 ? "" : "s"} first.`); return; }
+    setBusy(true); setMsg("Buying postage…");
+    const r = await fetch("/api/admin/orders/postage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ parcels: chosen.map((o) => ({ sale_id: o.sale_id, format: parcelFor(o).format, weight_grams: parseInt(parcelFor(o).weight), service_code: parcelFor(o).service })) }) });
+    setBusy(false);
+    if (!r.ok) { const j = await r.json().catch(() => ({})); setMsg(j.error ?? "Could not buy postage"); return; }
+    const bought = r.headers.get("x-postage-bought") ?? "0";
+    const errs = decodeURIComponent(r.headers.get("x-postage-errors") ?? "");
+    const blob = await r.blob();
+    window.open(URL.createObjectURL(blob), "_blank");
+    setMsg(`${bought} label${bought === "1" ? "" : "s"} bought and marked despatched; buyers emailed by Shopify.${errs ? ` Not bought: ${errs}` : ""}`);
+    setSel(new Set()); router.refresh();
+  }
 
   const shown = useMemo(() => orders.filter((o) =>
     tab === "collect" ? o.status === "new" || o.status === "missing" : tab === "unit" ? o.status === "collected" || o.status === "at_unit" : tab === "done" ? o.status === "despatched" || o.status === "refunded" : true), [orders, tab]);
@@ -54,18 +75,22 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
           <button className="text-[13px] font-medium text-danger disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("missing")}>Mark missing</button>
         </>}
         {tab === "unit" && <>
-          <a className={`btn-sm ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/slips?ids=${ids.join(",")}`} target="_blank">Print packing slips</a>
+          <button className="btn-sm" disabled={busy || !ids.length} onClick={buyAndPrint}>Buy postage and print labels</button>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/slips?ids=${ids.join(",")}`} target="_blank">Despatch notes only</a>
           <button className="btn-sm-secondary" disabled={busy || !ids.length} onClick={() => act("at_unit")}>Mark at the unit</button>
-          {!tracking && <button className="btn-sm-secondary" disabled={busy || !ids.length} onClick={() => setTracking({ carrier: "Royal Mail", tracking: "" })}>Despatched by hand</button>}
+          {!tracking && <button className="text-[13px] font-medium text-ink-muted disabled:opacity-40" disabled={busy || !ids.length} onClick={() => setTracking({ carrier: "Royal Mail", tracking: "" })}>Sent another way</button>}
           {tracking && <span className="flex items-center gap-2">
             <input className="field !h-9 !w-28 !text-[13px]" value={tracking.carrier} onChange={(e) => setTracking({ ...tracking, carrier: e.target.value })} placeholder="Carrier" />
             <input className="field !h-9 !w-44 !text-[13px]" value={tracking.tracking} onChange={(e) => setTracking({ ...tracking, tracking: e.target.value })} placeholder="Tracking (one order)" autoFocus />
             <button className="btn-sm" disabled={busy} onClick={() => act("despatched", tracking)}>Despatched</button>
             <button className="text-ink-muted" onClick={() => setTracking(null)}>Cancel</button>
           </span>}
-          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought in Click &amp; Drop; it marks the order despatched here on its own.</span>
+          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought from Royal Mail through Click &amp; Drop and print with the despatch notes. Manifest once a day in Click &amp; Drop for the collection.</span>
         </>}
-        {(tab === "done" || tab === "all") && <button className="btn-sm-secondary" disabled={busy || !ids.length} onClick={() => act("new")}>Back to collect</button>}
+        {(tab === "done" || tab === "all") && <>
+          <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}`} target="_blank">Reprint labels and notes</a>
+          <button className="text-[13px] font-medium text-ink-muted disabled:opacity-40" disabled={busy || !ids.length} onClick={() => act("new")}>Back to collect</button>
+        </>}
         {msg && <span className="w-full text-[12px] text-ink-muted">{msg}</span>}
       </div>
 
@@ -76,8 +101,8 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
           {rows.map((o) => {
             const age = Math.floor((Date.now() - new Date(o.sold_at).getTime()) / 86400000);
             return (
-              <label key={o.sale_id} className={`grid cursor-pointer gap-2 border-b border-border px-4 py-3 last:border-0 md:grid-cols-[auto_1.2fr_1fr_auto] md:items-center ${sel.has(o.sale_id) ? "bg-surface-2" : ""}`}>
-                <input type="checkbox" className="mt-1 md:mt-0" checked={sel.has(o.sale_id)} onChange={() => toggle(o.sale_id)} />
+              <div key={o.sale_id} className={`grid gap-2 border-b border-border px-4 py-3 last:border-0 md:grid-cols-[auto_1.2fr_1fr_auto] md:items-center ${sel.has(o.sale_id) ? "bg-surface-2" : ""}`}>
+                <input type="checkbox" className="mt-1 h-5 w-5 md:mt-0" checked={sel.has(o.sale_id)} onChange={() => toggle(o.sale_id)} />
                 <div>
                   <div className="flex flex-wrap items-center gap-2 text-[14px]"><span className={`pill ${TONE[o.status]}`}>{STATUS_LABEL[o.status]}</span><span className="font-medium">{o.title}</span><span className="num font-semibold">{money(o.amount_pence)}</span>{o.status === "new" && age > 2 && <span className="pill pill-danger">{age} days</span>}</div>
                   <div className="mt-0.5 text-[12px] text-ink-muted">{o.ticket && <span className="ticket">{o.ticket}</span>}{o.ticket ? " · " : ""}{o.dealer}{o.dealer_code ? ` (${o.dealer_code})` : ""}{o.pitches.length ? ` · pitch ${o.pitches.join(", ")}` : ""} · sold {new Date(o.sold_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}{o.order_name ? ` · ${o.order_name}` : ""}{o.slip_printed_at ? " · slip printed" : ""}</div>
@@ -87,11 +112,18 @@ export function OrdersDesk({ orders, centreFilter }: { orders: OnlineOrder[]; ce
                   {o.note && <div className="mt-1 italic">Note: {o.note}</div>}
                 </div>
                 <div className="text-right text-[12px] text-ink-muted">
-                  {o.status === "despatched" && <>{o.carrier ?? ""} {o.tracking ?? ""}<br />{o.despatched_at ? new Date(o.despatched_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}</>}
+                  {tab === "unit" && (
+                    <span className="flex flex-wrap items-center justify-end gap-1.5">
+                      <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).format} onChange={(e) => setParcelField(o.sale_id, o, "format", e.target.value)}>{FORMATS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+                      <input className="field !h-8 !w-20 !px-2 !text-[12px]" inputMode="numeric" placeholder="grams" value={parcelFor(o).weight} onChange={(e) => setParcelField(o.sale_id, o, "weight", e.target.value.replace(/\D/g, ""))} />
+                      <select className="field !h-8 !w-auto !px-2 !text-[12px]" value={parcelFor(o).service} onChange={(e) => setParcelField(o.sale_id, o, "service", e.target.value)}>{SERVICES.map((sv) => <option key={sv.code} value={sv.code}>{sv.label}</option>)}</select>
+                    </span>
+                  )}
+                  {o.status === "despatched" && <>{o.carrier ?? ""} {o.tracking ?? ""}{o.despatch_note_no ? ` · DN-${o.despatch_note_no}` : ""}<br />{o.despatched_at ? new Date(o.despatched_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}</>}
                   {o.status === "collected" && o.collected_at && <>Collected {new Date(o.collected_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</>}
                   {o.status === "missing" && <span className="text-danger">Centre told</span>}
                 </div>
-              </label>
+              </div>
             );
           })}
         </div>

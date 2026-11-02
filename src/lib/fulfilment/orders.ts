@@ -7,18 +7,19 @@ export type OnlineOrder = {
   sale_id: string; sold_at: string; amount_pence: number; ticket: string | null; title: string;
   dealer: string | null; dealer_code: string | null; pitches: string[];
   centre_id: string | null; centre: string;
-  buyer: string | null; email: string | null; address: string | null; order_name: string | null; note: string | null;
+  buyer: string | null; email: string | null; address: string | null; address_parts: { address1?: string; address2?: string; city?: string; province?: string; zip?: string; country_code?: string } | null; order_name: string | null; note: string | null;
   status: OrderStatus; collected_at: string | null; at_unit_at: string | null; despatched_at: string | null; slip_printed_at: string | null;
   carrier: string | null; tracking: string | null; fulfil_note: string | null; shopify_fulfilled: boolean;
+  package_format: string | null; weight_grams: number | null; service_code: string | null; label_path: string | null; despatch_note_no: number | null;
 };
-type FulfilRow = { status: OrderStatus; collected_at: string | null; at_unit_at: string | null; despatched_at: string | null; slip_printed_at: string | null; carrier: string | null; tracking: string | null; note: string | null; shopify_fulfilled: boolean };
+type FulfilRow = { status: OrderStatus; collected_at: string | null; at_unit_at: string | null; despatched_at: string | null; slip_printed_at: string | null; carrier: string | null; tracking: string | null; note: string | null; shopify_fulfilled: boolean; package_format: string | null; weight_grams: number | null; service_code: string | null; label_path: string | null; despatch_note_no: number | null };
 
 const addr = (a: ShopifyAddress | null | undefined) => a ? [a.address1, a.address2, a.city, a.province, a.zip, a.country].filter(Boolean).join(", ") : null;
 
 /** Every centre shop sale with where it is. Admin wide, or one centre. */
 export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sinceDays?: number; openOnly?: boolean } = {}): Promise<OnlineOrder[]> {
   const since = new Date(Date.now() - (opts.sinceDays ?? 60) * 86400000).toISOString();
-  let q = db.from("sales").select("id, sold_at, amount_pence, ticket_no, raw, centre_id, dealer_id, items(title), dealers(name, code), centres(name), channels:channel_id(type, owner_type), fulfilments(status, collected_at, at_unit_at, despatched_at, slip_printed_at, carrier, tracking, note, shopify_fulfilled)")
+  let q = db.from("sales").select("id, sold_at, amount_pence, ticket_no, raw, centre_id, dealer_id, items(title), dealers(name, code), centres(name), channels:channel_id(type, owner_type), fulfilments(status, collected_at, at_unit_at, despatched_at, slip_printed_at, carrier, tracking, note, shopify_fulfilled, package_format, weight_grams, service_code, label_path, despatch_note_no)")
     .is("voided_at", null).gte("sold_at", since).order("sold_at", { ascending: false });
   if (opts.centreId) q = q.eq("centre_id", opts.centreId);
   const { data } = await q;
@@ -36,9 +37,10 @@ export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sin
         title: (s.items as unknown as { title: string } | null)?.title ?? raw.title ?? "Item",
         dealer: d?.name ?? null, dealer_code: d?.code ?? null, pitches: pitchesFor(s.dealer_id, s.centre_id),
         centre_id: s.centre_id, centre: (s.centres as unknown as { name: string } | null)?.name ?? "Centre",
-        buyer: raw.order?.shipping_address?.name ?? null, email: raw.order?.email ?? null, address: addr(raw.order?.shipping_address), order_name: raw.order?.name ?? null, note: raw.order?.note ?? null,
+        buyer: raw.order?.shipping_address?.name ?? null, email: raw.order?.email ?? null, address: addr(raw.order?.shipping_address), address_parts: raw.order?.shipping_address ? { address1: raw.order.shipping_address.address1, address2: raw.order.shipping_address.address2, city: raw.order.shipping_address.city, province: raw.order.shipping_address.province, zip: raw.order.shipping_address.zip, country_code: raw.order.shipping_address.country_code ?? "GB" } : null, order_name: raw.order?.name ?? null, note: raw.order?.note ?? null,
         status: f?.status ?? "new", collected_at: f?.collected_at ?? null, at_unit_at: f?.at_unit_at ?? null, despatched_at: f?.despatched_at ?? null, slip_printed_at: f?.slip_printed_at ?? null,
         carrier: f?.carrier ?? null, tracking: f?.tracking ?? null, fulfil_note: f?.note ?? null, shopify_fulfilled: !!f?.shopify_fulfilled,
+        package_format: f?.package_format ?? null, weight_grams: f?.weight_grams ?? null, service_code: f?.service_code ?? null, label_path: f?.label_path ?? null, despatch_note_no: f?.despatch_note_no ?? null,
       };
     })
     .filter((o) => !opts.openOnly || !["despatched", "refunded"].includes(o.status));

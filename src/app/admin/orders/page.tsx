@@ -16,7 +16,7 @@ export default async function Orders({ searchParams }: { searchParams: Promise<{
     <>
       <div className="mb-5">
         <h1 className="text-[24px] font-semibold">Online orders</h1>
-        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. Packing slips at the unit. Postage and labels in Click &amp; Drop, which marks the order despatched here and emails the buyer.</p>
+        <p className="text-[13px] text-ink-muted">Runner collects every other day against the run sheet. At the unit: weigh, pick the service, buy postage. The paid Royal Mail label and the despatch note print together, the buyer is emailed the tracking, and the order is despatched. Manifest once a day in Click &amp; Drop for the collection.</p>
       </div>
       <div className="mb-5 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4">
         <Kpi label="To collect" value={String(n("new"))} sub={overdue ? `${overdue} waiting over 2 days` : "Next run"} tone={overdue ? "warning" : undefined} />

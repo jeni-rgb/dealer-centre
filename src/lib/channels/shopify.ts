@@ -192,7 +192,7 @@ export function shopifyOrderToLines(o: ShopifyOrder): IncomingLine[] {
 }
 
 /** Webhook payloads are REST shaped. Convert to the same lines. */
-export type ShopifyAddress = { name?: string; address1?: string; address2?: string; city?: string; province?: string; zip?: string; country?: string; phone?: string };
+export type ShopifyAddress = { name?: string; address1?: string; address2?: string; city?: string; province?: string; zip?: string; country?: string; country_code?: string; phone?: string };
 export function shopifyWebhookOrderToLines(o: {
   admin_graphql_api_id: string;
   created_at: string;
