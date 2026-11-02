@@ -74,8 +74,8 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "l8", item_id: "i08", channel_id: IDS.ch_shopify, status: "closed", external_id: "gid://shopify/Product/8", external_variant_id: "v8", last_error: null },
   ],
   sales: [
-    { id: "o1", item_id: "i06", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1041", amount_pence: 39500, listed_price_pence: 39500, discount_pence: 0, channel_fee_pence: 7900, postage_pence: 0, payment_type: "online", ticket_no: "B140331", sold_at: d(0, 10, 2), voided_at: null, corrected_at: null, original_amount_pence: null },
-    { id: "o2", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1038", amount_pence: 6500, listed_price_pence: 6500, discount_pence: 0, channel_fee_pence: 1300, postage_pence: 0, payment_type: "online", ticket_no: "JH0214", sold_at: d(1, 19, 40), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "o1", item_id: "i06", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "gid://shopify/Order/1041", raw: { title: "Oak coffer, 17th century style", order: { name: "#1041", email: "r.hale@example.com", note: "Please wrap well, it is a gift", shipping_address: { name: "Rebecca Hale", address1: "14 Mill Lane", city: "Holt", zip: "NR25 6AA", country: "United Kingdom" } } }, amount_pence: 39500, listed_price_pence: 39500, discount_pence: 0, channel_fee_pence: 7900, postage_pence: 0, payment_type: "online", ticket_no: "B140331", sold_at: d(0, 10, 2), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "o2", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "gid://shopify/Order/1038", raw: { title: "Victorian brass inkwell", order: { name: "#1038", email: "tom@example.com", shipping_address: { name: "Tom Barrow", address1: "3 Church Street", city: "Beverley", zip: "HU17 8DP", country: "United Kingdom" } } }, amount_pence: 6500, listed_price_pence: 6500, discount_pence: 0, channel_fee_pence: 1300, postage_pence: 0, payment_type: "online", ticket_no: "JH0214", sold_at: d(1, 19, 40), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "o3", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1031", amount_pence: 32000, listed_price_pence: 32000, discount_pence: 0, channel_fee_pence: 6400, postage_pence: 0, payment_type: "online", ticket_no: "JH0198", sold_at: d(2, 14, 12), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "o4", item_id: null, dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1022", amount_pence: 9500, listed_price_pence: 9500, discount_pence: 0, channel_fee_pence: 1900, postage_pence: 0, payment_type: "online", ticket_no: "B140344", sold_at: d(5, 11, 30), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "s1", item_id: "i07", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod1", amount_pence: 4200, listed_price_pence: 4200, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140370", sold_at: d(0, 11, 20), voided_at: null, corrected_at: null, original_amount_pence: null },
@@ -113,6 +113,12 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "st1", dealer_id: IDS.dealer, centre_id: IDS.centre, period: periodOf(-1), gross_pence: 241000, commission_pence: 24100, rent_pence: 39000, net_pence: 177900, status: "paid", paid_at: d(3), pdf_path: null },
     { id: "st2", dealer_id: IDS.dealer, centre_id: IDS.centre, period: periodOf(-2), gross_pence: 198500, commission_pence: 19850, rent_pence: 39000, net_pence: 139650, status: "paid", paid_at: d(33), pdf_path: null },
   ],
+  fulfilments: [
+    { sale_id: "o1", centre_id: IDS.centre, status: "new", collected_at: null, packed_at: null, posted_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
+    { sale_id: "o2", centre_id: IDS.centre, status: "collected", collected_at: d(0, 9, 0), packed_at: null, posted_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
+    { sale_id: "o3", centre_id: IDS.centre, status: "posted", collected_at: d(1), packed_at: d(1), posted_at: d(1, 15, 0), carrier: "Royal Mail", tracking: "RM123456789GB", note: null, shopify_fulfilled: true },
+    { sale_id: "o4", centre_id: IDS.centre, status: "posted", collected_at: d(4), packed_at: d(4), posted_at: d(4), carrier: "Royal Mail", tracking: "RM123456001GB", note: null, shopify_fulfilled: true },
+  ],
   centre_commissions: [
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
@@ -133,7 +139,7 @@ void monthDay;
 type Row = Record<string, unknown>;
 type Filter = (r: Row) => boolean;
 
-const FK: Record<string, string> = { items: "item_id", dealers: "dealer_id", centres: "centre_id", channels: "channel_id", printers: "printer_id", users: "user_id" };
+const FK: Record<string, string> = { sales: "sale_id", items: "item_id", dealers: "dealer_id", centres: "centre_id", channels: "channel_id", printers: "printer_id", users: "user_id" };
 type Rel = { alias: string; table: string; fk: string | null; children: Rel[] };
 /** Parse "a, b, rel:fk(x, y, nested(z))" into a tree of embeds. */
 const parseSelect = (sel: string): Rel[] => {

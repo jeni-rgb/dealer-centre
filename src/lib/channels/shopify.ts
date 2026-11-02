@@ -192,11 +192,17 @@ export function shopifyOrderToLines(o: ShopifyOrder): IncomingLine[] {
 }
 
 /** Webhook payloads are REST shaped. Convert to the same lines. */
+export type ShopifyAddress = { name?: string; address1?: string; address2?: string; city?: string; province?: string; zip?: string; country?: string; phone?: string };
 export function shopifyWebhookOrderToLines(o: {
   admin_graphql_api_id: string;
   created_at: string;
-  line_items: { admin_graphql_api_id: string; sku: string | null; product_id: number | null; variant_id: number | null; price: string; quantity: number; total_discount: string }[];
+  name?: string;
+  email?: string;
+  note?: string | null;
+  shipping_address?: ShopifyAddress | null;
+  line_items: { admin_graphql_api_id: string; sku: string | null; product_id: number | null; variant_id: number | null; price: string; quantity: number; total_discount: string; title?: string }[];
 }): IncomingLine[] {
+  const order = { name: o.name ?? null, email: o.email ?? null, note: o.note ?? null, shipping_address: o.shipping_address ?? null };
   return o.line_items.map((li) => ({
     external_order_id: o.admin_graphql_api_id,
     external_line_id: li.admin_graphql_api_id,
@@ -209,6 +215,18 @@ export function shopifyWebhookOrderToLines(o: {
     fees_pence: 0,
     payment_type: "online",
     sold_at: o.created_at,
-    raw: li,
+    raw: { ...li, order },
   }));
+}
+
+/** Tell Shopify the order is on its way, so the buyer gets the dispatch email with tracking. Best effort: returns false if Shopify refuses. */
+export async function shopifyFulfil(channel: ChannelRow, orderGid: string, tracking: string | null, carrier: string | null): Promise<boolean> {
+  const d = await gql<{ order: { fulfillmentOrders: { nodes: { id: string; status: string }[] } } | null }>(channel,
+    `query($id: ID!) { order(id: $id) { fulfillmentOrders(first: 5) { nodes { id status } } } }`, { id: orderGid });
+  const open = (d.order?.fulfillmentOrders.nodes ?? []).filter((f) => f.status === "OPEN" || f.status === "IN_PROGRESS");
+  if (open.length === 0) return false;
+  const r = await gql<{ fulfillmentCreateV2: { userErrors: { message: string }[] } }>(channel,
+    `mutation($f: FulfillmentV2Input!) { fulfillmentCreateV2(fulfillment: $f) { userErrors { message } } }`,
+    { f: { lineItemsByFulfillmentOrder: open.map((f) => ({ fulfillmentOrderId: f.id })), notifyCustomer: true, trackingInfo: tracking ? { number: tracking, company: carrier ?? undefined } : undefined } });
+  return (r.fulfillmentCreateV2.userErrors ?? []).length === 0;
 }
