@@ -29,7 +29,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
     <div className="flex flex-col gap-2.5">
       {status === "live" && mode === "none" && (
         <>
-          <button className="btn" onClick={() => setMode("sold")}>Sell</button>
+          <button className="btn" onClick={() => setMode("sold")}>Mark as sold</button>
           <div className="grid grid-cols-2 gap-2.5">
             <button className="btn-secondary" onClick={() => setMode("price")}>Edit price</button>
             <button className="btn-outline" disabled={busy} onClick={() => call("/api/labels/print", "POST", { item_ids: [id] })}>Reprint label</button>
@@ -57,7 +57,7 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <label className="flex items-center justify-between text-[13px] text-ink-muted">Sold on<input type="date" className="field !h-10 !w-40 !text-[13px]" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} /></label>
           <p className="text-[12px] text-ink-muted">{where === "centre" ? "Goes on your centre statement with commission, same as if the till had recorded it." : "No centre commission. Use this for fairs, home sales or anywhere the app does not watch."}</p>
           {err && <p className="text-[13px] text-danger">{err}</p>}
-          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Sold</button></div>
+          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Mark sold</button></div>
         </div>
       )}
 

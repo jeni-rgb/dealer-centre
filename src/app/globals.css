@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Gabriel Sans is a licensed typeface (Fontfabric). Drop the purchased .woff2 files into /public/fonts
+   with these exact names and the headings switch over; until then they fall back to Helvetica. */
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-SemiBold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+
 /* Design tokens from the Claude Design handover, 30 Oct 2026. Dark header direction. */
 :root {
   /* Dealer Centre brand, Nov 2026. Cream ground, olive primary, gold and forest accents. */
@@ -50,8 +56,8 @@
   --color-forest: var(--dc-forest);
   --color-forest-soft: var(--dc-forest-soft);
   --color-cream: var(--dc-cream);
-  --font-sans: Inter, system-ui, sans-serif;
-  --font-display: Archivo, Inter, system-ui, sans-serif;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-display: "Gabriel Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 html, body { background: var(--dc-surface); color: var(--dc-ink); }
