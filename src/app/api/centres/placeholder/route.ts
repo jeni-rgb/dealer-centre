@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { secondCentreBlocked } from "@/lib/centres/gate";
 
 const Input = z.object({ name: z.string().min(2).max(80), town: z.string().max(120).optional(), rent_mode: z.enum(["rent", "commission_only"]).default("rent"), rent_pence: z.number().int().min(0).default(0), rent_schedule: z.string().default("first") });
 
@@ -15,6 +16,8 @@ export async function POST(req: Request) {
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   const db = supabaseAdmin();
+  const blocked = await secondCentreBlocked(db, me.dealer_id);
+  if (blocked) return NextResponse.json({ error: blocked, code: "plan" }, { status: 402 });
   // Same name and town already added by another dealer: join that one instead of making a twin.
   const { data: twin } = await db.from("centres").select("id, name").eq("status", "unclaimed").ilike("name", p.data.name.trim()).maybeSingle();
   let centre = twin;

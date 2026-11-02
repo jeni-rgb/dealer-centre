@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { secondCentreBlocked } from "@/lib/centres/gate";
 
 const Input = z.object({
   centre_id: z.string().uuid().optional(),
@@ -25,6 +26,8 @@ export async function POST(req: Request) {
     const { data } = await db.from("centres").select("id, name").eq("invite_code", p.data.code.toUpperCase()).maybeSingle(); centre = data;
   }
   if (!centre) return NextResponse.json({ error: "No centre found" }, { status: 404 });
+  const blocked = await secondCentreBlocked(db, me.dealer_id, centre.id);
+  if (blocked) return NextResponse.json({ error: blocked, code: "plan" }, { status: 402 });
   const { error } = await db.from("dealer_centres").upsert(
     { dealer_id: me.dealer_id, centre_id: centre.id, status: "pending", rent_mode: p.data.rent_mode, rent_pence: p.data.rent_pence, rent_schedule: p.data.rent_schedule, rent_set_by: "dealer" },
     { onConflict: "dealer_id,centre_id", ignoreDuplicates: true },
