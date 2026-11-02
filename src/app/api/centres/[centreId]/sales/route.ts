@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { recordSale } from "@/lib/sales/record";
-import { normaliseSku } from "@/lib/sku";
+import { canonicalTicket, normaliseSku } from "@/lib/sku";
 import type { ChannelRow } from "@/lib/channels/types";
 
 const Line = z.object({
@@ -28,9 +28,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ centreI
   const db = supabaseAdmin();
   const { data: chId } = await db.rpc("ensure_manual_channel", { p_centre_id: centreId });
   const { data: channel } = await db.from("channels").select("*").eq("id", chId).single();
-  const results = [];
-  for (const l of p.data.lines) {
-    const sku = normaliseSku(l.ticket);
+  // Lines are independent, so record them side by side rather than one after another.
+  const results = await Promise.all(p.data.lines.map(async (l) => {
+    const sku = canonicalTicket(l.ticket);
     const r = await recordSale(db, channel as ChannelRow, {
       external_order_id: `eod-${centreId}-${l.sold_at.slice(0, 10)}-${sku}`,
       external_line_id: crypto.randomUUID(),
@@ -39,8 +39,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ centreI
       amount_pence: l.amount_pence, fees_pence: 0,
       payment_type: l.payment_type, sold_at: l.sold_at, raw: { source: "eod", by: me.id },
     });
-    results.push({ ticket: sku, ...r });
-  }
+    return { ticket: sku, ...r };
+  }));
   await db.from("sales").update({ recorded_by: me.id }).eq("channel_id", channel!.id).is("recorded_by", null);
   return NextResponse.json({ results });
 }
@@ -50,14 +50,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ centreId
   const me = await getMe();
   if (!me) return NextResponse.json({ error: "sign in" }, { status: 401 });
   const { centreId } = await params;
+  const db = supabaseAdmin();
+  // Recent floor sales for the "Recorded this week" list (client refresh after Record, Edit, Undo)
+  if (new URL(req.url).searchParams.get("recent")) {
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data } = await db.from("sales").select("id, amount_pence, original_amount_pence, payment_type, sold_at, ticket_no, items(title), dealers(name), channels:channel_id(type)").eq("centre_id", centreId).is("voided_at", null).gte("sold_at", since).order("sold_at", { ascending: false }).limit(200);
+    return NextResponse.json({ sales: (data ?? []).filter((s) => ["manual", "square"].includes((s.channels as unknown as { type: string })?.type)).map((s) => ({ id: s.id, amount_pence: s.amount_pence, original_amount_pence: s.original_amount_pence, payment_type: s.payment_type, sold_at: s.sold_at, ticket_no: s.ticket_no, title: (s.items as unknown as { title: string } | null)?.title ?? null, dealer: (s.dealers as unknown as { name: string } | null)?.name ?? null })) });
+  }
   const sku = normaliseSku(new URL(req.url).searchParams.get("ticket") ?? "");
   if (sku.length < 3) return NextResponse.json({ item: null });
-  const db = supabaseAdmin();
   const sel = "id, sku, title, price_pence, status, centre_id, dealer_id, dealers(name, code)";
   // "TD 1" or "TD01" typed at the till means TD0001
-  const candidates = [sku];
-  const short = sku.match(/^([A-Z][A-Z0-9]{1,3}?)(\d{1,3})$/);
-  if (short) candidates.push(`${short[1]}${short[2].padStart(4, "0")}`);
+  const candidates = [...new Set([sku, canonicalTicket(sku)])];
   for (const c of candidates) {
     let { data } = await db.from("items").select(sel).eq("centre_id", centreId).or(`sku.eq.${c},alt_skus.cs.{${c}}`).maybeSingle();
     if (!data) {

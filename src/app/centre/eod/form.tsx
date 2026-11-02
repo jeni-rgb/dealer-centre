@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Pill, money } from "@/components/ui";
-import { displaySku, normaliseSku } from "@/lib/sku";
+import { canonicalTicket, displaySku } from "@/lib/sku";
 
-type Line = { key: string; ticket: string; title: string | null; dealer: string | null; amount: string; payment: "CASH" | "CARD"; status: "ok" | "unknown" | "sold" };
+type Line = { key: string; ticket: string; title: string | null; dealer: string | null; amount: string; payment: "CASH" | "CARD"; status: "ok" | "unknown" | "sold" | "looking" };
 
-export function EndOfDay({ centreId, centreName }: { centreId: string; centreName: string }) {
+export function EndOfDay({ centreId, centreName, onRecorded }: { centreId: string; centreName: string; onRecorded?: () => void }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [ticket, setTicket] = useState("");
@@ -17,17 +17,20 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
   useEffect(() => { input.current?.focus(); }, [lines.length]);
 
   async function add(raw: string) {
-    const sku = normaliseSku(raw);
+    const sku = canonicalTicket(raw);
     if (sku.length < 3) return;
     if (lines.some((l) => l.ticket === sku)) { setTicket(""); return; }
+    // Show the line straight away, fill it in when the lookup comes back
+    const key = crypto.randomUUID();
+    setLines((ls) => [{ key, ticket: sku, title: null, dealer: null, amount: "", payment: "CARD", status: "looking" }, ...ls]);
+    setTicket("");
     const r = await fetch(`/api/centres/${centreId}/sales?ticket=${encodeURIComponent(sku)}`);
     const j = await r.json();
-    const item = j.item as { title: string; price_pence: number; status: string; dealer: { name: string; code: string } | null } | null;
-    setLines((ls) => [{
-      key: crypto.randomUUID(), ticket: sku, title: item?.title ?? null, dealer: item?.dealer ? `${item.dealer.code} ${item.dealer.name}` : null,
-      amount: item ? (item.price_pence / 100).toString() : "", payment: "CARD", status: !item ? "unknown" : item.status === "sold" ? "sold" : "ok",
-    }, ...ls]);
-    setTicket("");
+    const item = j.item as { sku: string; title: string; price_pence: number; status: string; dealer: { name: string; code: string } | null } | null;
+    setLines((ls) => ls.map((l) => l.key !== key ? l : {
+      ...l, ticket: item?.sku ?? sku, title: item?.title ?? null, dealer: item?.dealer ? `${item.dealer.code} ${item.dealer.name}` : null,
+      amount: item ? (item.price_pence / 100).toString() : "", status: !item ? "unknown" : item.status === "sold" ? "sold" : "ok",
+    }));
   }
   const update = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   const remove = (key: string) => setLines((ls) => ls.filter((l) => l.key !== key));
@@ -45,6 +48,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
     const res = (j.results ?? []) as { status: string }[];
     setDone({ matched: res.filter((x) => x.status === "matched").length, dealerOnly: res.filter((x) => x.status === "dealer_only").length, unmatched: res.filter((x) => x.status === "unmatched" || x.status === "duplicate").length });
     setLines([]);
+    onRecorded?.();
   }
 
   const total = lines.reduce((a, l) => a + (l.status !== "sold" ? Math.round(parseFloat(l.amount || "0") * 100) : 0), 0);
@@ -63,10 +67,10 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
       )}
 
       <div className="card mb-4 p-4">
-        <div className="flex gap-2">
-          <input ref={input} className="field ticket flex-1 uppercase !text-[18px]" placeholder="Scan or type ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(ticket); } }} autoCapitalize="characters" autoCorrect="off" />
-          <button className="btn-dark !h-12" onClick={() => add(ticket)}>Add</button>
-        </div>
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); add(ticket); }}>
+          <input ref={input} className="field ticket flex-1 uppercase !text-[18px]" placeholder="Scan or type ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} enterKeyHint="done" autoCapitalize="characters" autoCorrect="off" />
+          <button type="submit" className="btn-dark !h-12">Add</button>
+        </form>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-muted">
           <label className="flex items-center gap-2 whitespace-nowrap">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
           <span className="basis-full">Type the number off each ticket and press Enter, or scan it with a Bluetooth scanner. Price and dealer fill in by themselves. If the dealer gave a discount, change the price to what was actually paid.</span>
@@ -79,7 +83,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="ticket text-[18px]">{displaySku(l.ticket)}</div>
-                <div className="truncate text-[13px] text-ink-muted">{l.status === "unknown" ? "Not in the app. Will be recorded against the ticket number only." : l.status === "sold" ? "Already recorded as sold" : `${l.title} · ${l.dealer}`}</div>
+                <div className="truncate text-[13px] text-ink-muted">{l.status === "looking" ? "Looking up…" : l.status === "unknown" ? "Not in the app. Will be recorded against the ticket number only." : l.status === "sold" ? "Already recorded as sold" : `${l.title} · ${l.dealer}`}</div>
               </div>
               <div className="flex items-center gap-2">
                 {l.status === "unknown" && <Pill kind="warning">Unknown</Pill>}
@@ -87,7 +91,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
                 <button className="text-[13px] text-ink-muted" onClick={() => remove(l.key)}>Remove</button>
               </div>
             </div>
-            {l.status !== "sold" && (
+            {l.status !== "sold" && l.status !== "looking" && (
               <div className="mt-3 flex items-center gap-2">
                 <div className="flex h-11 flex-1 items-center gap-1 rounded-[12px] border border-border px-3"><span className="whitespace-nowrap text-[12px] text-ink-muted">Price paid £</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={l.amount} onChange={(e) => update(l.key, { amount: e.target.value })} placeholder="Paid" /></div>
                 <div className="flex rounded-[10px] bg-surface-2 p-0.5">
@@ -106,7 +110,7 @@ export function EndOfDay({ centreId, centreName }: { centreId: string; centreNam
             <div><div className="num text-[18px] font-semibold">{money(total)}</div><div className="text-[11px] text-header-muted">Total</div></div>
             <div><div className="num text-[18px] font-semibold">{money(cash)}</div><div className="text-[11px] text-header-muted">Cash</div></div>
           </div>
-          <button className="btn" disabled={busy} onClick={submit}>{busy ? "Recording…" : `Record ${lines.filter((l) => l.status !== "sold").length} sale${lines.length === 1 ? "" : "s"}`}</button>
+          <button className="btn" disabled={busy || lines.some((l) => l.status === "looking")} onClick={submit}>{busy ? "Recording, a few seconds…" : `Record ${lines.filter((l) => l.status !== "sold").length} sale${lines.length === 1 ? "" : "s"}`}</button>
         </div>
       )}
     </div>
