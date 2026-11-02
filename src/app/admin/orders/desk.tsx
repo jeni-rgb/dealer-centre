@@ -100,7 +100,7 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
       {shown.length === 0 && <p className="card p-8 text-center text-[14px] text-ink-muted">{tab === "collect" ? "Nothing to collect." : tab === "unit" ? "Nothing at the unit." : "Nothing here."}</p>}
       {Object.entries(byCentre).map(([name, rows]) => (
         <div key={name} className="card mb-5 overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5"><h2 className="text-[14px] font-semibold">{name}</h2><span className="text-[12px] text-ink-muted">{rows.length}</span></div>
+          {Object.keys(byCentre).length > 1 && <div className="flex items-center justify-between border-b border-border px-4 py-2.5"><h2 className="text-[14px] font-semibold">{name}</h2><span className="text-[12px] text-ink-muted">{rows.length}</span></div>}
           {rows.map((o) => {
             const age = Math.floor((Date.now() - new Date(o.sold_at).getTime()) / 86400000);
             return (
