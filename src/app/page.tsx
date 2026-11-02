@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Logo, Mark } from "@/components/logo";
 import { Phone, Browser } from "@/components/devices";
+import { KitIllustration } from "@/components/kit";
 
 export const metadata: Metadata = {
   title: "Dealer Centre: stock, labels and sales for antique dealers and centres",
@@ -32,11 +33,11 @@ const compare: [string, string, string, string][] = [
 
 const faqs = [
   ["Does my centre need to be on Dealer Centre?", "No. If they are not, you add the centre yourself at sign up and your items carry its name. You mark things sold from your phone. When the centre joins, nothing changes for you."],
-  ["We have an ordinary till, not Square. Does it work?", "Yes. An iPad by the till runs the Till screen: scan the ticket, tap cash or card, done. Or type the day's tickets in at End of day. When you get Square, one button moves every item across."],
+  ["We have an ordinary till. Do we have to change it?", "When a centre subscribes, the Square Register comes with it and replaces the old till on day one, set up by us. Card payments move to Square at 1.75%. If your dealers are on the app before you subscribe, their sales can still be recorded at End of day in the meantime."],
   ["What happens to dealers who do not want the app?", "They carry on as they are. The centre gives them a line in the system with the code already on their tickets, and their sales still get recorded and still get a statement."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
-  ["What does the centre pay?", "£299 a month, 14 days free. Unlimited dealers, End of day, statements and payouts worked out, the Till screen, label printing, and the centre's own online shop run for you at 20% commission with no monthly cost."],
-  ["Is there a contract?", "No. Monthly, cancel from Settings. Card taken at sign up, nothing charged for 14 days."],
+  ["What does the centre pay?", "£299 a month on a 12 month subscription, and the Square Register Retail Kit is included: till, cash drawer, receipt printer, scanner and label printer, set up on site and yours to keep after 12 months. Unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission."],
+  ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Centres: 12 months, because the Register is included; after that it is monthly and the kit is yours."],
 ];
 
 const amazonTag = process.env.NEXT_PUBLIC_AMAZON_TAG ?? "";
@@ -44,9 +45,6 @@ const amazon = (q: string) => `https://www.amazon.co.uk/s?k=${encodeURIComponent
 const kit = [
   { name: "Label printer", pick: "Brother QL-820NWB", why: "Prints the ticket labels on wifi so any dealer can print to it. Zebra ZD411 (in the Square Retail Kit) and Dymo LabelWriter 550 also work.", price: "about £170", q: "Brother QL-820NWB label printer" },
   { name: "Labels", pick: "Brother DK-11209 (62 x 29 mm)", why: "Die cut, 800 a roll, the size every ticket label is laid out for. Two rolls lasts a centre a month.", price: "about £12 a roll", q: "Brother DK-11209 labels" },
-  { name: "Barcode scanner", pick: "Any Bluetooth 1D scanner", why: "Pairs with the till iPad like a keyboard. Scan the ticket, the sale fills in. Optional: typing works too.", price: "£25 to £40", q: "Bluetooth barcode scanner 1D wireless" },
-  { name: "iPad and stand", pick: "Any iPad, a counter stand", why: "Runs the Till screen next to your existing till. An older iPad is fine; the stand keeps it at the right angle for scanning.", price: "stand about £25", q: "iPad counter stand" },
-  { name: "Square reader", pick: "Square Reader or Terminal", why: "Only if you want Square as your till. Dealer Centre works without it; when you add it, every item moves across with one button.", price: "from £19", q: "Square card reader" },
 ];
 
 const faqJsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
@@ -136,16 +134,37 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
             <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-forest">For centres</h2>
-            <h3 className="mt-3 text-[36px] font-bold leading-[1.1] tracking-[-0.02em]">Sixty dealers. Sixty statements. Two minutes a day.</h3>
-            <p className="mt-4 text-[17px] leading-7 text-ink-muted">£299 a month. That is about £5 per dealer. Here is exactly what it buys, and what it replaces.</p>
+            <h3 className="mt-3 text-[40px] font-bold leading-[1.05] tracking-[-0.02em] md:text-[48px]">The till is included.</h3>
+            <p className="mt-4 text-[17px] leading-7 text-ink-muted">Sign up as a centre and the Square Register arrives: cash drawer, receipt printer, barcode scanner, and a Brother label printer every dealer can print to from their phone. We set it up on site with every dealer loaded. £299 a month, nothing else.</p>
+          </div>
+
+          <div className="mt-10 grid items-center gap-8 rounded-[28px] bg-white p-6 md:grid-cols-[1.15fr_0.85fr] md:p-10" style={{ border: "1px solid var(--dc-border)" }}>
+            <KitIllustration className="w-full" />
+            <div className="relative">
+              <div className="hand text-[26px] leading-7 text-ink-muted">What it costs on its own</div>
+              <div className="mt-1 flex items-baseline gap-3">
+                <span className="swipe figure text-[56px] leading-none text-ink-muted">£1,429</span>
+                <span className="hand text-[22px] text-ink-muted">+ VAT</span>
+              </div>
+              <div className="hand mt-5 text-[26px] leading-7 text-ink-muted">What it costs with Dealer Centre</div>
+              <div className="mt-1 flex items-baseline gap-3">
+                <span className="figure text-[72px] leading-none text-forest">£0</span>
+                <span className="hand text-[28px] text-forest">included</span>
+              </div>
+              <ul className="mt-6 flex flex-col gap-2 text-[15px]">
+                {["Square Register with customer display", "Cash drawer and receipt printer", "Barcode scanner for the tickets", "Brother label printer, prints from any dealer's phone", "Set up on site, every dealer loaded", "Yours to keep after 12 months"].map((b) => <li key={b} className="flex gap-2.5"><span className="font-bold text-forest">✓</span>{b}</li>)}
+              </ul>
+              <p className="hand mt-5 text-[22px] leading-6 text-ink-muted">12 month subscription at £299. That is it. No till to buy, no books to keep.</p>
+              <Link href="/signin?next=/signup/centre" className="btn mt-5 !w-auto !px-8">Set up my centre</Link>
+            </div>
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Every sale recorded", ["Till screen on an iPad next to the till you have", "End of day: scan the kept tickets, two minutes", "Square connected, if and when you get it", "Barcode on every app dealer's ticket", "Dealers not on the app still get a line and a statement"]],
-              ["Dealers and statements", ["Unlimited dealers, on the app or not", "Statements worked out: sales, commission, rent, net", "Payouts listed, PDF per dealer", "Dealers ranked: sales against rent, who has gone quiet", "Join requests approved with one tap"]],
-              ["Your online shop, run for you", ["Your own Shopify and eBay, stocked by your dealers", "We list, answer customers, pick, pack and post", "No monthly cost: 20% commission on what sells", "You and the dealer share the rest", "Items come off the floor the moment they sell online"]],
-              ["Set up, kit and people", ["We set it up with you on site", "Every dealer loaded with the code already on their tickets", "Printed code sheet for the till", "Label printer and labels at cost", "Square set up for you when you move to it"]],
+              ["Every sale recorded by the till", ["Dealers on the app: scan the barcode", "Dealers not on the app: tap their name, type the price", "Cash or card, the Register does the rest", "Nothing written in a book, ever"]],
+              ["Dealers and statements", ["Unlimited dealers, on the app or not", "Statements worked out: sales, commission, rent, net", "Payouts listed, PDF per dealer", "Dealers ranked: sales against rent, who has gone quiet"]],
+              ["Your online shop, run for you", ["Your own Shopify and eBay, stocked by your dealers", "We list, answer customers, pick, pack and post", "No monthly cost: 20% commission on what sells", "Items come off the floor the moment they sell online"]],
+              ["Set up and people", ["We come and set it up with you", "Every dealer loaded with the code already on their tickets", "Printed code sheet for the counter", "Someone to call who knows your centre"]],
             ].map(([t, bits]) => (
               <div key={t as string} className="card flex flex-col p-6">
                 <h4 className="text-[18px] font-semibold leading-6">{t as string}</h4>
@@ -164,7 +183,7 @@ export default function Landing() {
               <table className="w-full text-[14px]">
                 <tbody>
                   {[
-                    ["Cash book and card book per dealer", "Scan the ticket, tap cash or card"],
+                    ["Cash book and card book per dealer", "The Register records it"],
                     ["Statement day with a calculator", "Done at midnight on the last day"],
                     ["Dealers ringing to ask what sold", "A buzz on their phone within a minute"],
                     ["Handwritten tickets nobody can read", "Printed barcoded labels"],
@@ -174,35 +193,15 @@ export default function Landing() {
                 </tbody>
               </table>
             </div>
-            <div className="flex flex-col gap-5">
-              <div className="rounded-[20px] bg-forest p-6 text-white">
-                <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[#C9DCCF]">The sums</div>
-                <div className="mt-3 grid grid-cols-3 gap-3">
-                  {[["£299", "a month"], ["£5", "per dealer, at 60"], ["2 min", "a day on the till"]].map(([n, l]) => <div key={l} className="rounded-[12px] bg-white/10 px-3 py-3"><div className="figure text-[26px]">{n}</div><div className="text-[12px] text-[#C9DCCF]">{l}</div></div>)}
-                </div>
-                <p className="mt-4 text-[14px] leading-6 text-[#DCE8DD]">A centre taking £20,000 a week spends more than £299 a month on the person who adds up the books. The online shop, run for you, is where most centres find it pays for itself in the first month.</p>
+            <div className="rounded-[20px] bg-forest p-6 text-white">
+              <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[#C9DCCF]">The sums</div>
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                {[["£299", "a month, till included"], ["£5", "per dealer, at 60"], ["0 min", "a day on the books"]].map(([n, l]) => <div key={l} className="rounded-[12px] bg-white/10 px-3 py-3"><div className="figure text-[26px]">{n}</div><div className="text-[12px] text-[#C9DCCF]">{l}</div></div>)}
               </div>
-              <div className="card p-6">
-                <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Moving to Square?</div>
-                <p className="mt-2 text-[15px] leading-6">Keep your till for now; everything works. When you are ready for Square we set it up with you: till, reader, every dealer as a category, every item on the till with its barcode. One button, nothing retyped. Ask us about the Square bundle.</p>
-                <Link href="/signin?next=/signup/centre" className="btn-sm mt-4">Set up my centre</Link>
-              </div>
+              <p className="mt-4 text-[14px] leading-6 text-[#DCE8DD]">A centre taking £20,000 a week spends more than £299 a month on the person who adds up the books. The online shop, run for you, is where most centres find it pays for itself in the first month.</p>
+              <Link href="/guides/centres" className="mt-4 inline-block text-[14px] font-semibold text-white underline">Read the centre guide</Link>
             </div>
           </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {[
-              ["End of day", "Scan or type the tickets the till kept. Price and dealer fill in. Edit a figure or undo a ticket any time that week.", "/screens/centre-eod.jpg"],
-              ["Code sheet by the till", "Every dealer and their code on one printed page, so a handwritten ticket still gets recorded.", "/screens/centre-codes.jpg"],
-              ["Your online shop", "Dealers toggle items onto the centre's Shopify and eBay. We run it, pick and pack, and you take a share.", "/screens/centre-online.jpg"],
-            ].map(([t, b, img]) => (
-              <div key={t} className="card overflow-hidden">
-                <div className="aspect-[16/10] overflow-hidden border-b border-border bg-surface-2"><img src={img} alt="" className="h-full w-full object-cover object-top" loading="lazy" /></div>
-                <div className="p-5"><h4 className="text-[17px] font-semibold">{t}</h4><p className="mt-1.5 text-[14px] leading-6 text-ink-muted">{b}</p></div>
-              </div>
-            ))}
-          </div>
-          <Link href="/guides/centres" className="mt-6 inline-block text-[14px] font-semibold text-forest">Read the centre guide →</Link>
         </div>
       </section>
 
@@ -210,7 +209,7 @@ export default function Landing() {
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Pricing</h2>
-          <h3 className="mt-3 text-center text-[36px] font-bold tracking-[-0.02em]">Pay by what you sell, not what you list</h3>
+          <h3 className="mt-3 text-center text-[36px] font-bold tracking-[-0.02em]">Dealers pay by what they sell. Centres pay one price, till included.</h3>
           <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">List as much stock as you like. 14 days free on every plan, card at sign up, nothing charged until day 14, cancel any time.</p>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {dealerPlans.map((p) => (
@@ -238,8 +237,8 @@ export default function Landing() {
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
-              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month, 14 days free</span></div>
-              <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">Unlimited dealers, End of day, Till screen, label printing, statements and payouts worked out, set up on site, and your own online shop run for you at 20% commission. Works with the till you have.</p>
+              <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month, 12 months, Square Register included</span></div>
+              <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">The full Register kit on your counter from day one, set up on site. Unlimited dealers, statements and payouts worked out, and your own online shop run for you at 20% commission.</p>
             </div>
             <Link href="/signin?next=/signup/centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
           </div>
@@ -249,9 +248,9 @@ export default function Landing() {
       {/* Kit */}
       <section id="kit" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-muted">What you need</h2>
-          <h3 className="mt-3 text-[36px] font-bold tracking-[-0.02em]">Under £250 of kit for a whole centre</h3>
-          <p className="mt-3 max-w-2xl text-[16px] text-ink-muted">Nothing exotic. A label printer and a roll of labels is enough for a dealer printing at home. A centre adds an iPad by the till and a scanner.</p>
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Printing at home</h2>
+          <h3 className="mt-3 text-[36px] font-bold tracking-[-0.02em]">Dealers: the centre prints your labels. Or print your own.</h3>
+          <p className="mt-3 max-w-2xl text-[16px] text-ink-muted">Every subscribed centre has a label printer on the counter and you can print to it from your phone. If you label at the kitchen table instead, this is all you need.</p>
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {kit.map((k) => (
               <a key={k.name} href={amazon(k.q)} target="_blank" rel="noreferrer sponsored" className="card flex flex-col p-5 transition hover:border-accent">
@@ -263,7 +262,7 @@ export default function Landing() {
             ))}
             <div className="flex flex-col justify-center rounded-[18px] bg-surface-2 p-5 text-[14px] leading-6 text-ink-muted">
               <span className="font-semibold text-ink">Already have a printer?</span>
-              Most Brother QL and Dymo LabelWriter models work. Labels open as a PDF sized to the roll, so anything that prints 62 mm wide is fine.
+              Brother QL, Zebra ZD411 and Dymo LabelWriter all work; pick the model in Settings and the label lays itself out to the roll.
               <span className="mt-3 text-[12px]">Links go to Amazon. We may earn a small commission; the price to you is the same.</span>
             </div>
           </div>

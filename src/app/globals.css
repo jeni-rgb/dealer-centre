@@ -121,3 +121,10 @@ body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webki
 /* Quiet watermark of the mark for empty states and headers */
 .watermark { position: absolute; right: -8px; bottom: -14px; opacity: 0.08; pointer-events: none; }
 .header-dark { position: relative; overflow: hidden; }
+
+/* Handwritten notes and the marker swipe on the kit price */
+.hand { font-family: Caveat, "Segoe Print", "Bradley Hand", cursive; }
+.swipe { position: relative; display: inline-block; }
+.swipe::after { content: ""; position: absolute; left: -6%; right: -6%; top: 48%; height: 0.22em; background: var(--dc-gold); border-radius: 999px; transform: rotate(-4deg) scaleX(0); transform-origin: left center; opacity: 0.9; animation: swipe 0.7s 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+@keyframes swipe { to { transform: rotate(-4deg) scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .swipe::after { animation: none; transform: rotate(-4deg) scaleX(1); } }
