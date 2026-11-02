@@ -15,7 +15,7 @@ export function CentreSignupForm() {
   const [town, setTown] = useState("");
   const [dealers, setDealers] = useState("");
   const [r, setR] = useState<Rent>({ charges_rent: null, rent_frequency: "monthly", rent_day: "1st of the month", charges_commission: null, commission: "10" });
-  const [till, setTill] = useState<"ordinary" | "square" | null>(null);
+  const [till, setTill] = useState<"ordinary" | "square" | "other" | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [matches, setMatches] = useState<{ id: string; name: string; address: string | null; dealers: number }[]>([]);
@@ -112,13 +112,16 @@ export function CentreSignupForm() {
       )}
 
       {steps[step] === "till" && (
-        <Q {...q} title="Do you already have a Square till?" sub="This decides which of the two centre options you get.">
+        <Q {...q} title="Do you already have a POS?" sub="A till system or card machine you ring sales through. This decides which plan you get.">
           <div className="flex flex-col gap-2">
             <Choice on={till === "ordinary"} onClick={() => setTill("ordinary")}>
-              <span className="flex flex-col py-2"><span>No, an ordinary till or card machine</span><span className="text-[12px] font-normal text-ink-muted">We include the Square Register Retail Kit and set it up on site. £299 a month + VAT on a 12 month subscription, kit yours after that. Most centres.</span></span>
+              <span className="flex flex-col py-2"><span>No, or just a cash book</span><span className="text-[12px] font-normal text-ink-muted">Kit plan: we include the Square Register Retail Kit and set it up on site. £299 a month + VAT on a 12 month subscription, kit yours after that.</span></span>
             </Choice>
             <Choice on={till === "square"} onClick={() => setTill("square")}>
-              <span className="flex flex-col py-2"><span>Yes, we have Square</span><span className="text-[12px] font-normal text-ink-muted">We connect it and load every dealer. £299 a month + VAT, 14 days free, no commitment.</span></span>
+              <span className="flex flex-col py-2"><span>Yes, Square</span><span className="text-[12px] font-normal text-ink-muted">Own till plan: we connect your Square and load every dealer. £249 a month + VAT, 14 days free, cancel any time.</span></span>
+            </Choice>
+            <Choice on={till === "other"} onClick={() => setTill("other")}>
+              <span className="flex flex-col py-2"><span>Yes, something else</span><span className="text-[12px] font-normal text-ink-muted">Own till plan: keep your till, record sales on our till screen beside it. £249 a month + VAT, 14 days free, cancel any time. We will talk you through it.</span></span>
             </Choice>
           </div>
           <button className="btn" disabled={!till} onClick={next}>Continue</button>
@@ -131,11 +134,11 @@ export function CentreSignupForm() {
             <div className="flex items-start justify-between gap-6 px-4 py-3"><span className="shrink-0 text-ink-muted">Centre</span><span className="text-right font-medium"><span className="block">{name}</span>{town && <span className="block text-[13px] font-normal text-ink-muted">{town}</span>}</span></div>
             <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Rent</span><span className="font-medium">{r.charges_rent ? `${r.rent_frequency}, ${r.rent_day}` : "None"}</span></div>
             <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Commission</span><span className="font-medium">{r.charges_commission ? `${r.commission}%` : "None"}</span></div>
-            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Payments</span><span className="font-medium">{till === "square" ? "Square" : "Ordinary till"}</span></div>
+            <div className="flex justify-between px-4 py-3"><span className="text-ink-muted">Payments</span><span className="font-medium">{till === "square" ? "Square, own till plan £249" : till === "other" ? "Own POS, own till plan £249" : "Kit plan £299, Register included"}</span></div>
           </div>
           {err && <p className="text-[13px] text-danger">{err}</p>}
           <button className="btn" disabled={busy} onClick={create}>{busy ? "Setting up…" : "Set up my centre"}</button>
-          <p className="text-[12px] text-ink-muted">{till === "square" ? "£299 a month + VAT, 14 days free, cancel any time; you add a card on the next screen." : "£299 a month + VAT on a 12 month subscription, Square Register kit included; you add a card on the next screen."} You can change any of this later in Settings.</p>
+          <p className="text-[12px] text-ink-muted">{till !== "ordinary" ? "£249 a month + VAT, 14 days free, cancel any time; you add a card on the next screen." : "£299 a month + VAT on a 12 month subscription, Square Register kit included; you add a card on the next screen."} You can change any of this later in Settings.</p>
         </Q>
       )}
     </div>

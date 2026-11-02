@@ -28,7 +28,7 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
 
       <Card title="Connections">
         <div className="divide-y divide-border">
-          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, centre.till === "square" ? "Floor sales and items flow in automatically" : "Not needed. You record sales in End of day. Connect this only if you move to Square."], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"]].map(([t, label, href, hint]) => {
+          {[["square", "Square till", `/api/oauth/square?owner=centre&id=${centre.id}`, centre.till === "square" ? "Floor sales and items flow in automatically" : centre.till === "other" ? "Your till stays. Record sales on the till screen or at End of day. Connect this only if you move to Square." : "Not needed. You record sales in End of day. Connect this only if you move to Square."], ["shopify", "Centre online shop", null, "Your Shopify store. Dealers switch items on per item"]].map(([t, label, href, hint]) => {
             const c = ch(t!);
             return (
               <div key={t} className="flex items-center justify-between py-3">

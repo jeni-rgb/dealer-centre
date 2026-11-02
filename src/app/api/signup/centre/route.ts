@@ -13,7 +13,7 @@ const Input = z.object({
   commission_percent: z.number().min(0).max(50).default(0),
   rent_day: z.number().int().min(1).max(28).default(1),
   statement_day: z.number().int().min(1).max(28).default(1),
-  till: z.enum(["ordinary", "square"]).default("ordinary"),
+  till: z.enum(["ordinary", "square", "other"]).default("ordinary"),
   pin: z.string().regex(/^\d{4,8}$/).optional(),
   claim_centre_id: z.string().uuid().optional(),
 });

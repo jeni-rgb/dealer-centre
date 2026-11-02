@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     const priceId = s.items.data[0]?.price?.id;
     const customer = String(s.customer);
     const trialEnds = s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null;
-    if (priceId && priceId === env.stripe.centrePrice()) {
-      // Centre plan, £299 a month
+    if (priceId && (priceId === env.stripe.centrePrice() || priceId === env.stripe.centreOwnTillPrice())) {
+      // Centre plans: kit £299 or own till £249
       await db.from("centres").update({ plan: planFor(s), trial_ends_at: trialEnds }).eq("stripe_customer_id", customer);
     } else {
       // Dealer tiers by items sold a month: Starter up to 25, Trade 26 to 50, Pro over 50 (no cap). All + VAT.

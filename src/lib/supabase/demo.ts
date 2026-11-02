@@ -20,6 +20,7 @@ const IDS = {
   ch_manual: "33333333-3333-3333-3333-333333333331",
   ch_shopify: "33333333-3333-3333-3333-333333333332",
   ch_square: "33333333-3333-3333-3333-333333333333",
+  ch_centre_shop: "33333333-3333-3333-3333-333333333334",
   printer_centre: "44444444-4444-4444-4444-444444444441",
   printer_own: "44444444-4444-4444-4444-444444444442",
 };
@@ -59,6 +60,7 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   channels: [
     { id: IDS.ch_manual, type: "manual", owner_type: "centre", owner_id: IDS.centre, external_account_id: "manual", location_id: null, status: "active", last_webhook_at: null, created_at: d(10) },
+    { id: IDS.ch_centre_shop, type: "shopify", owner_type: "centre", owner_id: IDS.centre, external_account_id: "looses-emporium.myshopify.com", location_id: null, status: "active", last_webhook_at: d(0, 10, 2), created_at: d(10) },
     { id: IDS.ch_shopify, type: "shopify", owner_type: "dealer", owner_id: IDS.dealer, external_account_id: "bloom-antiques.myshopify.com", location_id: null, status: "active", last_webhook_at: d(1, 9, 5), created_at: d(4) },
   ],
   items: items.map(([id, sku, title, price, cost, age, status, shop, centreShop]) => ({
@@ -72,6 +74,10 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "l8", item_id: "i08", channel_id: IDS.ch_shopify, status: "closed", external_id: "gid://shopify/Product/8", external_variant_id: "v8", last_error: null },
   ],
   sales: [
+    { id: "o1", item_id: "i06", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1041", amount_pence: 39500, listed_price_pence: 39500, discount_pence: 0, channel_fee_pence: 7900, postage_pence: 0, payment_type: "online", ticket_no: "B140331", sold_at: d(0, 10, 2), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "o2", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1038", amount_pence: 6500, listed_price_pence: 6500, discount_pence: 0, channel_fee_pence: 1300, postage_pence: 0, payment_type: "online", ticket_no: "JH0214", sold_at: d(1, 19, 40), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "o3", item_id: null, dealer_id: IDS.dealer2, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1031", amount_pence: 32000, listed_price_pence: 32000, discount_pence: 0, channel_fee_pence: 6400, postage_pence: 0, payment_type: "online", ticket_no: "JH0198", sold_at: d(2, 14, 12), voided_at: null, corrected_at: null, original_amount_pence: null },
+    { id: "o4", item_id: null, dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_centre_shop, external_order_id: "shop-1022", amount_pence: 9500, listed_price_pence: 9500, discount_pence: 0, channel_fee_pence: 1900, postage_pence: 0, payment_type: "online", ticket_no: "B140344", sold_at: d(5, 11, 30), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "s1", item_id: "i07", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod1", amount_pence: 4200, listed_price_pence: 4200, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "CARD", ticket_no: "B140370", sold_at: d(0, 11, 20), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "s2", item_id: "i08", dealer_id: IDS.dealer, centre_id: null, channel_id: IDS.ch_shopify, external_order_id: "sh1", amount_pence: 11000, listed_price_pence: 11000, discount_pence: 0, channel_fee_pence: 0, postage_pence: 0, payment_type: "online", ticket_no: "B140365", sold_at: d(0, 16, 40), voided_at: null, corrected_at: null, original_amount_pence: null },
     { id: "s3", item_id: "i09", dealer_id: IDS.dealer, centre_id: IDS.centre, channel_id: IDS.ch_manual, external_order_id: "eod2", amount_pence: 3000, listed_price_pence: 3300, discount_pence: 300, channel_fee_pence: 0, postage_pence: 0, payment_type: "CASH", ticket_no: "B140362", sold_at: d(0, 14, 5), voided_at: null, corrected_at: null, original_amount_pence: null },

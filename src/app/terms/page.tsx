@@ -42,28 +42,28 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Centre plans",
     "body": [
-      "Centres pay £299 a month plus VAT. There are two options, set by your answer to \"Do you already have a Square till?\" when you sign up.",
-      "Already on Square: a monthly subscription with 14 days free. You can cancel at any time and it stops at the end of the period you have paid for.",
-      "No Square till: a 12 month subscription with the Square Register kit included. There is no free trial and the first payment is taken when you subscribe. Both options include unlimited dealers, statements and payout figures."
+      "There are two centre plans, set by your answer to \"Do you already have a POS?\" when you sign up. All prices are plus VAT.",
+      "Own till plan, £249 a month: for centres that already have a till or card machine. A monthly subscription with 14 days free. You can cancel at any time and it stops at the end of the period you have paid for. Square connects to Dealer Centre directly; any other till is used alongside the Dealer Centre till screen or End of day.",
+      "Kit plan, £299 a month: for centres with no POS. A 12 month subscription with the Square Register kit included. There is no free trial and the first payment is taken when you subscribe. Both plans include unlimited dealers, statements and payout figures."
     ]
   },
   {
     "title": "Free trials",
     "body": [
-      "Dealers get 14 days free. Centres already on Square get 14 days free. We take card details at the start but charge nothing until the trial ends, and we email you before the first payment. If you cancel before the trial ends, you pay nothing. There is no trial on the 12 month centre option."
+      "Dealers get 14 days free. Centres on the own till plan get 14 days free. We take card details at the start but charge nothing until the trial ends, and we email you before the first payment. If you cancel before the trial ends, you pay nothing. There is no trial on the kit plan."
     ]
   },
   {
     "title": "Billing and renewal",
     "body": [
       "Payments are taken by card through Stripe, monthly in advance, on the same date each month. Subscriptions renew automatically until cancelled. If you change plan, Stripe adjusts the charge for the part of the month left.",
-      "If a payment fails, we will ask you to update your card. If it is still unpaid, we may limit your account until it is paid, as set out under Suspension. We may change our prices with at least 30 days notice by email; the new price applies from your next renewal after that. The price for a centre on the 12 month option does not go up during its first 12 months."
+      "If a payment fails, we will ask you to update your card. If it is still unpaid, we may limit your account until it is paid, as set out under Suspension. We may change our prices with at least 30 days notice by email; the new price applies from your next renewal after that. The price for a centre on the kit plan does not go up during its first 12 months."
     ]
   },
   {
-    "title": "The 12 month centre option and the Register kit",
+    "title": "The kit plan and the Register kit",
     "body": [
-      "If you take the 12 month option, you agree to pay £299 a month for 12 months from the date you subscribe. After 12 months it carries on monthly and you can cancel at any time.",
+      "If you take the kit plan, you agree to pay £299 a month plus VAT for 12 months from the date you subscribe. After 12 months it carries on monthly and you can cancel at any time.",
       "The kit is the Square Register Retail Kit: Square Register (2nd generation), 2D corded barcode scanner, Square Register tactile PIN guide, USB cash drawer, USB and Ethernet receipt printer, and USB barcode label printer. A barcode stand is not included. Dealer Centre arranges delivery and sets it up at your centre. Square charges its own fees and plans separately, and barcode label printing through Square needs Square for Retail Plus.",
       "The kit stays ours until you have paid all 12 monthly payments. It then becomes yours to keep. Until then, look after it, keep it at your centre and do not sell or lend it. If the Square hardware develops a fault, we will help you claim under Square's warranty. [Confirm warranty arrangements.]",
       "If you end the subscription during the first 12 months, or we end it because you have not paid, you must pay the months left in the 12 month term straight away. Square's own fees for card payments are charged by Square, not by us."
@@ -72,8 +72,8 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Cancelling",
     "body": [
-      "Dealers and centres already on Square can cancel at any time from Settings. Cancelling stops the next renewal and you keep access until the end of the period you have paid for. We do not refund part months.",
-      "Centres on the 12 month option can cancel once the 12 months are up by emailing hello@thedealercentre.co.uk; the self service page does not offer cancelling during the term.",
+      "Dealers and centres on the own till plan can cancel at any time from Settings. Cancelling stops the next renewal and you keep access until the end of the period you have paid for. We do not refund part months.",
+      "Centres on the kit plan can cancel once the 12 months are up by emailing hello@thedealercentre.co.uk; the self service page does not offer cancelling during the term.",
       "When an account closes, your listings stop syncing to Square and Shopify. You can download your statements before you leave. We keep records as set out in our privacy policy."
     ]
   },
@@ -134,7 +134,7 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Changes to these terms",
     "body": [
-      "We may update these terms. If a change matters, we will email you at least 30 days before it takes effect. Carrying on using Dealer Centre after that means you accept the new terms. If you do not, you can cancel before they take effect, and for centres on the 12 month option a change that materially harms you lets you leave without the early ending charge."
+      "We may update these terms. If a change matters, we will email you at least 30 days before it takes effect. Carrying on using Dealer Centre after that means you accept the new terms. If you do not, you can cancel before they take effect, and for centres on the kit plan a change that materially harms you lets you leave without the early ending charge."
     ]
   },
   {

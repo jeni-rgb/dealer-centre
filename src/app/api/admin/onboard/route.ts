@@ -9,7 +9,7 @@ const Input = z.object({
   name: z.string().min(2).max(80),
   address: z.string().max(200).optional(),
   owner_email: z.string().email(),
-  till: z.enum(["ordinary", "square"]).default("ordinary"),
+  till: z.enum(["ordinary", "square", "other"]).default("ordinary"),
   commission_percent: z.number().min(0).max(50).default(0),
   charges_rent: z.boolean().default(true),
   rent_frequency: z.enum(["weekly", "monthly", "quarterly"]).default("monthly"),

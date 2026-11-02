@@ -8,7 +8,7 @@ export function OnboardForm() {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
-  const [till, setTill] = useState<"ordinary" | "square">("ordinary");
+  const [till, setTill] = useState<"ordinary" | "square" | "other">("ordinary");
   const [commission, setCommission] = useState("10");
   const [rent, setRent] = useState(true);
   const [freq, setFreq] = useState<"weekly" | "monthly" | "quarterly">("monthly");
@@ -62,7 +62,7 @@ export function OnboardForm() {
         <div><label className="field-label">Town or address</label><input className="field" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Magdalen Street, Norwich" /></div>
         <div><label className="field-label">Owner&rsquo;s email</label><input className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@centre.co.uk" /></div>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="field-label">Till</label><select className="field" value={till} onChange={(e) => setTill(e.target.value as "ordinary" | "square")}><option value="ordinary">Ordinary till (iPad recording)</option><option value="square">Square</option></select></div>
+          <div><label className="field-label">Till</label><select className="field" value={till} onChange={(e) => setTill(e.target.value as "ordinary" | "square" | "other")}><option value="ordinary">No POS: kit plan, £299, Register included</option><option value="square">Square: own till plan, £249</option><option value="other">Another POS: own till plan, £249, till screen alongside</option></select></div>
           <div><label className="field-label">Commission %</label><input className="field num" inputMode="decimal" value={commission} onChange={(e) => setCommission(e.target.value)} /></div>
           <div><label className="field-label">Rent</label><select className="field" value={rent ? freq : "none"} onChange={(e) => { if (e.target.value === "none") setRent(false); else { setRent(true); setFreq(e.target.value as typeof freq); } }}><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="quarterly">Quarterly</option><option value="none">No rent, commission only</option></select></div>
           <div><label className="field-label">Free months</label><input className="field num" inputMode="numeric" value={freeMonths} onChange={(e) => setFreeMonths(e.target.value)} /><span className="mt-1 block text-[12px] text-ink-muted">0 = normal 14 day trial, card required</span></div>
