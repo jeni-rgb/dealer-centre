@@ -1,8 +1,11 @@
-<!-- Supabase > Authentication > Email Templates > Magic Link. Subject: Your Dealer Centre sign in link -->
-<div style="font-family: Inter, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #0F172A;">
-  <div style="font-size: 13px; font-weight: 600; color: #2563EB;">Dealer Centre</div>
-  <h1 style="font-size: 22px; font-weight: 600; margin: 12px 0 8px;">Sign in to Dealer Centre</h1>
-  <p style="font-size: 15px; line-height: 22px; color: #64748B; margin: 0 0 24px;">Tap the button and you are in. No password to remember. The link works once and expires in an hour.</p>
-  <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: #2563EB; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 14px 22px; border-radius: 12px;">Sign in</a>
-  <p style="font-size: 12px; line-height: 18px; color: #94A3B8; margin: 28px 0 0;">If you did not ask for this, ignore it. Nobody can sign in without this email.<br>Dealer Centre, Norwich</p>
+<!-- Supabase > Authentication > Email Templates > Magic Link.
+     Subject: Your Dealer Centre sign in link
+     Paste this as the WHOLE body. Delete Supabase's default text above and below it, otherwise the email shows two links. -->
+<div style="font-family: Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #FDFBEF; color: #1A1A17;">
+  <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #5C5319;">DEALER CENTRE</div>
+  <h1 style="font-size: 22px; font-weight: 700; margin: 14px 0 8px; color: #1A1A17;">Sign in to Dealer Centre</h1>
+  <p style="font-size: 15px; line-height: 22px; color: #6E6A58; margin: 0 0 24px;">Tap the button and you are in. No password to remember. The link works once and expires in an hour.</p>
+  <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: #5C5319; color: #FDFBEF; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 26px; border-radius: 999px;">Sign in</a>
+  <p style="font-size: 12px; line-height: 18px; color: #6E6A58; margin: 24px 0 0;">Button not working? Copy this address into your browser:<br><span style="word-break: break-all; color: #6E6A58;">{{ .ConfirmationURL }}</span></p>
+  <p style="font-size: 12px; line-height: 18px; color: #9A9484; margin: 24px 0 0;">If you did not ask for this, ignore it. Nobody can sign in without this email.<br>Dealer Centre, Norwich</p>
 </div>

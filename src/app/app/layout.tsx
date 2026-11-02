@@ -4,6 +4,12 @@ import { getMe } from "@/lib/auth";
 export default async function DealerLayout({ children }: { children: React.ReactNode }) {
   const me = await getMe();
   if (!me) redirect("/signin?next=/app");
-  if (!me.dealer_id) redirect("/signup/dealer");
+  if (!me.dealer_id) {
+    // A centre owner who typed /app by hand: send them to their dashboard rather than dealer sign up
+    const { supabaseServer } = await import("@/lib/supabase/server");
+    const sb = await supabaseServer();
+    const { data: owned } = await sb.from("centre_owners").select("centre_id").eq("user_id", me.id).limit(1);
+    redirect(owned?.length ? "/centre" : me.is_platform_admin ? "/admin" : "/signup/dealer");
+  }
   return <>{children}</>;
 }
