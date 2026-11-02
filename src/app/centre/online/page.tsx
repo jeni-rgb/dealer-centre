@@ -28,12 +28,12 @@ export default async function CentreOnline({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <div className="mb-6"><h1 className="text-[24px] font-semibold">Online shop</h1><p className="text-[13px] text-ink-muted">Sales through {centre.name}'s online shop. You pick, pack and hand over; dealers get paid on their statement.</p></div>
+      <div className="mb-6"><h1 className="text-[24px] font-semibold">Online shop</h1><p className="text-[13px] text-ink-muted">Sales through {centre.name}'s online shop. Our runner collects, packs and posts each one; keep it to one side until then. Dealers get paid on their statement.</p></div>
       <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
         <Kpi label="Online sales this month" value={money(gross)} />
         <Kpi label={`Dealer Centre ${platformBps / 100}%`} value={money(platform)} sub="Charged on your next invoice, + VAT" />
         <Kpi label={`Your centre ${centre.centre_online_share_bps / 100}%`} value={money(share)} sub="Stays with you" />
-        <Kpi label="To pick" value={String(live.length)} sub="Sold in the last 3 days" tone={live.length ? "warning" : undefined} />
+        <Kpi label="Awaiting collection" value={String(live.length)} sub="Sold in the last 3 days, keep to one side" tone={live.length ? "warning" : undefined} />
       </div>
       <p className="mb-8 text-[13px] text-ink-muted">
         {`Online commission is ${centre.online_commission_bps / 100}% of each online sale: ${platformBps / 100}% to Dealer Centre, ${centre.centre_online_share_bps / 100}% to your centre; the dealer gets the rest on their statement. `}
@@ -42,7 +42,7 @@ export default async function CentreOnline({ searchParams }: { searchParams: Pro
           : `${lastPeriod.toLocaleDateString("en-GB", { month: "long" })}: worked out on the 1st and added to your next £299 invoice.`}
       </p>
       <div className="card overflow-hidden">
-        <div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Picking list</h2></div>
+        <div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">For our runner to collect</h2></div>
         {online.length === 0 && <p className="px-5 py-8 text-center text-[14px] text-ink-muted">No online sales yet this month.</p>}
         {online.map((s) => {
           const it = s.items as unknown as { title: string; photos: { url?: string }[] } | null;

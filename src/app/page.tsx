@@ -39,6 +39,7 @@ const faqs = [
   ["Does my centre need to be on Dealer Centre?", "No. If they are not, you add the centre yourself at sign up and your items carry its name. You mark things sold from your phone. When the centre joins, nothing changes for you."],
   ["We have an ordinary till. Do we have to change it?", "When a centre subscribes, the Square Register comes with it and replaces the old till on day one, set up by us. Card payments move to Square at 1.75%. If your dealers are on the app before you subscribe, their sales can still be recorded at End of day in the meantime."],
   ["What happens to dealers who do not want the app?", "They carry on as they are. The centre gives them a line in the system with the code already on their tickets, and their sales still get recorded and still get a statement."],
+  ["Who posts what sells online?", "We do, all of it. A Dealer Centre runner collects the item from the centre, packs it and posts it, and our online shop manager handles the buyer from first question to delivery. The centre does nothing and the dealer does nothing. Postage is taken from the sale before the split."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
   ["What does the centre pay?", "Two plans. Kit plan, £299 a month + VAT: for centres with no POS, a 12 month subscription with the Square Register Retail Kit included, set up on site and yours to keep after 12 months, no free trial. Own till plan, £249 a month + VAT: you already have a POS, keep it; Square connects directly and any other till works beside our till screen. Monthly, 14 days free, cancel any time. Both include unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission (15% to Dealer Centre, 5% to the centre)."],
   ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Kit plan centres: 12 months, then monthly and the kit is yours. Own till plan centres: monthly, no commitment."],
@@ -168,13 +169,13 @@ export default function Landing() {
       <section id="online-shop" className="bg-white py-24">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 md:grid-cols-2">
           <div>
-            <h2 className="text-[36px] leading-[1.08] md:text-[44px]">Your online shop. Stocked by your dealers, run by us.</h2>
-            <p className="mt-5 text-[18px] leading-8 text-ink-muted">Most centres have thousands of items that only the people who walk through the door ever see. Dealer Centre puts them online under your centre&rsquo;s name, with no listing to do and nothing to pay up front.</p>
+            <h2 className="text-[36px] leading-[1.08] md:text-[44px]">Your online shop. Stocked by your dealers. Run, packed and posted by us.</h2>
+            <p className="mt-5 text-[18px] leading-8 text-ink-muted">Most centres have thousands of items that only the people who walk through the door ever see. Dealer Centre puts them online under your centre&rsquo;s name and does the whole job: listing, customers, payment, collection, packing and posting. Nothing to do and nothing to pay up front.</p>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {[
                 ["We build it and list it", "Every item a dealer switches on goes up with its photos, price and ticket number. New stock appears the day it is listed."],
-                ["We take the payment and talk to the buyer", "Questions, payment, order emails and the receipt are handled. You hear when something sells."],
-                ["You pick it and post it", "A picking list with the ticket number and the dealer. Take it off the shelf, pack it, send it."],
+                ["Our shop manager deals with the buyer", "Questions, payment, order emails and the receipt are handled by a person whose job it is. You hear when something sells."],
+                ["Our runner collects, packs and posts it", "A Dealer Centre runner takes it off your shelf, packs it properly and sends it. You never touch a parcel."],
                 ["It comes off the floor instantly", "Sold online, the ticket is dead on the till. Sold on the floor, the listing closes. Nothing is sold twice."],
               ].map(([t, b]) => <div key={t}><h3 className="text-[17px] font-bold leading-6">{t}</h3><p className="mt-1.5 text-[14px] leading-6 text-ink-muted">{b}</p></div>)}
             </div>
@@ -189,7 +190,7 @@ export default function Landing() {
           </div>
           <div className="flex flex-col gap-4">
             <Browser src="/screens/centre-online.webp" alt="Centre online shop page: online sales, your share, picking list" />
-            <p className="text-center text-[13px] text-ink-muted">The centre&rsquo;s view: what sold online, your 5%, and the picking list.</p>
+            <p className="text-center text-[13px] text-ink-muted">The centre&rsquo;s view: what sold online, your 5%, and what our runner is collecting.</p>
           </div>
         </div>
       </section>
@@ -204,7 +205,7 @@ export default function Landing() {
             {[
               ["Every sale recorded by the till", "Dealers on the app: scan the barcode. Dealers not on the app: tap their name, type the price. Cash or card, the Register does the rest. Nothing written in a book, ever."],
               ["Dealers and statements", "Unlimited dealers, on the app or not. Statements worked out: sales, commission, rent, net. Payouts listed, PDF per dealer. Dealers ranked: sales against rent, who has gone quiet."],
-              ["Your online shop, run for you", "Every dealer's stock, listed and sold online under your centre's name. We build it, list it, take the payment and answer the customer. You pick it off the shelf and post it. 20% commission on what sells online (15% Dealer Centre, 5% to your centre)."],
+              ["Your online shop, run for you", "Every dealer's stock, listed and sold online under your centre's name. Our shop manager lists it, answers the customer and takes the payment; our runner collects it from your shelf, packs it and posts it. You do nothing. 20% commission on what sells online (15% Dealer Centre, 5% to your centre)."],
             ].map(([t, b]) => <div key={t}><h3 className="text-[20px] font-bold leading-7">{t}</h3><p className="mt-2 text-[15px] leading-6 text-ink-muted">{b}</p></div>)}
           </div>
         </div>
