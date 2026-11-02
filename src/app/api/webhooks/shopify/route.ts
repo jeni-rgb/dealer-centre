@@ -28,7 +28,18 @@ export async function POST(req: Request) {
       for (const line of shopifyWebhookOrderToLines(payload)) await recordSale(db, channel as ChannelRow, line);
     }
     if (topic === "refunds/create") {
-      await voidSale(db, channel as ChannelRow, `gid://shopify/Order/${payload.order_id}`);
+      const gid = `gid://shopify/Order/${payload.order_id}`;
+      await voidSale(db, channel as ChannelRow, gid);
+      const { data: refunded } = await db.from("sales").select("id").eq("channel_id", channel.id).eq("external_order_id", gid);
+      for (const s of refunded ?? []) await db.from("fulfilments").upsert({ sale_id: s.id, status: "refunded", refunded_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "sale_id" });
+    }
+    // Click & Drop (or anyone) marks the order fulfilled in Shopify: that is despatch. Tracking comes with it.
+    if (topic === "fulfillments/create" || topic === "fulfillments/update") {
+      const gid = `gid://shopify/Order/${payload.order_id}`;
+      const tracking = payload.tracking_number ?? payload.tracking_numbers?.[0] ?? null;
+      const carrier = payload.tracking_company ?? null;
+      const { data: sales } = await db.from("sales").select("id, centre_id").eq("channel_id", channel.id).eq("external_order_id", gid);
+      for (const s of sales ?? []) await db.from("fulfilments").upsert({ sale_id: s.id, centre_id: s.centre_id, status: "despatched", despatched_at: payload.created_at ?? new Date().toISOString(), tracking, carrier, shopify_fulfilled: true, shopify_fulfillment_id: String(payload.id ?? ""), updated_at: new Date().toISOString() }, { onConflict: "sale_id" });
     }
     if (topic === "app/uninstalled") {
       await db.from("channels").update({ status: "disconnected", access_token: null }).eq("id", channel.id);

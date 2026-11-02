@@ -5,7 +5,7 @@ import { shopifyOAuth } from "@/lib/channels/shopify";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { enqueue } from "@/lib/jobs/queue";
 
-const TOPICS = ["orders/create", "orders/updated", "orders/paid", "refunds/create", "products/update", "app/uninstalled"];
+const TOPICS = ["orders/create", "orders/updated", "orders/paid", "refunds/create", "fulfillments/create", "fulfillments/update", "products/update", "app/uninstalled"];
 
 export async function GET(req: Request) {
   const u = new URL(req.url);

@@ -3,9 +3,10 @@ import { money } from "@/components/ui";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 
 /** The runner's sheet: what to collect, by centre, by pitch. Print it. */
-export default async function RunSheet({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
-  const { centre } = await searchParams;
-  const orders = (await listOnlineOrders(supabaseAdmin(), { centreId: centre || undefined })).filter((o) => o.status === "new");
+export default async function RunSheet({ searchParams }: { searchParams: Promise<{ centre?: string; ids?: string }> }) {
+  const { centre, ids } = await searchParams;
+  const want = (ids ?? "").split(",").filter(Boolean);
+  const orders = (await listOnlineOrders(supabaseAdmin(), { centreId: centre || undefined })).filter((o) => want.length ? want.includes(o.sale_id) : o.status === "new");
   const byCentre = orders.reduce<Record<string, typeof orders>>((m, o) => { (m[o.centre] ??= []).push(o); return m; }, {});
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 text-[13px] text-ink print:p-0">
@@ -26,7 +27,7 @@ export default async function RunSheet({ searchParams }: { searchParams: Promise
           </table>
         </section>
       ))}
-      <p className="mt-8 text-[11px] text-ink-muted">Tick each item as it goes in the van, then mark them Collected in Online orders. Anything not on the shelf: tell the centre, mark it Missing.</p>
+      <p className="mt-8 text-[11px] text-ink-muted">Tick each item as it goes in the van, then select them in Online orders and press Mark collected. Anything not on the shelf: Mark missing, which tells the centre and the dealer.</p>
     </div>
   );
 }

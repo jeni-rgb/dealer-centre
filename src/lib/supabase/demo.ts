@@ -114,10 +114,10 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "st2", dealer_id: IDS.dealer, centre_id: IDS.centre, period: periodOf(-2), gross_pence: 198500, commission_pence: 19850, rent_pence: 39000, net_pence: 139650, status: "paid", paid_at: d(33), pdf_path: null },
   ],
   fulfilments: [
-    { sale_id: "o1", centre_id: IDS.centre, status: "new", collected_at: null, packed_at: null, posted_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
-    { sale_id: "o2", centre_id: IDS.centre, status: "collected", collected_at: d(0, 9, 0), packed_at: null, posted_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
-    { sale_id: "o3", centre_id: IDS.centre, status: "posted", collected_at: d(1), packed_at: d(1), posted_at: d(1, 15, 0), carrier: "Royal Mail", tracking: "RM123456789GB", note: null, shopify_fulfilled: true },
-    { sale_id: "o4", centre_id: IDS.centre, status: "posted", collected_at: d(4), packed_at: d(4), posted_at: d(4), carrier: "Royal Mail", tracking: "RM123456001GB", note: null, shopify_fulfilled: true },
+    { sale_id: "o1", centre_id: IDS.centre, status: "new", collected_at: null, at_unit_at: null, despatched_at: null, slip_printed_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
+    { sale_id: "o2", centre_id: IDS.centre, status: "collected", collected_at: d(0, 9, 0), at_unit_at: null, despatched_at: null, slip_printed_at: null, carrier: null, tracking: null, note: null, shopify_fulfilled: false },
+    { sale_id: "o3", centre_id: IDS.centre, status: "despatched", collected_at: d(1), at_unit_at: d(1), despatched_at: d(1, 15, 0), slip_printed_at: d(1), carrier: "Royal Mail", tracking: "RM123456789GB", note: null, shopify_fulfilled: true },
+    { sale_id: "o4", centre_id: IDS.centre, status: "despatched", collected_at: d(4), at_unit_at: d(4), despatched_at: d(4), slip_printed_at: d(4), carrier: "Royal Mail", tracking: "RM123456001GB", note: null, shopify_fulfilled: true },
   ],
   centre_commissions: [
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },

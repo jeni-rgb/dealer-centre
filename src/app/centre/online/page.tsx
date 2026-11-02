@@ -45,7 +45,7 @@ export default async function CentreOnline({ searchParams }: { searchParams: Pro
         {orders.slice(0, 40).map((o) => (
           <div key={o.sale_id} className="flex items-center gap-4 border-b border-border px-5 py-3 last:border-0">
             <div className="flex flex-1 flex-col"><span className="text-[14px] font-medium">{o.title}</span><span className="text-[12px] text-ink-muted">{o.dealer} · <span className="ticket">{o.dealer_code}</span>{o.pitches.length ? ` · pitch ${o.pitches.join(", ")}` : ""} · ticket {o.ticket ?? "–"}</span></div>
-            <Pill kind={o.status === "new" ? "warning" : o.status === "posted" ? "success" : o.status === "missing" ? "danger" : "neutral"}>{o.status === "new" ? "Leave on shelf" : STATUS_LABEL[o.status]}</Pill>
+            <Pill kind={o.status === "new" ? "warning" : o.status === "despatched" ? "success" : o.status === "missing" || o.status === "refunded" ? "danger" : "neutral"}>{o.status === "new" ? "Leave on shelf" : o.status === "missing" ? "Not found, please look" : STATUS_LABEL[o.status]}</Pill>
             <span className="w-24 text-right text-[12px] text-ink-muted">{new Date(o.sold_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
             <span className="num w-20 text-right text-[14px] font-semibold">{money(o.amount_pence)}</span>
           </div>
