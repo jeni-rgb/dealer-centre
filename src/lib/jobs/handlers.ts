@@ -149,6 +149,6 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
   },
 
   async notify_sale(db, p) {
-    await sendSaleNotification(db, p as { item_id: string | null; dealer_id: string; amount_pence?: number; ticket_no?: string | null });
+    await sendSaleNotification(db, p as { item_id: string | null; dealer_id: string; amount_pence?: number; ticket_no?: string | null; online?: boolean });
   },
 };

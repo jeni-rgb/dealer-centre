@@ -28,12 +28,12 @@ export default async function CentreOnline({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <div className="mb-6"><h1 className="text-[24px] font-semibold">Online shop</h1><p className="text-[13px] text-ink-muted">Sales through {centre.name}'s online shop. Our runner collects, packs and posts each one; keep it to one side until then. Dealers get paid on their statement.</p></div>
+      <div className="mb-6"><h1 className="text-[24px] font-semibold">Online shop</h1><p className="text-[13px] text-ink-muted">Sales through {centre.name}'s online shop. Our runner collects every other day, then packs and posts each one. Leave sold items where they are, or to one side. Dealers get paid on their statement.</p></div>
       <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
         <Kpi label="Online sales this month" value={money(gross)} />
         <Kpi label={`Dealer Centre ${platformBps / 100}%`} value={money(platform)} sub="Charged on your next invoice, + VAT" />
         <Kpi label={`Your centre ${centre.centre_online_share_bps / 100}%`} value={money(share)} sub="Stays with you" />
-        <Kpi label="Awaiting collection" value={String(live.length)} sub="Sold in the last 3 days, keep to one side" tone={live.length ? "warning" : undefined} />
+        <Kpi label="Awaiting collection" value={String(live.length)} sub="Collected every other day" tone={live.length ? "warning" : undefined} />
       </div>
       <p className="mb-8 text-[13px] text-ink-muted">
         {`Online commission is ${centre.online_commission_bps / 100}% of each online sale: ${platformBps / 100}% to Dealer Centre, ${centre.centre_online_share_bps / 100}% to your centre; the dealer gets the rest on their statement. `}

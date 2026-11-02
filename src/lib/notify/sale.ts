@@ -10,7 +10,7 @@ import { pushToDealer } from "@/lib/push/send";
  */
 export async function sendSaleNotification(
   db: Admin,
-  p: { item_id: string | null; dealer_id: string; amount_pence?: number; ticket_no?: string | null },
+  p: { item_id: string | null; dealer_id: string; amount_pence?: number; ticket_no?: string | null; online?: boolean },
 ) {
   const { data: users } = await db.from("users").select("email").eq("dealer_id", p.dealer_id);
   if (!users?.length) return;
@@ -19,7 +19,7 @@ export async function sendSaleNotification(
   if (p.item_id) {
     const { data: item } = await db.from("items").select("title, price_pence, sku, centre_id, centres(name)").eq("id", p.item_id).single();
     const where = (item?.centres as unknown as { name: string } | null)?.name ?? "online";
-    line = `Sold: ${item?.title}, £${((item?.price_pence ?? 0) / 100).toFixed(2)}, ${displaySku(item?.sku ?? "")}, at ${where}`;
+    line = `Sold: ${item?.title}, £${((item?.price_pence ?? 0) / 100).toFixed(2)}, ${displaySku(item?.sku ?? "")}, at ${where}${p.online ? ", online: leave it where it is, we collect and post" : ""}`;
   } else {
     line = `Sold: ticket ${p.ticket_no ? displaySku(p.ticket_no) : "unknown"}, £${((p.amount_pence ?? 0) / 100).toFixed(2)}, at the till`;
   }

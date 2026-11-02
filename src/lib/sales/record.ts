@@ -102,7 +102,7 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
       .single();
     await db.from("items").update({ status: "sold", sold_at: line.sold_at }).eq("id", m.item.item_id).eq("status", "live");
     await enqueue(db, "close_item_on_other_channels", { item_id: m.item.item_id, sold_channel_id: channel.id });
-    await enqueue(db, "notify_sale", { sale_id: sale?.id, item_id: m.item.item_id, dealer_id: m.item.dealer_id });
+    await enqueue(db, "notify_sale", { sale_id: sale?.id, item_id: m.item.item_id, dealer_id: m.item.dealer_id, online: channel.owner_type === "centre" && channel.type === "shopify" });
     return { status: "matched" as const, via: m.via, item_id: m.item.item_id };
   }
 
