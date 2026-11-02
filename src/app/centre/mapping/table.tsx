@@ -6,8 +6,9 @@ import { Pill } from "@/components/ui";
 type Row = { id: string; dealer_id: string; name: string; code: string; status: string; square_category_id: string | null; pitch_numbers: string; rent_pence: number; rent_mode: string; rent_schedule: string; rent_set_by: string };
 const SCHED: Record<string, string> = { first: "1st", fifteenth: "15th", last: "Last day", weekly_friday: "Fridays", weekly_monday: "Mondays", quarterly: "Quarterly" };
 
-export function MappingTable({ centreId, categories, rows }: { centreId: string; categories: { id: string; name: string }[]; rows: Row[] }) {
+export function MappingTable({ centreId, categories, rows: initialRows }: { centreId: string; categories: { id: string; name: string }[]; rows: Row[] }) {
   const router = useRouter();
+  const [rows, setRows] = useState<Row[]>(initialRows);
   const [busy, setBusy] = useState<string | null>(null);
   const [pushed, setPushed] = useState<string | null>(null);
   async function pushStock() {
@@ -19,7 +20,8 @@ export function MappingTable({ centreId, categories, rows }: { centreId: string;
   }
   async function save(id: string, patch: Record<string, unknown>) {
     setBusy(id);
-    await fetch(`/api/centres/${centreId}/dealers/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
+    const r = await fetch(`/api/centres/${centreId}/dealers/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(patch) });
+    if (r.ok) setRows((rs) => rs.map((row) => (row.id === id ? { ...row, ...(patch as Partial<Row>) } : row)).filter((row) => row.status !== "declined"));
     setBusy(null); router.refresh();
   }
   const used = new Set(rows.map((r) => r.square_category_id).filter(Boolean));

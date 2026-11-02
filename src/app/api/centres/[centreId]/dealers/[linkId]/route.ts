@@ -67,5 +67,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ centre
   }
 
   await db.from("dealer_centres").update(upd).eq("id", linkId);
+
+  // Approval: anything the dealer listed while waiting now belongs to this centre, so End of day can find the tickets.
+  if (p.data.status === "active") {
+    const { data: moved } = await db.from("items").update({ centre_id: centreId }).eq("dealer_id", link.dealer_id).is("centre_id", null).eq("status", "live").select("id");
+    const { data: centreChannels } = await db.from("channels").select("id").eq("owner_type", "centre").eq("owner_id", centreId).eq("type", "square").eq("status", "active");
+    if (moved?.length && centreChannels?.length) {
+      const { enqueue } = await import("@/lib/jobs/queue");
+      for (const it of moved) for (const ch of centreChannels) {
+        const { data: l } = await db.from("item_listings").upsert({ item_id: it.id, channel_id: ch.id, status: "pending" }, { onConflict: "item_id,channel_id", ignoreDuplicates: true }).select("id").maybeSingle();
+        if (l) await enqueue(db, "sync_item_to_channel", { listing_id: l.id });
+      }
+    }
+  }
   return NextResponse.json({ ok: true, ...upd });
 }

@@ -53,6 +53,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ centreId
   const sku = normaliseSku(new URL(req.url).searchParams.get("ticket") ?? "");
   if (sku.length < 3) return NextResponse.json({ item: null });
   const db = supabaseAdmin();
-  const { data } = await db.from("items").select("id, sku, title, price_pence, status, dealers(name, code)").eq("centre_id", centreId).or(`sku.eq.${sku},alt_skus.cs.{${sku}}`).maybeSingle();
-  return NextResponse.json({ item: data ? { ...data, dealer: data.dealers } : null });
+  const sel = "id, sku, title, price_pence, status, centre_id, dealer_id, dealers(name, code)";
+  // "TD 1" or "TD01" typed at the till means TD0001
+  const candidates = [sku];
+  const short = sku.match(/^([A-Z][A-Z0-9]{1,3}?)(\d{1,3})$/);
+  if (short) candidates.push(`${short[1]}${short[2].padStart(4, "0")}`);
+  for (const c of candidates) {
+    let { data } = await db.from("items").select(sel).eq("centre_id", centreId).or(`sku.eq.${c},alt_skus.cs.{${c}}`).maybeSingle();
+    if (!data) {
+      // Listed before the dealer was approved, or without a centre chosen: if the dealer is linked here, it is this centre's item.
+      const { data: loose } = await db.from("items").select(sel).is("centre_id", null).or(`sku.eq.${c},alt_skus.cs.{${c}}`).maybeSingle();
+      if (loose) {
+        const { data: link } = await db.from("dealer_centres").select("id").eq("dealer_id", loose.dealer_id).eq("centre_id", centreId).is("left_at", null).maybeSingle();
+        if (link) { await db.from("items").update({ centre_id: centreId }).eq("id", loose.id); data = { ...loose, centre_id: centreId }; }
+      }
+    }
+    if (data) return NextResponse.json({ item: { ...data, dealer: data.dealers } });
+  }
+  return NextResponse.json({ item: null });
 }
