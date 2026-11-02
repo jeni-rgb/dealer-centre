@@ -219,6 +219,7 @@ export default function Landing() {
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Most dealers</span>}
                 <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
                 <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">/month + VAT</span></div>
+                <div className="mt-1 text-[13px] font-semibold text-forest">14 days free, then {p.price} a month + VAT</div>
                 <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
                 <div className="text-[13px] text-ink-muted">{p.forWho}</div>
                 <ul className="mt-5 flex flex-col gap-2 text-[14px] font-medium">{p.bits.map((b) => <li key={b} className="border-b border-border pb-2 last:border-0">{b}</li>)}</ul>
