@@ -14,7 +14,7 @@ export function provider(): Provider {
   if (process.env.DEMO_MODE === "1") return "sample";
   return shiptheoryConfigured() ? "shiptheory" : "clickdrop";
 }
-export const providerLabel = () => (provider() === "shiptheory" ? "Shiptheory" : provider() === "sample" ? "sample mode (no real postage)" : "Royal Mail Click & Drop");
+export const providerLabel = () => (provider() === "shiptheory" ? "Shiptheory" : provider() === "sample" ? "sample (no real postage)" : "Royal Mail business");
 
 export async function listServices(): Promise<{ code: string; label: string }[]> {
   if (provider() === "shiptheory") { try { return await shiptheoryServices(); } catch { return [{ code: "auto", label: "Let Shiptheory rules choose" }]; } }

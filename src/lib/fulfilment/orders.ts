@@ -47,7 +47,7 @@ export async function listOnlineOrders(db: Admin, opts: { centreId?: string; sin
     .filter((o) => !opts.openOnly || !["despatched", "refunded"].includes(o.status));
 }
 
-export const STATUS_LABEL: Record<OrderStatus, string> = { new: "To collect", collected: "Collected", at_unit: "At the unit", despatched: "Despatched", missing: "Missing", refunded: "Refunded" };
+export const STATUS_LABEL: Record<OrderStatus, string> = { new: "To collect", collected: "Collected", at_unit: "Postage applied", despatched: "Despatched", missing: "Missing", refunded: "Refunded" };
 
 /** Only orders that still need something from us. */
 export const isOpen = (s: OrderStatus) => s === "new" || s === "collected" || s === "at_unit" || s === "missing";
