@@ -3,7 +3,9 @@ import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { recordSale } from "@/lib/sales/record";
-import { canonicalTicket, normaliseSku } from "@/lib/sku";
+import { normaliseSku, ticketCandidates } from "@/lib/sku";
+
+export const dynamic = "force-dynamic";
 import type { ChannelRow } from "@/lib/channels/types";
 
 const Line = z.object({
@@ -30,7 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ centreI
   const { data: channel } = await db.from("channels").select("*").eq("id", chId).single();
   // Lines are independent, so record them side by side rather than one after another.
   const results = await Promise.all(p.data.lines.map(async (l) => {
-    const sku = canonicalTicket(l.ticket);
+    const sku = await resolveTicket(db, centreId, l.ticket);
     const r = await recordSale(db, channel as ChannelRow, {
       external_order_id: `eod-${centreId}-${l.sold_at.slice(0, 10)}-${sku}`,
       external_line_id: crypto.randomUUID(),
@@ -43,6 +45,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ centreI
   }));
   await db.from("sales").update({ recorded_by: me.id }).eq("channel_id", channel!.id).is("recorded_by", null);
   return NextResponse.json({ results });
+}
+
+/** The ticket as the centre's items know it: exact spelling if an item has it, else the padded spelling, else as typed. */
+async function resolveTicket(db: ReturnType<typeof supabaseAdmin>, centreId: string, raw: string) {
+  const cands = ticketCandidates(raw);
+  const { data } = await db.from("items").select("sku").eq("centre_id", centreId).in("sku", cands);
+  const found = new Set((data ?? []).map((i) => i.sku));
+  return cands.find((c) => found.has(c)) ?? cands[0];
 }
 
 /** Look up a ticket so the form can prefill title and price. */
@@ -59,10 +69,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ centreId
   }
   const sku = normaliseSku(new URL(req.url).searchParams.get("ticket") ?? "");
   if (sku.length < 3) return NextResponse.json({ item: null });
+  try {
   const sel = "id, sku, title, price_pence, status, centre_id, dealer_id, dealers(name, code)";
   // "TD 1" or "TD01" typed at the till means TD0001
-  const candidates = [...new Set([sku, canonicalTicket(sku)])];
-  for (const c of candidates) {
+  for (const c of ticketCandidates(sku)) {
     let { data } = await db.from("items").select(sel).eq("centre_id", centreId).or(`sku.eq.${c},alt_skus.cs.{${c}}`).maybeSingle();
     if (!data) {
       // Listed before the dealer was approved, or without a centre chosen: if the dealer is linked here, it is this centre's item.
@@ -75,4 +85,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ centreId
     if (data) return NextResponse.json({ item: { ...data, dealer: data.dealers } });
   }
   return NextResponse.json({ item: null });
+  } catch (e) {
+    console.error("[eod lookup]", e);
+    return NextResponse.json({ item: null, error: String(e) });
+  }
 }

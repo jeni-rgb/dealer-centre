@@ -33,7 +33,7 @@ export function matchLine(line: IncomingLine, candidates: Candidate[], categorie
     const s = normaliseSku(line.sku);
     const c = candidates.find((x) => x.sku === s);
     if (c) return { kind: "item", item: c, via: "sku" };
-    const a = candidates.find((x) => x.alt_skus.map(normaliseSku).includes(s));
+    const a = candidates.find((x) => (x.alt_skus ?? []).map(normaliseSku).includes(s));
     if (a) return { kind: "item", item: a, via: "alt_sku" };
   }
   // Square till path: dealer category plus ticket number in the note
@@ -43,7 +43,7 @@ export function matchLine(line: IncomingLine, candidates: Candidate[], categorie
   const dealerCode = dealerFromCategory ? candidates.find((c) => c.dealer_id === dealerFromCategory)?.sku.replace(/\d{4}$/, "") : undefined;
   const ticket = extractTicketFromNote(line.note, dealerCode);
   if (ticket) {
-    const c = candidates.find((x) => x.sku === ticket || x.alt_skus.map(normaliseSku).includes(ticket));
+    const c = candidates.find((x) => x.sku === ticket || (x.alt_skus ?? []).map(normaliseSku).includes(ticket));
     if (c && (!dealerFromCategory || c.dealer_id === dealerFromCategory)) return { kind: "item", item: c, via: "ticket" };
   }
   if (dealerFromCategory) return { kind: "dealer_only", dealer_id: dealerFromCategory, ticket_no: ticket };

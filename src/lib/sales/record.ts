@@ -56,7 +56,12 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
 
   let m = matchLine(line, candidates, categories);
 
-  // Manual till: an unknown ticket still belongs to the dealer whose code it starts with.
+  // Manual till: the ticket may be one of this centre's items even if the dealer link is in an odd state.
+  if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
+    const { data: direct } = await db.from("items").select("id, dealer_id, centre_id, sku, alt_skus").eq("centre_id", centreId).eq("status", "live").eq("sku", line.sku).maybeSingle();
+    if (direct) m = { kind: "item", item: { item_id: direct.id, dealer_id: direct.dealer_id, centre_id: direct.centre_id, sku: direct.sku, alt_skus: direct.alt_skus ?? [], listing_external_id: null, listing_external_variant_id: null }, via: "sku" };
+  }
+  // Still nothing: an unknown ticket belongs to the dealer whose code it starts with.
   if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
     const prefix = line.sku.match(/^([A-Z][A-Z0-9]{1,3}?)\d{1,4}$/)?.[1];
     if (prefix) {

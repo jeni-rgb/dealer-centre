@@ -24,9 +24,9 @@ export function EndOfDay({ centreId, centreName, onRecorded }: { centreId: strin
     const key = crypto.randomUUID();
     setLines((ls) => [{ key, ticket: sku, title: null, dealer: null, amount: "", payment: "CARD", status: "looking" }, ...ls]);
     setTicket("");
-    const r = await fetch(`/api/centres/${centreId}/sales?ticket=${encodeURIComponent(sku)}`);
-    const j = await r.json();
-    const item = j.item as { sku: string; title: string; price_pence: number; status: string; dealer: { name: string; code: string } | null } | null;
+    let j: { item?: unknown } = {};
+    try { const r = await fetch(`/api/centres/${centreId}/sales?ticket=${encodeURIComponent(sku)}`, { cache: "no-store" }); j = await r.json(); } catch { j = {}; }
+    const item = (j.item ?? null) as { sku: string; title: string; price_pence: number; status: string; dealer: { name: string; code: string } | null } | null;
     setLines((ls) => ls.map((l) => l.key !== key ? l : {
       ...l, ticket: item?.sku ?? sku, title: item?.title ?? null, dealer: item?.dealer ? `${item.dealer.code} ${item.dealer.name}` : null,
       amount: item ? (item.price_pence / 100).toString() : "", status: !item ? "unknown" : item.status === "sold" ? "sold" : "ok",

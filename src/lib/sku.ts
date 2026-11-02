@@ -7,8 +7,21 @@ export function normaliseSku(raw: string): string {
 /** "TD 1", "TD01" and "TD0001" are the same ticket. Pads a short number to four digits. Leaves full tickets alone. */
 export function canonicalTicket(raw: string): string {
   const s = normaliseSku(raw);
+  if (/^[A-Z][A-Z0-9]{0,3}\d{4}$/.test(s)) return s; // already a full ticket, leave it alone
   const m = s.match(/^([A-Z][A-Z0-9]{0,3}?)(\d{1,3})$/);
   return m ? `${m[1]}${m[2].padStart(4, "0")}` : s;
+}
+
+/** Every spelling a typed ticket could mean, exact form first: "TD 1" -> ["TD1", "TD0001"]; "B14372" -> ["B14372", "B140372"]. */
+export function ticketCandidates(raw: string): string[] {
+  const s = normaliseSku(raw);
+  const out = [s];
+  const m = s.match(/^([A-Z][A-Z0-9]{0,3}?)(\d{1,3})$/);
+  if (m) out.push(`${m[1]}${m[2].padStart(4, "0")}`);
+  // "B14372" read as code B14 + 372 when the exact form is not an item
+  const m2 = s.match(/^([A-Z][A-Z0-9]{1,3})(\d{3})$/);
+  if (m2) out.push(`${m2[1]}${m2[2].padStart(4, "0")}`);
+  return [...new Set(out)];
 }
 
 export function displaySku(sku: string): string {

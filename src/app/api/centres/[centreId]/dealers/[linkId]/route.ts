@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ centre
   if (p.data.rent_mode) { upd.rent_mode = p.data.rent_mode; upd.rent_set_by = "centre"; }
   if (p.data.rent_schedule) { upd.rent_schedule = p.data.rent_schedule; upd.rent_set_by = "centre"; }
   if (p.data.square_category_id !== undefined) upd.square_category_id = p.data.square_category_id;
-  if (p.data.status) { upd.status = p.data.status; if (p.data.status === "active" && !link.joined_at) upd.joined_at = new Date().toISOString(); if (p.data.status === "declined") upd.left_at = new Date().toISOString(); }
+  if (p.data.status) { upd.status = p.data.status; if (p.data.status === "active") { upd.left_at = null; if (!link.joined_at) upd.joined_at = new Date().toISOString(); } if (p.data.status === "declined") upd.left_at = new Date().toISOString(); }
 
   // Create the dealer's category and a variable price catch all item in Square in one go.
   if (p.data.create_square_category) {
