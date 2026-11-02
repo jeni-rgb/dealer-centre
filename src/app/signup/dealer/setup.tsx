@@ -99,8 +99,12 @@ function Business({ email, hp, onDone }: { email: string; hp: HP; onDone: () => 
 
 function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; status: string }[]; onDone: () => void }) {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<{ id: string; name: string; address: string | null }[]>([]);
-  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
+  const [results, setResults] = useState<{ id: string; name: string; address: string | null; unclaimed?: boolean }[]>([]);
+  const [picked, setPicked] = useState<{ id: string; name: string; unclaimed?: boolean } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [town, setTown] = useState("");
+  const [whoList, setWhoList] = useState<{ id: string; name: string; code: string }[] | null>(null);
+  const [claimed, setClaimed] = useState<string | null>(null);
   const [mode, setMode] = useState<"rent" | "commission_only">("rent");
   const [rent, setRent] = useState("");
   const [sched, setSched] = useState("first");
@@ -114,9 +118,31 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
   async function join() {
     if (!picked) return;
     setBusy(true);
-    const r = await fetch("/api/centres/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ centre_id: picked.id, rent_mode: mode, rent_pence: Math.round(parseFloat(rent || "0") * 100), rent_schedule: sched }) });
+    const body = { rent_mode: mode, rent_pence: Math.round(parseFloat(rent || "0") * 100), rent_schedule: sched };
+    if (picked.unclaimed) {
+      const r = await fetch("/api/centres/placeholder", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: picked.name, ...body }) });
+      setBusy(false);
+      if (r.ok) { setMsg(`You are listed at ${picked.name}. When they join Dealer Centre, nothing changes for you.`); setTimeout(onDone, 1400); } else setMsg((await r.json()).error ?? "Something went wrong");
+      return;
+    }
+    // Centre already on Dealer Centre: has it set us up already? ("Which one is you?")
+    const u = await fetch(`/api/dealers/unclaimed?centre=${picked.id}`); const list = ((await u.json()).dealers ?? []) as { id: string; name: string; code: string }[];
+    if (list.length > 0 && whoList === null) { setWhoList(list); setBusy(false); return; }
+    const r = await fetch("/api/centres/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ centre_id: picked.id, ...body }) });
     setBusy(false);
-    if (r.ok) { setMsg(`Request sent to ${picked.name}. They approve you from their dashboard.`); setTimeout(onDone, 1200); }
+    if (r.ok) { setMsg(`Request sent to ${picked.name}. They approve you from their dashboard.`); setTimeout(onDone, 1200); } else setMsg((await r.json()).error ?? "Something went wrong");
+  }
+  async function addCentre() {
+    setBusy(true);
+    const r = await fetch("/api/centres/placeholder", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: q.trim(), town: town.trim(), rent_mode: mode, rent_pence: Math.round(parseFloat(rent || "0") * 100), rent_schedule: sched }) });
+    setBusy(false);
+    if (r.ok) { setMsg(`${q.trim()} added. Your items will carry it, and when they join Dealer Centre nothing changes for you.`); setTimeout(onDone, 1600); } else setMsg((await r.json()).error ?? "Something went wrong");
+  }
+  async function claim(id: string) {
+    setBusy(true);
+    const r = await fetch("/api/dealers/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ dealer_id: id }) });
+    const j = await r.json(); setBusy(false);
+    if (r.ok) { setClaimed(j.code); setMsg(`That's you. Your code stays ${j.code} and everything already sold under it is on your statement. ${picked?.name} just confirms it.`); setTimeout(onDone, 2200); } else setMsg(j.error ?? "Something went wrong");
   }
   return (
     <>
@@ -126,9 +152,20 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
         {!picked ? (
           <>
             <input className="field" placeholder="Centre name or town" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-            {results.length > 0 && <div className="card divide-y divide-border">{results.map((r) => <button key={r.id} className="flex w-full flex-col px-4 py-3 text-left" onClick={() => setPicked(r)}><span className="text-[15px] font-medium">{r.name}</span>{r.address && <span className="text-[12px] text-ink-muted">{r.address}</span>}</button>)}</div>}
-            {q.length >= 2 && results.length === 0 && (
-              <div className="card p-4 text-[14px]"><p className="text-ink-muted">No match for &ldquo;{q}&rdquo;.</p><a className="mt-2 block font-medium text-accent" href={`mailto:?subject=Dealer%20Centre&body=Connect%20your%20till%20in%20five%20minutes%3A%20${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}/signup/centre`}>Invite your centre</a></div>
+            {results.length > 0 && !adding && <div className="card divide-y divide-border">{results.map((r) => <button key={r.id} className="flex w-full items-center justify-between px-4 py-3 text-left" onClick={() => setPicked(r)}><span className="flex flex-col"><span className="text-[15px] font-medium">{r.name}</span>{r.address && <span className="text-[12px] text-ink-muted">{r.address}</span>}</span>{r.unclaimed && <Pill kind="neutral">Added by dealers</Pill>}</button>)}</div>}
+            {q.length >= 2 && !adding && (
+              <div className="card p-4 text-[14px]"><p className="text-ink-muted">{results.length === 0 ? `No match for "${q}".` : "Not in the list?"}</p><button className="mt-2 block font-medium text-accent" onClick={() => setAdding(true)}>Add {q.trim()} to Dealer Centre</button></div>
+            )}
+            {adding && (
+              <div className="card flex flex-col gap-3 p-4">
+                <div><span className="text-[15px] font-medium">{q.trim()}</span><p className="text-[12px] text-ink-muted">Not on Dealer Centre yet. That is fine: your items and statement will say {q.trim()}, and when they join, nothing changes for you.</p></div>
+                <input className="field" placeholder="Town, so other dealers find it" value={town} onChange={(e) => setTown(e.target.value)} autoFocus />
+                <div className="flex rounded-[10px] bg-surface-2 p-0.5">
+                  {(["rent", "commission_only"] as const).map((m) => <button key={m} onClick={() => setMode(m)} className={`h-10 flex-1 rounded-[8px] text-[13px] font-semibold ${mode === m ? "bg-white shadow-sm" : "text-ink-muted"}`}>{m === "rent" ? "I pay rent" : "Commission only"}</button>)}
+                </div>
+                {mode === "rent" && <div className="flex h-12 items-center gap-1.5 rounded-[12px] border border-border px-3.5"><span className="text-ink-muted">£</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder="Rent" /></div>}
+                <div className="grid grid-cols-2 gap-2"><button className="btn-secondary" onClick={() => setAdding(false)}>Back</button><button className="btn" disabled={busy} onClick={addCentre}>{busy ? "Adding…" : "Add centre"}</button></div>
+              </div>
             )}
           </>
         ) : (
@@ -143,8 +180,15 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
                 <div><label className="field-label">Taken</label><select className="field" value={sched} onChange={(e) => setSched(e.target.value)}><option value="first">1st of the month</option><option value="fifteenth">15th of the month</option><option value="last">Last day of the month</option><option value="weekly_friday">Every Friday</option><option value="weekly_monday">Every Monday</option><option value="quarterly">Quarterly</option></select></div>
               </>
             )}
-            <p className="text-[12px] text-ink-muted">The centre can correct this when they approve you.</p>
-            <button className="btn" disabled={busy} onClick={join}>{busy ? "Sending…" : "Ask to join"}</button>
+            {whoList && !claimed && (
+              <div className="card flex flex-col gap-2 p-4">
+                <span className="text-[15px] font-medium">{picked.name} has already set up these dealers. Which one is you?</span>
+                <div className="divide-y divide-border">{whoList.map((d) => <button key={d.id} className="flex h-[48px] w-full items-center justify-between text-left text-[14px]" disabled={busy} onClick={() => claim(d.id)}><span>{d.name}</span><span className="ticket text-[13px] text-ink-muted">{d.code}</span></button>)}</div>
+                <button className="text-[13px] text-ink-muted" onClick={() => setWhoList([])}>None of these, I am new here</button>
+              </div>
+            )}
+            {!whoList?.length && <p className="text-[12px] text-ink-muted">{picked.unclaimed ? "Nobody at the centre approves this yet; you are listed straight away." : "The centre can correct this when they approve you."}</p>}
+            {!whoList?.length && <button className="btn" disabled={busy} onClick={join}>{busy ? "Sending…" : picked.unclaimed ? "Join" : "Ask to join"}</button>}
           </>
         )}
         {msg && <p className="text-[13px] text-success">{msg}</p>}

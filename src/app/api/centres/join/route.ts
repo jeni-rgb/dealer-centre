@@ -25,9 +25,10 @@ export async function POST(req: Request) {
     const { data } = await db.from("centres").select("id, name").eq("invite_code", p.data.code.toUpperCase()).maybeSingle(); centre = data;
   }
   if (!centre) return NextResponse.json({ error: "No centre found" }, { status: 404 });
-  await db.from("dealer_centres").upsert(
+  const { error } = await db.from("dealer_centres").upsert(
     { dealer_id: me.dealer_id, centre_id: centre.id, status: "pending", rent_mode: p.data.rent_mode, rent_pence: p.data.rent_pence, rent_schedule: p.data.rent_schedule, rent_set_by: "dealer" },
     { onConflict: "dealer_id,centre_id", ignoreDuplicates: true },
   );
+  if (error) return NextResponse.json({ error: error.code === "23505" ? `Your dealer code is already used at ${centre.name}. Change yours in Settings, or if that code is you, pick your name from the list.` : error.message }, { status: 400 });
   return NextResponse.json({ name: centre.name, centre_id: centre.id });
 }

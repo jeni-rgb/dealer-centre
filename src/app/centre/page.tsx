@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AddDealer } from "./add-dealer";
 import { currentCentre } from "@/lib/centre";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Kpi, Pill, money } from "@/components/ui";
 
-type Row = { dealer_id: string; name: string; code: string; pitch_numbers: string[]; rent_pence: number; sales_month_pence: number; items_live: number; last_sale_at: string | null };
+type Row = { dealer_id: string; name: string; code: string; pitch_numbers: string[]; rent_pence: number; sales_month_pence: number; items_live: number; last_sale_at: string | null; placeholder?: boolean };
 
 export default async function CentreHome({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
   const { centre: cp } = await searchParams;
@@ -30,14 +31,18 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
     <>
       <div className="mb-6 flex items-baseline justify-between">
         <div><h1 className="text-[24px] font-semibold">{centre.name}</h1><p className="text-[13px] text-ink-muted">Centre code <span className="ticket">{centre.invite_code}</span> · {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p></div>
-        {(pending ?? []).length > 0 && <Link href={`/centre/mapping?centre=${centre.id}`} className="btn-sm">{(pending ?? []).length} dealer{(pending ?? []).length > 1 ? "s" : ""} to approve</Link>}
+        <div className="flex items-center gap-2">
+          <Link href={`/centre/codes?centre=${centre.id}`} className="btn-sm-secondary">Print code sheet</Link>
+          <AddDealer centreId={centre.id} />
+          {(pending ?? []).length > 0 && <Link href={`/centre/mapping?centre=${centre.id}`} className="btn-sm">{(pending ?? []).length} dealer{(pending ?? []).length > 1 ? "s" : ""} to approve</Link>}
+        </div>
       </div>
       {!channel && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border bg-white px-4 py-3 text-[14px]"><span>No Square till connected. Record floor sales from the collected tickets in <Link className="font-semibold text-accent" href={`/centre/eod?centre=${centre.id}`}>End of day</Link>.</span><a className="text-[13px] text-ink-muted underline" href={`/api/oauth/square?owner=centre&id=${centre.id}`}>Connect Square instead</a></div>
       )}
       <div className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <Kpi label="Month to date" value={money(total)} sub={`${money(online)} online`} />
-        <Kpi label="Dealers" value={String(list.length)} sub={`${list.filter(stale).length} with no sale in 30 days`} tone={list.filter(stale).length ? "warning" : undefined} />
+        <Kpi label="Dealers" value={String(list.length)} sub={`${list.filter((r) => !r.placeholder).length} on the app · ${list.filter(stale).length} with no sale in 30 days`} tone={list.filter(stale).length ? "warning" : undefined} />
         <Kpi label="Card share" value={total ? `${Math.round((card / total) * 100)}%` : "–"} />
         <Kpi label="Unmatched sales" value={String(unmatched)} sub={unmatched ? "Till sales with no dealer" : "All sales assigned"} tone={unmatched ? "danger" : undefined} />
       </div>
@@ -52,7 +57,7 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
               const ratio = r.rent_pence ? s / r.rent_pence : null;
               return (
                 <tr key={r.dealer_id} className="border-b border-border last:border-0">
-                  <td className="px-5 py-3"><span className="font-medium">{r.name}</span> <span className="ticket text-[12px] text-ink-muted">{r.code}</span></td>
+                  <td className="px-5 py-3"><span className="font-medium">{r.name}</span> <span className="ticket text-[12px] text-ink-muted">{r.code}</span>{r.placeholder && <Pill kind="neutral" className="ml-2">No app yet</Pill>}</td>
                   <td className="py-3 text-ink-muted">{r.pitch_numbers.join(", ")}</td>
                   <td className="py-3"><div className="flex items-center gap-3"><div className="h-2 w-40 overflow-hidden rounded-full bg-surface-2"><div className="h-full rounded-full bg-accent" style={{ width: `${(s / maxSales) * 100}%` }} /></div><span className="num font-semibold">{money(s)}</span></div></td>
                   <td className="num py-3 text-right text-ink-muted">{money(r.rent_pence)}</td>

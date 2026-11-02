@@ -17,8 +17,8 @@ export function Sku({ sku, className = "" }: { sku: string; className?: string }
   return <span className={`ticket ${className}`}>{displaySku(sku)}</span>;
 }
 
-export function Pill({ kind, children }: { kind: "neutral" | "accent" | "success" | "warning" | "danger"; children: React.ReactNode }) {
-  return <span className={`pill pill-${kind}`}>{children}</span>;
+export function Pill({ kind, children, className = "" }: { kind: "neutral" | "accent" | "success" | "warning" | "danger"; children: React.ReactNode; className?: string }) {
+  return <span className={`pill pill-${kind} ${className}`}>{children}</span>;
 }
 
 export function ChannelLabel({ type, ownerType }: { type: string | null | undefined; ownerType?: string | null }) {

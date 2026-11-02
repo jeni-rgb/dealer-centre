@@ -60,11 +60,9 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
   if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
     const prefix = line.sku.match(/^([A-Z][A-Z0-9]{1,3}?)\d{1,4}$/)?.[1];
     if (prefix) {
-      const { data: d } = await db.from("dealers").select("id").eq("code", prefix).maybeSingle();
-      if (d) {
-        const { data: link } = await db.from("dealer_centres").select("id").eq("dealer_id", d.id).eq("centre_id", centreId).is("left_at", null).maybeSingle();
-        if (link) m = { kind: "dealer_only", dealer_id: d.id, ticket_no: line.sku };
-      }
+      // Codes are unique per centre, so look the prefix up among this centre's dealers.
+      const { data: link } = await db.from("dealer_centres").select("dealer_id, dealers!inner(code)").eq("centre_id", centreId).is("left_at", null).eq("dealers.code", prefix).maybeSingle();
+      if (link) m = { kind: "dealer_only", dealer_id: link.dealer_id, ticket_no: line.sku };
     }
   }
 

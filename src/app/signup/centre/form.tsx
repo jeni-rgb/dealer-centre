@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Rent = { charges_rent: boolean | null; rent_frequency: "weekly" | "monthly" | "quarterly"; rent_day: string; charges_commission: boolean | null; commission: string };
@@ -18,6 +18,13 @@ export function CentreSignupForm() {
   const [till, setTill] = useState<"ordinary" | "square" | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [matches, setMatches] = useState<{ id: string; name: string; address: string | null; dealers: number }[]>([]);
+  const [claim, setClaim] = useState<{ id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (name.trim().length < 3) { setMatches([]); return; }
+    const t = setTimeout(async () => { const r = await fetch(`/api/centres/unclaimed?q=${encodeURIComponent(name.trim())}`); setMatches((await r.json()).centres ?? []); }, 300);
+    return () => clearTimeout(t);
+  }, [name]);
 
   const steps = ["name", "dealers", "rent", "commission", "till", "confirm"] as const;
   const next = () => setStep((s) => Math.min(s + 1, steps.length - 1));
@@ -32,6 +39,7 @@ export function CentreSignupForm() {
         name: name.trim(), address: town.trim(), dealer_count: parseInt(dealers || "0") || null,
         charges_rent: !!r.charges_rent, rent_frequency: r.rent_frequency, rent_day: rentDay, statement_day: 1,
         commission_percent: r.charges_commission ? parseFloat(r.commission || "0") : 0, till: till ?? "ordinary",
+        claim_centre_id: claim?.id,
       }),
     });
     const j = await res.json();
@@ -48,6 +56,17 @@ export function CentreSignupForm() {
         <Q {...q} title="What is your centre called?" sub="And where is it. Dealers search for you by either.">
           <input className="field" placeholder="Looses Emporium" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
           <input className="field" placeholder="Magdalen Street, Norwich" value={town} onChange={(e) => setTown(e.target.value)} />
+          {matches.length > 0 && !claim && (
+            <div className="card divide-y divide-border">
+              {matches.map((m) => (
+                <div key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 text-[14px]">
+                  <span><span className="block font-medium">{m.name}{m.address ? `, ${m.address}` : ""}</span><span className="text-[12px] text-ink-muted">Already on Dealer Centre with {m.dealers} dealer{m.dealers === 1 ? "" : "s"} who added it. Is this yours?</span></span>
+                  <button className="btn-sm" onClick={() => { setClaim(m); setName(m.name); if (m.address) setTown(m.address); }}>This is mine</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {claim && <div className="card flex items-center justify-between px-4 py-3 text-[14px]"><span>Taking over <span className="font-medium">{claim.name}</span>. Your dealers and their stock are already here.</span><button className="text-[13px] text-accent" onClick={() => setClaim(null)}>Undo</button></div>}
           <button className="btn" disabled={name.trim().length < 2} onClick={next}>Continue</button>
         </Q>
       )}
