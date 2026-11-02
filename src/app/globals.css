@@ -1,10 +1,9 @@
 @import "tailwindcss";
 
-/* Gabriel Sans is a licensed typeface (Fontfabric). Drop the purchased .woff2 files into /public/fonts
-   with these exact names and the headings switch over; until then they fall back to Helvetica. */
-@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-SemiBold.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+/* Gabriel Sans (Fontfabric). Trial files are in /public/fonts for now; swap in the licensed files with the same names before launch. */
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Medium.ttf") format("truetype"); font-weight: 500 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Gabriel Sans"; src: url("/fonts/GabrielSans-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 
 /* Design tokens from the Claude Design handover, 30 Oct 2026. Dark header direction. */
 :root {
