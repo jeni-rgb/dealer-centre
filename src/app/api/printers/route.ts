@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
+import { modelById } from "@/lib/labels/models";
 
 const Input = z.object({
   name: z.string().min(1).max(60),
@@ -10,6 +11,7 @@ const Input = z.object({
   centre_id: z.string().uuid().optional(),
   label_width_mm: z.number().int().default(62),
   label_height_mm: z.number().int().default(29),
+  model: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -28,6 +30,9 @@ export async function POST(req: Request) {
     owner_id = p.data.centre_id;
   }
   if (!owner_id) return NextResponse.json({ error: "no owner" }, { status: 400 });
-  const { data } = await db.from("printers").insert({ ...p.data, centre_id: undefined, owner_type, owner_id }).select("id").single();
+  const m = p.data.model ? modelById(p.data.model) : null;
+  const { model: _m, centre_id: _c, ...rest } = p.data;
+  void _m; void _c;
+  const { data } = await db.from("printers").insert({ ...rest, ...(m ? { label_width_mm: m.w, label_height_mm: m.h } : {}), owner_type, owner_id }).select("id").single();
   return NextResponse.json({ id: data?.id });
 }

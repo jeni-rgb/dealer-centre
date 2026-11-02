@@ -42,7 +42,7 @@ const faqs = [
 const amazonTag = process.env.NEXT_PUBLIC_AMAZON_TAG ?? "";
 const amazon = (q: string) => `https://www.amazon.co.uk/s?k=${encodeURIComponent(q)}${amazonTag ? `&tag=${amazonTag}` : ""}`;
 const kit = [
-  { name: "Label printer", pick: "Brother QL-820NWB", why: "Prints the 62 by 29 mm ticket labels, on wifi so the centre and any dealer can print to it. The one Dealer Centre is tested on.", price: "about £170", q: "Brother QL-820NWB label printer" },
+  { name: "Label printer", pick: "Brother QL-820NWB", why: "Prints the ticket labels on wifi so any dealer can print to it. Zebra ZD411 (in the Square Retail Kit) and Dymo LabelWriter 550 also work.", price: "about £170", q: "Brother QL-820NWB label printer" },
   { name: "Labels", pick: "Brother DK-11209 (62 x 29 mm)", why: "Die cut, 800 a roll, the size every ticket label is laid out for. Two rolls lasts a centre a month.", price: "about £12 a roll", q: "Brother DK-11209 labels" },
   { name: "Barcode scanner", pick: "Any Bluetooth 1D scanner", why: "Pairs with the till iPad like a keyboard. Scan the ticket, the sale fills in. Optional: typing works too.", price: "£25 to £40", q: "Bluetooth barcode scanner 1D wireless" },
   { name: "iPad and stand", pick: "Any iPad, a counter stand", why: "Runs the Till screen next to your existing till. An older iPad is fine; the stand keeps it at the right angle for scanning.", price: "stand about £25", q: "iPad counter stand" },

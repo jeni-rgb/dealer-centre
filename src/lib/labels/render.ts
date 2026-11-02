@@ -25,7 +25,9 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const mono = await pdf.embedFont(StandardFonts.Courier);
 
-  const pad = 2 * MM;
+  // Everything is laid out for 62 × 29 and scaled to the roll in use, so a 51 × 25 Zebra label keeps its proportions.
+  const k = Math.min(h / (29 * MM), w / (62 * MM));
+  const pad = 2 * MM * k;
 
   // Barcode across the top
   const barcodePng = await bwipjs.toBuffer({
@@ -36,33 +38,33 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
     includetext: false,
   });
   const img = await pdf.embedPng(barcodePng);
-  const bcH = 9 * MM;
-  const bcW = Math.min(w - pad * 2 - 14 * MM, img.width * (bcH / img.height));
+  const bcH = 9 * MM * k;
+  const bcW = Math.min(w - pad * 2 - 14 * MM * k, img.width * (bcH / img.height));
   page.drawImage(img, { x: pad, y: h - pad - bcH, width: bcW, height: bcH });
 
   // Dealer code, very large, top right
-  const codeSize = 20;
+  const codeSize = 20 * k;
   const codeW = bold.widthOfTextAtSize(input.dealerCode, codeSize);
   page.drawText(input.dealerCode, { x: w - pad - codeW, y: h - pad - codeSize + 2, size: codeSize, font: bold, color: rgb(0, 0, 0) });
 
   // SKU in mono under barcode
-  page.drawText(displaySku(input.sku), { x: pad, y: h - pad - bcH - 4 * MM, size: 9, font: mono });
+  page.drawText(displaySku(input.sku), { x: pad, y: h - pad - bcH - 4 * MM * k, size: 9 * k, font: mono });
 
   // Price, large, bottom right
   const price = `£${(input.pricePence / 100).toFixed(input.pricePence % 100 === 0 ? 0 : 2)}`;
-  const priceSize = 16;
+  const priceSize = 16 * k;
   const priceW = bold.widthOfTextAtSize(price, priceSize);
   page.drawText(price, { x: w - pad - priceW, y: pad, size: priceSize, font: bold });
 
   // Title, truncated to fit the remaining width
-  const titleSize = 7;
-  const maxTitleW = w - pad * 2 - priceW - 2 * MM;
+  const titleSize = 7 * k;
+  const maxTitleW = w - pad * 2 - priceW - 2 * MM * k;
   let title = input.title;
   while (sans.widthOfTextAtSize(title, titleSize) > maxTitleW && title.length > 3) title = title.slice(0, -2) + "…";
   page.drawText(title, { x: pad, y: pad + 1, size: titleSize, font: sans });
 
   if (input.centreName) {
-    page.drawText(input.centreName, { x: pad, y: pad + 1 + titleSize + 1, size: 5.5, font: sans, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText(input.centreName, { x: pad, y: pad + 1 + titleSize + 1, size: 5.5 * k, font: sans, color: rgb(0.3, 0.3, 0.3) });
   }
 
   return pdf.save();

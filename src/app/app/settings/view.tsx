@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { PRINTER_MODELS } from "@/lib/labels/models";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
@@ -15,6 +16,7 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
   const router = useRouter();
   const [shop, setShop] = useState("");
   const [printerName, setPrinterName] = useState("");
+  const [printerModel, setPrinterModel] = useState<string>(PRINTER_MODELS[0].id);
   const [d, setD] = useState({ own: dealer.default_own_shopify, shop: dealer.default_centre_shopify, ebay: dealer.default_centre_ebay });
 
   async function saveDefaults(next: typeof d) {
@@ -23,7 +25,7 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
   }
   async function addPrinter(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: printerName.trim(), provider: "browser" }) });
+    await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: printerName.trim(), provider: "browser", model: printerModel }) });
     setPrinterName(""); router.refresh();
   }
 
@@ -70,7 +72,7 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
           {printers.map((p) => (
             <div key={p.id} className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{p.name}</span><span className="text-[12px] text-ink-muted">{p.own ? "Your printer" : "Shop printer, from your centre"}{p.cloud ? " · prints without a computer" : ""}</span></span><span className="h-2 w-2 rounded-full bg-success-dot" /></div>
           ))}
-          <form onSubmit={addPrinter} className="flex gap-2 px-4 py-3"><input className="field !h-10 !text-[14px]" placeholder="Add your own, e.g. Brother QL" value={printerName} onChange={(e) => setPrinterName(e.target.value)} /><button className="btn-sm-secondary">Add</button></form>
+          <form onSubmit={addPrinter} className="flex flex-col gap-2 px-4 py-3"><div className="flex gap-2"><input className="field !h-10 !text-[14px]" placeholder="Add your own, e.g. Brother at home" value={printerName} onChange={(e) => setPrinterName(e.target.value)} /><button className="btn-sm-secondary">Add</button></div><select className="field !h-10 !text-[13px]" value={printerModel} onChange={(e) => setPrinterModel(e.target.value)}>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></form>
         </div>
       </Section>
 
