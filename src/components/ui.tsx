@@ -3,7 +3,7 @@ import { Logo, Mark } from "./logo";
 import { displaySku } from "@/lib/sku";
 
 export const money = (pence: number) =>
-  `£${(pence / 100).toLocaleString("en-GB", { minimumFractionDigits: pence % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
+  `${pence < 0 ? "−" : ""}£${(Math.abs(pence) / 100).toLocaleString("en-GB", { minimumFractionDigits: pence % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 export const when = (iso: string) => {
   const d = new Date(iso);
