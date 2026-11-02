@@ -22,7 +22,7 @@ export type ItemRow = {
   price_pence: number;
   listed_price_pence: number | null;
   cost_pence: number | null;
-  photos: { path: string; url?: string }[];
+  photos: { path: string; url?: string; role?: "reference" | "listing" }[];
   status: "draft" | "live" | "sold" | "withdrawn";
   on_own_shopify: boolean;
   on_centre_shopify: boolean;
@@ -55,4 +55,10 @@ export interface ChannelAdapter {
   setInventory(channel: ChannelRow, ref: ListingRef, qty: 0 | 1): Promise<void>;
   /** Fetch orders since a time, for reconciliation. */
   listOrderLines(channel: ChannelRow, since: Date): Promise<IncomingLine[]>;
+}
+
+/** Photos that go online. Reference snaps (for the dealer's own records) stay out; if nothing is marked, everything goes. */
+export function listingPhotos(item: { photos: { path: string; url?: string; role?: string }[] }) {
+  const flagged = item.photos.filter((p) => p.role === "listing");
+  return (flagged.length ? flagged : item.photos.filter((p) => p.role !== "reference")).filter((p) => p.url);
 }

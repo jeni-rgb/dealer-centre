@@ -25,7 +25,7 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
       {step === "business" && <Business email={email} hp={hp} onDone={() => (window.location.href = "/api/billing/checkout")} />}
       {step === "card" && (
         <>
-          <StepHeader {...hp} title="Card and 30 day trial" sub="Nothing is charged today. First payment in 30 days, email three days before." />
+          <StepHeader {...hp} title="Card and 14 day trial" sub="Nothing is charged today. First payment in 14 days, email three days before." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
               {[["25", "Up to 25 sold a month", "£25"], ["100", "Up to 50 sold a month", "£100"], ["150", "Over 100 sold a month", "£150"]].map(([t, a, b]) => (

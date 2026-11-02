@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
-import type { ChannelAdapter, ChannelRow, IncomingLine, ItemRow, ListingRef } from "./types";
+import { listingPhotos, type ChannelAdapter, type ChannelRow, type IncomingLine, type ItemRow, type ListingRef } from "./types";
 
 const API_VERSION = process.env.SHOPIFY_API_VERSION ?? "2025-10";
 const SCOPES = "read_products,write_products,read_inventory,write_inventory,read_orders";
@@ -54,8 +54,8 @@ export const shopifyAdapter: ChannelAdapter = {
   async upsertItem(channel, item, { listingId, existing }) {
     void listingId;
     if (existing?.external_id) {
-      await gql(channel, `mutation($input: ProductInput!) { productUpdate(input: $input) { userErrors { message } } }`,
-        { input: { id: existing.external_id, title: item.title, descriptionHtml: item.description ?? "" } });
+      await gql(channel, `mutation($product: ProductUpdateInput!) { productUpdate(product: $product) { userErrors { message } } }`,
+        { product: { id: existing.external_id, title: item.title, descriptionHtml: item.description ?? "" } });
       const d = await gql<{ product: { variants: { nodes: { id: string }[] } } | null }>(channel,
         `query($id: ID!) { product(id: $id) { variants(first: 1) { nodes { id } } } }`, { id: existing.external_id });
       const vid = d.product?.variants.nodes[0]?.id;
@@ -70,19 +70,20 @@ export const shopifyAdapter: ChannelAdapter = {
       productCreate: { product: { id: string; variants: { nodes: { id: string; inventoryItem: { id: string } }[] } } | null; userErrors: { message: string }[] };
     }>(
       channel,
-      `mutation($input: ProductInput!) {
-        productCreate(input: $input) {
+      `mutation($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product { id variants(first: 1) { nodes { id inventoryItem { id } } } }
           userErrors { message }
         }
       }`,
       {
-        input: {
+        product: {
           title: item.title,
           descriptionHtml: item.description ?? "",
           status: "ACTIVE",
           tags: ["dealer-centre", `sku:${item.sku}`],
         },
+        media: listingPhotos(item).slice(0, 10).map((p) => ({ originalSource: p.url, mediaContentType: "IMAGE", alt: item.title })),
       },
     );
     if (!create.productCreate.product) throw new Error(create.productCreate.userErrors.map((e) => e.message).join("; "));

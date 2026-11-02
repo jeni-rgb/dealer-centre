@@ -7,7 +7,7 @@ export const CreateItemInput = z.object({
   description: z.string().max(2000).optional(),
   price_pence: z.number().int().min(0),
   centre_id: z.string().uuid().nullable().optional(),
-  photos: z.array(z.object({ path: z.string() })).default([]),
+  photos: z.array(z.object({ path: z.string(), url: z.string().optional(), role: z.enum(["reference", "listing"]).optional() })).default([]),
   cost_pence: z.number().int().min(0).nullable().optional(),
   on_own_shopify: z.boolean().default(true),
   on_centre_shopify: z.boolean().default(false),

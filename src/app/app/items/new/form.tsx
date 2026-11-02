@@ -23,6 +23,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [label, setLabel] = useState(printers.length > 0);
   const [printer, setPrinter] = useState(printers[0]?.id ?? "");
   const [files, setFiles] = useState<File[]>([]);
+  const [shopFiles, setShopFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [limit, setLimit] = useState(false);
@@ -38,12 +39,14 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     setBusy(true);
     try {
       const sb = supabaseBrowser();
-      const photos: { path: string; url: string }[] = [];
-      for (const f of files.slice(0, 6)) {
+      const photos: { path: string; url: string; role: "reference" | "listing" }[] = [];
+      const up = async (f: File, role: "reference" | "listing") => {
         const path = `items/${crypto.randomUUID()}.${f.name.split(".").pop() ?? "jpg"}`;
         const { error } = await sb.storage.from("files").upload(path, f, { contentType: f.type });
-        if (!error) photos.push({ path, url: sb.storage.from("files").getPublicUrl(path).data.publicUrl });
-      }
+        if (!error) photos.push({ path, url: sb.storage.from("files").getPublicUrl(path).data.publicUrl, role });
+      };
+      for (const f of files.slice(0, 2)) await up(f, "reference");
+      for (const f of shopFiles.slice(0, 10)) await up(f, "listing");
       const r = await fetch("/api/items", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -97,10 +100,18 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
           <span className="w-12" />
         </div>
         <div className="flex flex-1 flex-col gap-4 px-5 pb-4 pt-1">
-          <label className="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-[16px] border border-dashed border-[#CBD5E1] bg-surface text-[14px] font-medium text-[#334155]">
-            <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
-            {files.length > 0 ? <span>{files.length} photo{files.length > 1 ? "s" : ""} ready</span> : <><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Take photo</>}
+          <label className="flex h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[16px] border border-dashed border-border bg-surface-2 text-[14px] font-medium text-ink">
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
+            {files.length > 0 ? <span>Reference photo ready</span> : <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Quick snap for your records</>}
+            <span className="text-[12px] font-normal text-ink-muted">Only you see this one</span>
           </label>
+          {(own || shop || ebay) && (
+            <label className="flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-border bg-white px-4 py-3 text-[14px]">
+              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setShopFiles(Array.from(e.target.files ?? []))} />
+              <span className="flex flex-col"><span className="font-medium">Photos for online</span><span className="text-[12px] text-ink-muted">{shopFiles.length > 0 ? `${shopFiles.length} chosen, first one is the cover` : "Up to 10. These go to Shopify, the centre shop and eBay."}</span></span>
+              <span className="pill pill-accent">{shopFiles.length > 0 ? "Change" : "Add"}</span>
+            </label>
+          )}
 
           <TicketCard sku={previewSku} hint="Assigned by the app, goes on the label and the till" />
 

@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     customer: dealer?.stripe_customer_id ?? undefined,
     customer_email: dealer?.stripe_customer_id ? undefined : me.email,
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { trial_period_days: 30, metadata: { dealer_id: me.dealer_id } },
+    subscription_data: { trial_period_days: 14, metadata: { dealer_id: me.dealer_id } },
     payment_method_collection: "always",
     metadata: { dealer_id: me.dealer_id },
     success_url: `${env.appUrl()}/app?welcome=1`,

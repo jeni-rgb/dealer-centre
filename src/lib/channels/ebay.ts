@@ -1,4 +1,4 @@
-import type { ChannelAdapter, ChannelRow, IncomingLine } from "./types";
+import { listingPhotos, type ChannelAdapter, type ChannelRow, type IncomingLine } from "./types";
 
 /**
  * eBay via the Sell APIs: Inventory (create offer at the ticket price, buy it now only),
@@ -77,7 +77,7 @@ export const ebayAdapter: ChannelAdapter = {
       product: {
         title: item.title.slice(0, 80),
         description: item.description ?? item.title,
-        imageUrls: item.photos.map((p) => p.url).filter(Boolean).slice(0, 12),
+        imageUrls: listingPhotos(item).map((p) => p.url).slice(0, 12),
       },
     });
     if (existing?.external_id) {

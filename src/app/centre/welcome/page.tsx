@@ -21,11 +21,11 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
             <li>Till screen and label printing, Square connection when you have one</li>
             <li>Your own online shop with every dealer&rsquo;s stock, run for you</li>
           </ul>
-          <p className="mt-3 text-[13px] text-ink-muted">30 days free. Card taken now, nothing charged until day 30, cancel any time.</p>
+          <p className="mt-3 text-[13px] text-ink-muted">14 days free. Card taken now, nothing charged until day 14, cancel any time.</p>
           <a href={`/api/billing/centre-checkout?centre=${centre.id}`} className="btn mt-4">Add card and start trial</a>
         </div>
       ) : paid === "1" ? (
-        <div className="card mt-6 flex items-center justify-between p-4 text-[14px]"><span>Trial started. First payment in 30 days, email three days before.</span><span className="pill pill-success">Paid</span></div>
+        <div className="card mt-6 flex items-center justify-between p-4 text-[14px]"><span>Trial started. First payment in 14 days, email three days before.</span><span className="pill pill-success">Paid</span></div>
       ) : null}
 
       <div className="card mt-6 p-5">
