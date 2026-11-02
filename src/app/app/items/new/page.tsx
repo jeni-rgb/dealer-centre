@@ -9,7 +9,7 @@ export default async function NewItem() {
     sb.from("dealer_centres").select("centre_id, centres(name, id)").eq("dealer_id", me.dealer_id).eq("status", "active").is("left_at", null),
     sb.from("channels_public").select("type").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).eq("status", "active"),
     sb.from("printers").select("id, name, owner_type, provider, status").eq("status", "ready"),
-    sb.from("dealers").select("code, default_own_shopify, default_centre_shopify, default_centre_ebay, item_limit").eq("id", me.dealer_id).single(),
+    sb.from("dealers").select("code, default_own_shopify, default_centre_shopify, default_centre_ebay, item_limit, monthly_sold_limit").eq("id", me.dealer_id).single(),
     sb.from("sku_counters").select("next_number").eq("dealer_id", me.dealer_id).maybeSingle(),
   ]);
   const centreIds = (centres ?? []).map((c) => c.centre_id);
@@ -26,7 +26,7 @@ export default async function NewItem() {
         return { id: c.centre_id, name: (c.centres as unknown as { name: string })?.name ?? "Centre", hasShop: ch.some((x) => x.type === "shopify"), hasEbay: ch.some((x) => x.type === "ebay") };
       })}
       hasOwnShopify={(ownChannels ?? []).some((c) => c.type === "shopify")}
-      defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false, ebay: dealer?.default_centre_ebay ?? false }}
+      defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false, ebay: dealer?.default_centre_ebay ?? false }} starter={(dealer?.monthly_sold_limit ?? 25) <= 25}
       printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${p.name} (till)` : p.name }))}
     />
   );

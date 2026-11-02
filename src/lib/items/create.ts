@@ -27,7 +27,9 @@ export class PlanLimitError extends Error {}
 export async function createItem(db: Admin, dealerId: string, input: CreateItemInput) {
   // Plans are by items sold a month, not items listed. Listing is never blocked; the Today screen
   // nudges an upgrade when a dealer has sold past their tier this month. Only a lapsed plan stops listing.
-  const { data: dealer } = await db.from("dealers").select("plan").eq("id", dealerId).single();
+  const { data: dealer } = await db.from("dealers").select("plan, monthly_sold_limit").eq("id", dealerId).single();
+  // Centre shop and eBay are Trade and above
+  if (dealer && (dealer.monthly_sold_limit ?? 25) <= 25) { input.on_centre_shopify = false; input.on_centre_ebay = false; }
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }

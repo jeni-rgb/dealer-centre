@@ -8,18 +8,18 @@ import { Icon, Phone, Pill, TicketCard, Toggle, ToggleGroup } from "@/components
 type Centre = { id: string; name: string; hasShop: boolean; hasEbay: boolean };
 type Props = {
   dealerCode: string; nextNumber: number; centres: Centre[]; hasOwnShopify: boolean;
-  defaults: { own: boolean; shop: boolean; ebay: boolean }; printers: { id: string; name: string }[];
+  defaults: { own: boolean; shop: boolean; ebay: boolean }; printers: { id: string; name: string }[]; starter?: boolean;
 };
 
-export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers }: Props) {
+export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers, starter = false }: Props) {
   const previewSku = `${dealerCode}${String(nextNumber).padStart(4, "0")}`;
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
   const [centre, setCentre] = useState(centres[0]?.id ?? "");
   const [own, setOwn] = useState(hasOwnShopify && defaults.own);
-  const [shop, setShop] = useState(defaults.shop);
-  const [ebay, setEbay] = useState(defaults.ebay);
+  const [shop, setShop] = useState(defaults.shop && !starter);
+  const [ebay, setEbay] = useState(defaults.ebay && !starter);
   const [label, setLabel] = useState(printers.length > 0);
   const [printer, setPrinter] = useState(printers[0]?.id ?? "");
   const [files, setFiles] = useState<File[]>([]);
@@ -149,8 +149,8 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             <span className="field-label">Also list on</span>
             <ToggleGroup>
               <Toggle on={own} onChange={setOwn} label="Your Shopify" hint={hasOwnShopify ? "Photo and price go to your own shop" : "Connect Shopify in Settings first"} disabled={!hasOwnShopify} />
-              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={c.hasShop ? "The centre's Shopify store, they ship it. 27% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop} />}
-              {c && <Toggle on={ebay} onChange={setEbay} label={`${c.name} eBay store`} hint={c.hasEbay ? "Buy it now at your price, centre handles postage" : "Centre has not connected eBay yet"} disabled={!c.hasEbay} />}
+              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasShop ? "The centre's Shopify store, they ship it. 27% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop || starter} />}
+              {c && <Toggle on={ebay} onChange={setEbay} label={`${c.name} eBay store`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasEbay ? "Buy it now at your price, centre handles postage" : "Centre has not connected eBay yet"} disabled={!c.hasEbay || starter} />}
             </ToggleGroup>
           </div>
 

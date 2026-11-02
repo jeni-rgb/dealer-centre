@@ -11,9 +11,23 @@ export const metadata: Metadata = {
 };
 
 const dealerPlans = [
-  { name: "Starter", price: "£25", who: "Up to 25 items sold a month", bits: ["Unlimited stock", "Labels and ticket numbers", "Centre till and End of day", "Your own Shopify", "Sale notifications", "Monthly statement"] },
-  { name: "Trade", price: "£100", who: "Up to 50 items sold a month", bits: ["Everything in Starter", "Centre online shop and eBay", "Margin on every item", "Priority support"], featured: true },
-  { name: "Pro", price: "£150", who: "Over 100 items sold a month", bits: ["Everything in Trade", "Several centres on one account", "Export to your accountant"] },
+  { name: "Starter", price: "£25", who: "Up to 25 items sold a month", forWho: "A pitch you top up at weekends", bits: ["Unlimited stock listed", "Ticket numbers and labels", "Centre till, End of day, notifications", "Your own Shopify", "Margin on every item", "Monthly statement with PDF"], not: ["Centre online shop and eBay", "More than one centre"] },
+  { name: "Trade", price: "£100", who: "Up to 50 items sold a month", forWho: "Full time at one centre", bits: ["Everything in Starter", "Centre online shop and eBay", "Priority support"], not: ["More than one centre"], featured: true },
+  { name: "Pro", price: "£150", who: "Over 100 items sold a month", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
+];
+
+const compare: [string, string, string, string][] = [
+  ["Items sold a month", "Up to 25", "Up to 50", "Unlimited"],
+  ["Stock you can list", "Unlimited", "Unlimited", "Unlimited"],
+  ["Centres you sell at", "One", "One", "Any number"],
+  ["Ticket numbers and labels", "✓", "✓", "✓"],
+  ["Centre till, End of day, notifications", "✓", "✓", "✓"],
+  ["Your own Shopify", "✓", "✓", "✓"],
+  ["Margin and haggle guide on every item", "✓", "✓", "✓"],
+  ["Monthly statement with PDF", "✓", "✓", "✓"],
+  ["Centre online shop and eBay", "–", "✓", "✓"],
+  ["Export for your accountant", "–", "–", "✓"],
+  ["Support", "Email", "Priority email", "Priority email and phone"],
 ];
 
 const faqs = [
@@ -142,11 +156,22 @@ export default function Landing() {
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Most dealers</span>}
                 <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
                 <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">/month</span></div>
-                <div className="mt-1 text-[14px] font-medium">{p.who}</div>
-                <ul className="mt-5 flex flex-col gap-2 text-[14px] text-ink-muted">{p.bits.map((b) => <li key={b} className="flex gap-2"><span className="text-success">✓</span>{b}</li>)}</ul>
+                <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
+                <div className="text-[13px] text-ink-muted">{p.forWho}</div>
+                <ul className="mt-5 flex flex-col gap-2 text-[14px]">{p.bits.map((b) => <li key={b} className="flex gap-2"><span className="font-bold text-success">✓</span>{b}</li>)}</ul>
+                {p.not.length > 0 && <ul className="mt-2 flex flex-col gap-2 text-[14px] text-ink-muted">{p.not.map((b) => <li key={b} className="flex gap-2"><span className="w-[11px] text-center">–</span>{b}</li>)}</ul>}
                 <Link href="/signin?next=/signup/dealer" className={`mt-7 ${p.featured ? "btn" : "btn-outline"}`}>Start free</Link>
               </div>
             ))}
+          </div>
+          <div className="card mt-8 overflow-hidden">
+            <div className="border-b border-border px-6 py-4"><h4 className="text-[16px] font-semibold">What is in each plan</h4><p className="text-[13px] text-ink-muted">The only things that change between plans are how much you sell, where, and whether you use the centre&rsquo;s online shop.</p></div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-[14px]">
+                <thead><tr className="border-b border-border text-left text-[12px] uppercase tracking-wide text-ink-muted"><th className="px-6 py-3 font-semibold">&nbsp;</th><th className="py-3 font-semibold">Starter £25</th><th className="py-3 font-semibold text-accent">Trade £100</th><th className="py-3 font-semibold">Pro £150</th></tr></thead>
+                <tbody>{compare.map(([k, a, b, c]) => <tr key={k} className="border-b border-border last:border-0"><td className="px-6 py-3 font-medium">{k}</td>{[a, b, c].map((v, i) => <td key={i} className={`py-3 ${v === "✓" ? "font-bold text-success" : v === "–" ? "text-ink-muted" : ""}`}>{v}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
           </div>
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
