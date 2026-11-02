@@ -1,2 +1,1 @@
-Gabriel Sans trial files (Fontfabric). Replace with the licensed webfont files before launch, same names:
-  GabrielSans-Bold.ttf  GabrielSans-Medium.ttf  GabrielSans-Regular.ttf
+Montserrat (SIL Open Font License, see Montserrat-OFL.txt). Variable weight file, used for headings, figures and ticket numbers. Body text is Helvetica.
