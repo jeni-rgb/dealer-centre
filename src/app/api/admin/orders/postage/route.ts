@@ -9,7 +9,7 @@ import { renderDespatchNotes, mergeLabelsAndNotes } from "@/lib/fulfilment/slips
 import { shopifyFulfil } from "@/lib/channels/shopify";
 import type { ChannelRow } from "@/lib/channels/types";
 
-const Input = z.object({ parcels: z.array(z.object({ sale_id: z.string().uuid(), format: z.enum(["largeLetter", "smallParcel", "mediumParcel"]), weight_grams: z.number().int().min(1).max(30000), service_code: z.string().min(1).max(20) })).min(1).max(100) });
+const Input = z.object({ parcels: z.array(z.object({ sale_id: z.string().min(1).max(64), format: z.enum(["largeLetter", "smallParcel", "mediumParcel"]), weight_grams: z.number().int().min(1).max(30000), service_code: z.string().min(1).max(20) })).min(1).max(100) });
 
 /**
  * Buy postage for the selected parcels through Click & Drop, keep each label, mark the orders despatched, tell Shopify
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     }
   }
   // Labels go to the thermal printer, notes to the A4 printer: two print jobs, both reachable from Reprint.
-  const done = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id) && o.label_path).map((o) => o.sale_id);
+  const done = provider() === "sample" ? ids : (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id) && o.label_path).map((o) => o.sale_id);
   void labels; void renderDespatchNotes; void mergeLabelsAndNotes;
   return NextResponse.json({ ok: true, bought: results.filter((r) => r.ok).length, errors, labels_url: done.length ? `/api/admin/orders/labels?ids=${done.join(",")}&only=labels` : null, notes_url: done.length ? `/api/admin/orders/labels?ids=${done.join(",")}&only=notes` : null });
 }

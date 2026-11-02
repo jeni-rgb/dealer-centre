@@ -86,7 +86,7 @@ export function OrdersDesk({ orders, centreFilter, services, providerName, defau
             <button className="btn-sm" disabled={busy} onClick={() => act("despatched", tracking)}>Despatched</button>
             <button className="text-ink-muted" onClick={() => setTracking(null)}>Cancel</button>
           </span>}
-          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought through {providerName} and print with the despatch notes.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : " Shiptheory manifests Royal Mail and books courier collections."}</span>
+          <span className="ml-auto text-[12px] text-ink-muted">Labels are bought through {providerName} and print with the despatch notes.{providerName.includes("Click") ? " Manifest once a day in Click & Drop for the collection." : providerName.includes("Shiptheory") ? " Shiptheory manifests Royal Mail and books courier collections." : ""}</span>
         </>}
         {(tab === "done" || tab === "all") && <>
           <a className={`btn-sm-secondary ${ids.length ? "" : "pointer-events-none opacity-40"}`} href={`/api/admin/orders/labels?ids=${ids.join(",")}&only=labels`} target="_blank">Reprint labels</a>

@@ -7,7 +7,7 @@ import type { ChannelRow } from "@/lib/channels/types";
 import { notifyMissing } from "@/lib/fulfilment/missing";
 
 const Input = z.object({
-  sale_ids: z.array(z.string().uuid()).min(1).max(200),
+  sale_ids: z.array(z.string().min(1).max(64)).min(1).max(200),
   status: z.enum(["new", "collected", "at_unit", "despatched", "missing"]),
   carrier: z.string().max(40).optional(), tracking: z.string().max(80).optional(), note: z.string().max(500).optional(),
 });

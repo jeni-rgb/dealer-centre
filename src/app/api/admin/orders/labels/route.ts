@@ -3,7 +3,8 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { listOnlineOrders } from "@/lib/fulfilment/orders";
 import { renderDespatchNotes, mergeLabelsAndNotes } from "@/lib/fulfilment/slips";
-import { fetchPending } from "@/lib/fulfilment/postage";
+import { fetchPending, provider } from "@/lib/fulfilment/postage";
+import { sampleBuy } from "@/lib/fulfilment/sample";
 import { shopifyFulfil } from "@/lib/channels/shopify";
 import type { ChannelRow } from "@/lib/channels/types";
 
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
   orders = (await listOnlineOrders(db, {})).filter((o) => ids.includes(o.sale_id));
   const labels: Uint8Array[] = [];
   for (const o of orders.filter((q) => q.label_path)) { const { data } = await db.storage.from("files").download(o.label_path!); if (data) labels.push(new Uint8Array(await data.arrayBuffer())); }
+  if (provider() === "sample") for (const r of await sampleBuy(orders.filter((q) => !q.label_path).map((o) => ({ order: o, format: "smallParcel", weightGrams: o.weight_grams ?? 800, serviceCode: o.service_code ?? "TPS48" })))) if (r.ok) labels.push(r.labelPdf);
   const notes = only === "labels" ? null : await renderDespatchNotes(orders);
   const pdf = only === "labels" ? await mergeLabelsAndNotes(labels, await renderDespatchNotes([])) : only === "notes" ? notes! : await mergeLabelsAndNotes(labels, notes!);
   const name = only === "labels" ? "labels" : only === "notes" ? "despatch-notes" : "labels-and-notes";
