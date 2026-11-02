@@ -87,7 +87,7 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
     let channelFee = 0;
     if (channel.owner_type === "centre" && (channel.type === "shopify" || channel.type === "ebay")) {
       const { data: c } = await db.from("centres").select("online_commission_bps").eq("id", channel.owner_id).single();
-      channelFee = Math.round((line.amount_pence * (c?.online_commission_bps ?? 2700)) / 10000);
+      channelFee = Math.round((line.amount_pence * (c?.online_commission_bps ?? 2000)) / 10000);
     }
     const { data: sale } = await db
       .from("sales")

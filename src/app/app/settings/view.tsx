@@ -51,7 +51,7 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
       <Section title="Default channels for new items">
         <ToggleGroup>
           <Toggle on={d.own} onChange={(v) => saveDefaults({ ...d, own: v })} label="Your Shopify" disabled={!shopify} />
-          <Toggle on={d.shop} onChange={(v) => saveDefaults({ ...d, shop: v })} label="Centre online shop" hint="27% commission, centre ships it" />
+          <Toggle on={d.shop} onChange={(v) => saveDefaults({ ...d, shop: v })} label="Centre online shop" hint="20% commission, centre ships it" />
           <Toggle on={d.ebay} onChange={(v) => saveDefaults({ ...d, ebay: v })} label="Centre eBay store" hint="Buy it now at your price" />
         </ToggleGroup>
       </Section>

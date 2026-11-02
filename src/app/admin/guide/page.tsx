@@ -16,7 +16,7 @@ export default function AdminGuide() {
         { id: "sql", title: "Database changes", lead: "Every change is a numbered file in supabase/migrations and a matching setup-part file for the SQL editor. Run them in order, once. The latest is part 9 (push notifications)." },
         { id: "money", title: "How the money works", body: (
           <table className="mt-4 w-full text-[14px]"><tbody>
-            {[["Dealer subscriptions", "£25 / £100 / £150 a month by items sold (25 / 50 / over 100). 14 day trial, Stripe."], ["Centre subscription", "£299 a month, 14 day trial, Stripe. Comp via free months at onboarding."], ["Online shop", "27% of each online sale: 22% to us, 5% to the centre, plus £2.95 handling. Dealer gets the rest."], ["Floor sales", "Centre's own commission and rent, set in centre Settings. We take nothing on floor sales."]].map(([k, v]) => <tr key={k} className="border-b border-border"><td className="py-2.5 pr-4 font-semibold">{k}</td><td className="py-2.5 text-ink-muted">{v}</td></tr>)}
+            {[["Dealer subscriptions", "£25 / £100 / £150 a month by items sold (25 / 50 / over 100). 14 day trial, Stripe."], ["Centre subscription", "£299 a month, 14 day trial, Stripe. Comp via free months at onboarding."], ["Online shop", "20% of each online sale plus £2.95 handling; the centre keeps its own share as set in centre Settings. Dealer gets the rest."], ["Floor sales", "Centre's own commission and rent, set in centre Settings. We take nothing on floor sales."]].map(([k, v]) => <tr key={k} className="border-b border-border"><td className="py-2.5 pr-4 font-semibold">{k}</td><td className="py-2.5 text-ink-muted">{v}</td></tr>)}
           </tbody></table>
         ) },
       ]}

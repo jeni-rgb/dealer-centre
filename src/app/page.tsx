@@ -35,7 +35,7 @@ const faqs = [
   ["We have an ordinary till, not Square. Does it work?", "Yes. An iPad by the till runs the Till screen: scan the ticket, tap cash or card, done. Or type the day's tickets in at End of day. When you get Square, one button moves every item across."],
   ["What happens to dealers who do not want the app?", "They carry on as they are. The centre gives them a line in the system with the code already on their tickets, and their sales still get recorded and still get a statement."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
-  ["What does the centre pay?", "£299 a month, 14 days free. Unlimited dealers, End of day, statements and payouts worked out, the Till screen, label printing, and the centre's own online shop run for you."],
+  ["What does the centre pay?", "£299 a month, 14 days free. Unlimited dealers, End of day, statements and payouts worked out, the Till screen, label printing, and the centre's own online shop run for you at 20% commission with no monthly cost."],
   ["Is there a contract?", "No. Monthly, cancel from Settings. Card taken at sign up, nothing charged for 14 days."],
 ];
 
@@ -137,16 +137,64 @@ export default function Landing() {
           <div className="max-w-2xl">
             <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-forest">For centres</h2>
             <h3 className="mt-3 text-[36px] font-bold leading-[1.1] tracking-[-0.02em]">Sixty dealers. Sixty statements. Two minutes a day.</h3>
-            <p className="mt-4 text-[17px] leading-7 text-ink-muted">Keep the till you have. An iPad by it scans each ticket as it sells, or you type the day&rsquo;s tickets in at End of day. Dealers on the app hear within a minute; dealers who are not still get their statement. When you buy Square, one button moves every item across.</p>
+            <p className="mt-4 text-[17px] leading-7 text-ink-muted">£299 a month. That is about £5 per dealer. Here is exactly what it buys, and what it replaces.</p>
           </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Every sale recorded", ["Till screen on an iPad next to the till you have", "End of day: scan the kept tickets, two minutes", "Square connected, if and when you get it", "Barcode on every app dealer's ticket", "Dealers not on the app still get a line and a statement"]],
+              ["Dealers and statements", ["Unlimited dealers, on the app or not", "Statements worked out: sales, commission, rent, net", "Payouts listed, PDF per dealer", "Dealers ranked: sales against rent, who has gone quiet", "Join requests approved with one tap"]],
+              ["Your online shop, run for you", ["Your own Shopify and eBay, stocked by your dealers", "We list, answer customers, pick, pack and post", "No monthly cost: 20% commission on what sells", "You and the dealer share the rest", "Items come off the floor the moment they sell online"]],
+              ["Set up, kit and people", ["We set it up with you on site", "Every dealer loaded with the code already on their tickets", "Printed code sheet for the till", "Label printer and labels at cost", "Square set up for you when you move to it"]],
+            ].map(([t, bits]) => (
+              <div key={t as string} className="card flex flex-col p-6">
+                <h4 className="text-[18px] font-semibold leading-6">{t as string}</h4>
+                <ul className="mt-4 flex flex-col gap-2.5 text-[14px] leading-5 text-ink-muted">{(bits as string[]).map((b) => <li key={b} className="flex gap-2"><span className="mt-0.5 font-bold text-forest">✓</span>{b}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+
           <div className="mt-10">
             <Browser src="/screens/centre-dashboard.jpg" alt="Centre dashboard: month to date, dealers ranked, rent against sales" />
           </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
+            <div className="card overflow-hidden">
+              <div className="border-b border-border px-6 py-4"><h4 className="text-[16px] font-semibold">What it replaces</h4></div>
+              <table className="w-full text-[14px]">
+                <tbody>
+                  {[
+                    ["Cash book and card book per dealer", "Scan the ticket, tap cash or card"],
+                    ["Statement day with a calculator", "Done at midnight on the last day"],
+                    ["Dealers ringing to ask what sold", "A buzz on their phone within a minute"],
+                    ["Handwritten tickets nobody can read", "Printed barcoded labels"],
+                    ["Items sold twice, floor and online", "One ticket number everywhere"],
+                    ["A spreadsheet for who owes what", "Dealers ranked against rent, every day"],
+                  ].map(([a, b]) => <tr key={a} className="border-b border-border last:border-0"><td className="px-6 py-3 text-ink-muted line-through decoration-[#C9B38A]">{a}</td><td className="py-3 pr-6 font-medium">{b}</td></tr>)}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-col gap-5">
+              <div className="rounded-[20px] bg-forest p-6 text-white">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-[#C9DCCF]">The sums</div>
+                <div className="mt-3 grid grid-cols-3 gap-3">
+                  {[["£299", "a month"], ["£5", "per dealer, at 60"], ["2 min", "a day on the till"]].map(([n, l]) => <div key={l} className="rounded-[12px] bg-white/10 px-3 py-3"><div className="figure text-[26px]">{n}</div><div className="text-[12px] text-[#C9DCCF]">{l}</div></div>)}
+                </div>
+                <p className="mt-4 text-[14px] leading-6 text-[#DCE8DD]">A centre taking £20,000 a week spends more than £299 a month on the person who adds up the books. The online shop, run for you, is where most centres find it pays for itself in the first month.</p>
+              </div>
+              <div className="card p-6">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Moving to Square?</div>
+                <p className="mt-2 text-[15px] leading-6">Keep your till for now; everything works. When you are ready for Square we set it up with you: till, reader, every dealer as a category, every item on the till with its barcode. One button, nothing retyped. Ask us about the Square bundle.</p>
+                <Link href="/signin?next=/signup/centre" className="btn-sm mt-4">Set up my centre</Link>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {[
               ["End of day", "Scan or type the tickets the till kept. Price and dealer fill in. Edit a figure or undo a ticket any time that week.", "/screens/centre-eod.jpg"],
-              ["Dealers ranked", "Sales against rent for every pitch, who has not sold in 30 days, join requests to approve.", "/screens/centre-dashboard.jpg"],
-              ["Your own online shop", "Dealers toggle items onto the centre's Shopify and eBay. We run it, pick and pack, and you take a share.", "/screens/centre-online.jpg"],
+              ["Code sheet by the till", "Every dealer and their code on one printed page, so a handwritten ticket still gets recorded.", "/screens/centre-codes.jpg"],
+              ["Your online shop", "Dealers toggle items onto the centre's Shopify and eBay. We run it, pick and pack, and you take a share.", "/screens/centre-online.jpg"],
             ].map(([t, b, img]) => (
               <div key={t} className="card overflow-hidden">
                 <div className="aspect-[16/10] overflow-hidden border-b border-border bg-surface-2"><img src={img} alt="" className="h-full w-full object-cover object-top" loading="lazy" /></div>
@@ -191,7 +239,7 @@ export default function Landing() {
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
               <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[44px]">£299</span><span className="text-[14px] text-[#C9DCCF]">/month, 14 days free</span></div>
-              <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">Unlimited dealers, End of day, Till screen, label printing, statements and payouts worked out, and your own online shop run for you. Works with the till you have.</p>
+              <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">Unlimited dealers, End of day, Till screen, label printing, statements and payouts worked out, set up on site, and your own online shop run for you at 20% commission. Works with the till you have.</p>
             </div>
             <Link href="/signin?next=/signup/centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
           </div>

@@ -48,7 +48,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, created_at: d(55) },
   ],
   centres: [
-    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2700, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", till_pin_plain: "4821", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
+    { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, handling_fee_pence: 295, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", till_pin_plain: "4821", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
