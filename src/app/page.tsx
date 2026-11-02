@@ -39,13 +39,27 @@ const faqs = [
   ["Is there a contract?", "No. Monthly, cancel from Settings. Card taken at sign up, nothing charged for 14 days."],
 ];
 
+const amazonTag = process.env.NEXT_PUBLIC_AMAZON_TAG ?? "";
+const amazon = (q: string) => `https://www.amazon.co.uk/s?k=${encodeURIComponent(q)}${amazonTag ? `&tag=${amazonTag}` : ""}`;
+const kit = [
+  { name: "Label printer", pick: "Brother QL-820NWB", why: "Prints the 62 by 29 mm ticket labels, on wifi so the centre and any dealer can print to it. The one Dealer Centre is tested on.", price: "about £170", q: "Brother QL-820NWB label printer" },
+  { name: "Labels", pick: "Brother DK-11209 (62 x 29 mm)", why: "Die cut, 800 a roll, the size every ticket label is laid out for. Two rolls lasts a centre a month.", price: "about £12 a roll", q: "Brother DK-11209 labels" },
+  { name: "Barcode scanner", pick: "Any Bluetooth 1D scanner", why: "Pairs with the till iPad like a keyboard. Scan the ticket, the sale fills in. Optional: typing works too.", price: "£25 to £40", q: "Bluetooth barcode scanner 1D wireless" },
+  { name: "iPad and stand", pick: "Any iPad, a counter stand", why: "Runs the Till screen next to your existing till. An older iPad is fine; the stand keeps it at the right angle for scanning.", price: "stand about £25", q: "iPad counter stand" },
+  { name: "Square reader", pick: "Square Reader or Terminal", why: "Only if you want Square as your till. Dealer Centre works without it; when you add it, every item moves across with one button.", price: "from £19", q: "Square card reader" },
+];
+
+const faqJsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
+const productJsonLd = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Dealer Centre", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android", description: "Stock, labels and sales for antique dealers and antiques centres.", offers: [{ "@type": "Offer", price: "25", priceCurrency: "GBP", name: "Starter" }, { "@type": "Offer", price: "100", priceCurrency: "GBP", name: "Trade" }, { "@type": "Offer", price: "150", priceCurrency: "GBP", name: "Pro" }, { "@type": "Offer", price: "299", priceCurrency: "GBP", name: "Centre" }] };
+
 export default function Landing() {
   return (
     <main className="overflow-x-hidden">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([productJsonLd, faqJsonLd]) }} />
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Logo size={34} />
         <nav className="hidden items-center gap-7 text-[14px] font-medium text-ink-muted md:flex">
-          <a href="#dealers">For dealers</a><a href="#centres">For centres</a><a href="#pricing">Pricing</a><Link href="/guides/dealers">Guides</Link>
+          <a href="#dealers">For dealers</a><a href="#centres">For centres</a><a href="#pricing">Pricing</a><a href="#kit">Kit</a><Link href="/guides/dealers">Guides</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/signin" className="hidden text-[14px] font-medium md:inline">Sign in</Link>
@@ -180,6 +194,30 @@ export default function Landing() {
               <p className="mt-2 max-w-xl text-[15px] text-[#DCE8DD]">Unlimited dealers, End of day, Till screen, label printing, statements and payouts worked out, and your own online shop run for you. Works with the till you have.</p>
             </div>
             <Link href="/signin?next=/signup/centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Kit */}
+      <section id="kit" className="bg-white py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-ink-muted">What you need</h2>
+          <h3 className="mt-3 text-[36px] font-bold tracking-[-0.02em]">Under £250 of kit for a whole centre</h3>
+          <p className="mt-3 max-w-2xl text-[16px] text-ink-muted">Nothing exotic. A label printer and a roll of labels is enough for a dealer printing at home. A centre adds an iPad by the till and a scanner.</p>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {kit.map((k) => (
+              <a key={k.name} href={amazon(k.q)} target="_blank" rel="noreferrer sponsored" className="card flex flex-col p-5 transition hover:border-accent">
+                <div className="flex items-center justify-between"><span className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">{k.name}</span><span className="text-[12px] text-ink-muted">{k.price}</span></div>
+                <div className="mt-1.5 text-[17px] font-semibold">{k.pick}</div>
+                <p className="mt-1.5 flex-1 text-[14px] leading-6 text-ink-muted">{k.why}</p>
+                <span className="mt-4 text-[13px] font-semibold text-accent">Find it on Amazon →</span>
+              </a>
+            ))}
+            <div className="flex flex-col justify-center rounded-[18px] bg-surface-2 p-5 text-[14px] leading-6 text-ink-muted">
+              <span className="font-semibold text-ink">Already have a printer?</span>
+              Most Brother QL and Dymo LabelWriter models work. Labels open as a PDF sized to the roll, so anything that prints 62 mm wide is fine.
+              <span className="mt-3 text-[12px]">Links go to Amazon. We may earn a small commission; the price to you is the same.</span>
+            </div>
           </div>
         </div>
       </section>
