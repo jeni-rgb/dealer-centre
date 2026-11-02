@@ -7,7 +7,7 @@
 :root {
   /* Dealer Centre brand, Nov 2026. Cream ground, olive primary, gold and forest accents. */
   --dc-ink: #1A1A17;
-  --dc-ink-muted: #6E6A58;
+  --dc-ink-muted: #4A4737;
   --dc-border: #E6E1CC;
   --dc-surface: #FDFBEF;
   --dc-surface-2: #F3EFDD;
@@ -53,13 +53,13 @@
   --color-forest: var(--dc-forest);
   --color-forest-soft: var(--dc-forest-soft);
   --color-cream: var(--dc-cream);
-  --font-sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-sans: Montserrat, "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
   --font-display: Montserrat, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 html, body { background: var(--dc-surface); color: var(--dc-ink); }
-h1, h2, .display { font-family: var(--font-display); letter-spacing: -0.01em; }
-body { font-family: var(--font-sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+h1, h2, .display { font-family: var(--font-display); letter-spacing: -0.02em; font-weight: 800; }
+body { font-family: var(--font-sans); font-weight: 500; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
 
 .num { font-variant-numeric: tabular-nums; }
 .ticket { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.03em; }
