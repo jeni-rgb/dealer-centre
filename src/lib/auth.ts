@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export type Me = {
@@ -9,11 +10,19 @@ export type Me = {
   impersonating?: boolean;
 };
 
-export async function getMe(): Promise<Me | null> {
+// Cached per request: the layout and the page both call this, so it runs once.
+export const getMe = cache(async (): Promise<Me | null> => {
   const sb = await supabaseServer();
-  const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) return null;
-  const { data } = await sb.from("users").select("id, email, role, is_platform_admin, dealer_id").eq("id", auth.user.id).maybeSingle();
+  // getClaims verifies the JWT locally (no round trip to Supabase Auth when signing keys are asymmetric).
+  let uid: string | undefined;
+  const claims = await sb.auth.getClaims().catch(() => null);
+  uid = claims?.data?.claims?.sub as string | undefined;
+  if (!uid) {
+    const { data: auth } = await sb.auth.getUser();
+    uid = auth.user?.id;
+  }
+  if (!uid) return null;
+  const { data } = await sb.from("users").select("id, email, role, is_platform_admin, dealer_id").eq("id", uid).maybeSingle();
   const me = (data as Me | null) ?? null;
   if (me?.is_platform_admin) {
     // Admin opened the app as a dealer (set by /api/admin/impersonate). Reads still go through admin RLS; writes are admin's.
@@ -22,7 +31,7 @@ export async function getMe(): Promise<Me | null> {
     if (as) return { ...me, dealer_id: as, impersonating: true };
   }
   return me;
-}
+});
 
 /** Dealer Centre's own people: runners, shop manager, admins. */
 export const isOps = (me: Me | null) => !!me && (me.is_platform_admin || me.role === "ops_staff");
