@@ -27,6 +27,7 @@ export default async function NewItem() {
       })}
       hasOwnShopify={(ownChannels ?? []).some((c) => c.type === "shopify")}
       defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false }} starter={(dealer?.monthly_sold_limit ?? 25) <= 25}
+      aiEnabled={!!process.env.OPENAI_API_KEY}
       printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${p.name} (till)` : p.name }))}
     />
   );
