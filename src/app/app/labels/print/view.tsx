@@ -30,12 +30,14 @@ async function toPng(svg: string, wMm: number, hMm: number): Promise<Blob> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }: { listed?: boolean; labels: Label[]; w: number; h: number; pdfUrl: string; itemIds?: string[] }) {
+export function PrintView({ labels, w, h, pdfUrl, tokenUrl, itemIds = [], listed = false }: { tokenUrl?: string; listed?: boolean; labels: Label[]; w: number; h: number; pdfUrl: string; itemIds?: string[] }) {
   const markPrinted = () => { if (itemIds.length) fetch("/api/labels/mark", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: itemIds }), keepalive: true }).catch(() => {}); };
   const [files, setFiles] = useState<File[] | null>(null);
   const [urls, setUrls] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(true);
+  const [standalone, setStandalone] = useState(false);
+  useEffect(() => { setStandalone(window.matchMedia("(display-mode: standalone)").matches || !!(navigator as unknown as { standalone?: boolean }).standalone); }, []);
   const [pdf, setPdf] = useState<File | null>(null);
 
   useEffect(() => {
@@ -78,8 +80,10 @@ export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }
       <div className="mx-auto flex max-w-md flex-col gap-3 p-4 print:hidden">
         <h1 className="text-[22px] font-semibold">Print {labels.length} label{labels.length === 1 ? "" : "s"}</h1>
         <p className="text-[13px] text-ink-muted">{w} × {h} mm.</p>
-        <button onClick={() => { markPrinted(); window.location.href = pdfUrl; }} className={`${btn} bg-accent text-white`}>Open label to print</button>
-        <p className="text-[13px] text-ink-muted">Then tap Share (square with arrow) and choose Jadens, or Print.</p>
+        {standalone
+          ? <a href={tokenUrl ?? pdfUrl} target="_blank" rel="noopener" onClick={markPrinted} className={`${btn} flex items-center justify-center bg-accent text-white`}>Open label to print</a>
+          : <button onClick={() => { markPrinted(); window.location.href = pdfUrl; }} className={`${btn} bg-accent text-white`}>Open label to print</button>}
+        <p className="text-[13px] text-ink-muted">Tap Share (square with arrow) then Jadens.</p>
         <button onClick={sharePdf} disabled={!pdf} className="text-center text-[14px] underline disabled:opacity-50">{pdf ? "Send PDF to printer app" : "Preparing PDF…"}</button>
         {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
         <button onClick={() => { window.print(); markPrinted(); }} className="text-center text-[14px] underline">Print (AirPrint)</button>
