@@ -8,8 +8,8 @@ import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
 type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; default_own_shopify: boolean; default_centre_shopify: boolean };
 
-export function SettingsView({ email, dealer, shopify, square, centres, printers }: {
-  email: string; dealer: Dealer; shopify: Channel; square: Channel;
+export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
+  email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
   centres: { id: string; name: string; status: string; rent_pence: number; rent_mode: string }[];
   printers: { id: string; name: string; own: boolean; cloud: boolean }[];
 }) {
@@ -17,6 +17,9 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
   const [shop, setShop] = useState("");
   const [printerName, setPrinterName] = useState("");
   const [printerModel, setPrinterModel] = useState<string>(PRINTER_MODELS[0].id);
+  const [personEmail, setPersonEmail] = useState("");
+  const [peopleMsg, setPeopleMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [d, setD] = useState({ own: dealer.default_own_shopify, shop: dealer.default_centre_shopify });
 
   async function saveDefaults(next: typeof d) {
@@ -29,12 +32,40 @@ export function SettingsView({ email, dealer, shopify, square, centres, printers
     setPrinterName(""); router.refresh();
   }
 
+  async function people_(body: Record<string, unknown>) {
+    setBusy(true); setPeopleMsg(null);
+    const r = await fetch("/api/dealers/people", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) { setPeopleMsg(j.error ?? "Something went wrong"); return false; }
+    router.refresh();
+    return j;
+  }
+  async function addPerson(e: React.FormEvent) {
+    e.preventDefault();
+    const j = await people_({ action: "add", email: personEmail.trim() });
+    if (j) { setPeopleMsg(j.emailed ? `Sign in link sent to ${personEmail.trim()}` : `Added. They can sign in at /signin with ${personEmail.trim()}`); setPersonEmail(""); }
+  }
+  async function removePerson(p: { id: string; email: string }) {
+    if (!confirm(`Remove ${p.email}? They will no longer be able to sign in to this account.`)) return;
+    await people_({ action: "remove", id: p.id });
+  }
+
   return (
     <>
       <Section title="Account">
         <div className="card divide-y divide-border">
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{dealer.name}</span><span className="text-[12px] text-ink-muted">{email}</span></span><span className="ticket text-[16px]">{dealer.code}</span></div>
           <Link href="/api/billing/portal" className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealer.plan === "trial" ? `Trial, ends ${dealer.trial_ends_at ? new Date(dealer.trial_ends_at).toLocaleDateString("en-GB") : ""}` : dealer.plan} · {dealer.monthly_sold_limit >= 100000 ? "over 50" : dealer.monthly_sold_limit > 25 ? "26 to 50" : `up to ${dealer.monthly_sold_limit}`} items sold a month</span></span><span className="text-[13px] font-medium text-accent">Manage online</span></Link>
+        </div>
+      </Section>
+
+      <Section title="Who can sign in">
+        <div className="card divide-y divide-border">
+          {people.map((p) => (
+            <div key={p.id} className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{p.email}</span>{p.id === meId && <span className="text-[12px] text-ink-muted">You</span>}</span>{p.id !== meId && people.length > 1 && <button type="button" className="btn-sm-secondary" disabled={busy} onClick={() => removePerson(p)}>Remove</button>}</div>
+          ))}
+          <form onSubmit={addPerson} className="flex flex-col gap-2 px-4 py-3"><div className="flex gap-2"><input type="email" required className="field !h-10 !text-[14px]" placeholder="Add a person, their email" value={personEmail} onChange={(e) => setPersonEmail(e.target.value)} /><button className="btn-sm" disabled={busy}>Add</button></div><span className="text-[12px] text-ink-muted">They see the same stock, sales and statements. No extra charge.</span>{peopleMsg && <span className="text-[13px]">{peopleMsg}</span>}</form>
         </div>
       </Section>
 
