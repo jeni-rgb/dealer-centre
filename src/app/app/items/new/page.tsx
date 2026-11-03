@@ -1,6 +1,9 @@
 import { requireDealer } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 import { ListItemForm } from "./form";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function NewItem() {
   const me = await requireDealer();
@@ -10,7 +13,8 @@ export default async function NewItem() {
     sb.from("channels_public").select("type").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).eq("status", "active"),
     sb.from("printers").select("id, name, owner_type, provider, status").eq("status", "ready"),
     sb.from("dealers").select("code, default_own_shopify, default_centre_shopify, item_limit, monthly_sold_limit").eq("id", me.dealer_id).single(),
-    sb.from("sku_counters").select("next_number").eq("dealer_id", me.dealer_id).maybeSingle(),
+    // sku_counters has no user RLS policy, so read it with the service client (scoped to this dealer)
+    supabaseAdmin().from("sku_counters").select("next_number").eq("dealer_id", me.dealer_id).maybeSingle(),
   ]);
   const centreIds = (centres ?? []).map((c) => c.centre_id);
   const { data: centreChannels } = centreIds.length
