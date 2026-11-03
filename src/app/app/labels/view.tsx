@@ -22,6 +22,12 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
     router.refresh();
   }
 
+  async function mark(ids: string[]) {
+    setBusy(ids.length === 1 ? `m${ids[0]}` : "mall");
+    await fetch("/api/labels/mark", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: ids }) });
+    setBusy(null); router.refresh();
+  }
+
   return (
     <>
       <div>
@@ -41,6 +47,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
         <div className="flex items-center justify-between pb-2">
           <h2 className="text-[16px] font-semibold">Not printed <span className="text-ink-muted">{notPrinted.length}</span></h2>
           {notPrinted.length > 1 && <button className="btn-sm" disabled={busy !== null} onClick={() => print(notPrinted.map((r) => r.item_id))}>{busy === "all" ? "Sending…" : "Print all"}</button>}
+          {notPrinted.length > 1 && <button className="btn-sm-secondary" disabled={busy !== null} onClick={() => mark(notPrinted.map((r) => r.item_id))}>{busy === "mall" ? "…" : "Mark all printed"}</button>}
         </div>
         {notPrinted.length === 0 && <p className="card p-4 text-[14px] text-ink-muted">Every item has a label. Nice.</p>}
         <div className="flex flex-col gap-2">
@@ -49,6 +56,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
               <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[10px] bg-surface-2">{r.photo && <img src={r.photo} alt="" className="h-full w-full object-cover" />}</div>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate text-[14px] font-medium">{r.title}</span><span className="text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /> {r.status === "failed" && <Pill kind="danger">Failed</Pill>}</span></div>
               <button className="btn-sm-secondary" disabled={busy !== null} onClick={() => print([r.item_id])}>{busy === r.item_id ? "…" : "Print"}</button>
+              <button className="text-[12px] font-medium text-ink-muted underline" disabled={busy !== null} onClick={() => mark([r.item_id])}>{busy === `m${r.item_id}` ? "…" : "Mark printed"}</button>
             </div>
           ))}
         </div>

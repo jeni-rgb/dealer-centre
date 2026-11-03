@@ -11,7 +11,7 @@ export default async function NewItem() {
   const [{ data: centres }, { data: ownChannels }, { data: printers }, { data: dealer }, { data: counter }] = await Promise.all([
     sb.from("dealer_centres").select("centre_id, centres(name, id)").eq("dealer_id", me.dealer_id).eq("status", "active").is("left_at", null),
     sb.from("channels_public").select("type").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).eq("status", "active"),
-    sb.from("printers").select("id, name, owner_type, provider, status").eq("status", "ready"),
+    sb.from("printers").select("id, name, owner_type, provider, status, label_width_mm, label_height_mm").eq("status", "ready"),
     sb.from("dealers").select("code, default_own_shopify, default_centre_shopify, item_limit, monthly_sold_limit").eq("id", me.dealer_id).single(),
     // sku_counters has no user RLS policy, so read it with the service client (scoped to this dealer)
     supabaseAdmin().from("sku_counters").select("next_number").eq("dealer_id", me.dealer_id).maybeSingle(),
@@ -32,7 +32,7 @@ export default async function NewItem() {
       hasOwnShopify={(ownChannels ?? []).some((c) => c.type === "shopify")}
       defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false }} starter={(dealer?.monthly_sold_limit ?? 25) <= 25}
       aiEnabled={!!process.env.GEMINI_API_KEY}
-      printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${p.name} (till)` : p.name }))}
+      printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${p.name} (till)` : p.name, browser: p.provider !== "printnode", w: p.label_width_mm ?? null, h: p.label_height_mm ?? null }))}
     />
   );
 }

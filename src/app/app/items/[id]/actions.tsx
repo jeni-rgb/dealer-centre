@@ -83,6 +83,13 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
         <button className="h-11 text-[14px] font-medium text-danger" disabled={busy} onClick={() => confirm("Withdraw this item from every channel?") && call(`/api/items/${id}`, "PATCH", { status: "withdrawn" })}>Withdraw from sale</button>
       )}
       {status === "withdrawn" && <button className="btn-secondary" disabled={busy} onClick={() => call(`/api/items/${id}`, "PATCH", { status: "live" })}>Put back on sale</button>}
+      {(status === "live" || status === "withdrawn") && mode === "none" && (
+        <button className="h-11 text-[14px] font-medium text-danger" disabled={busy} onClick={async () => {
+          if (!confirm("Delete this item for good? It comes off every channel and can't be undone.")) return;
+          const r = await fetch(`/api/items/${id}`, { method: "DELETE" });
+          if (r.ok) router.push("/app/stock"); else alert((await r.json().catch(() => ({}))).error ?? "Couldn't delete");
+        }}>Delete item</button>
+      )}
     </div>
   );
 }

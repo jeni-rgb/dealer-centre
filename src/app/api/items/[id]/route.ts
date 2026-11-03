@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { handlers } from "@/lib/jobs/handlers";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -35,5 +36,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       await enqueue(db, "sync_item_to_channel", { listing_id: l.id });
     }
   }
+  return NextResponse.json({ ok: true });
+}
+
+/** Deletes an unsold item. Takes it off Shopify/Square in the background, then removes the row. */
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const me = await getMe();
+  if (!me?.dealer_id) return NextResponse.json({ error: "sign in" }, { status: 401 });
+  const { id } = await params;
+  const db = supabaseAdmin();
+  const { data: item } = await db.from("items").select("id, status").eq("id", id).eq("dealer_id", me.dealer_id).maybeSingle();
+  if (!item) return NextResponse.json({ error: "not found" }, { status: 404 });
+  const { count } = await db.from("sales").select("id", { count: "exact", head: true }).eq("item_id", id);
+  if (item.status === "sold" || (count ?? 0) > 0) return NextResponse.json({ error: "Sold items can't be deleted." }, { status: 409 });
+  await db.from("items").update({ status: "withdrawn" }).eq("id", id);
+  after(async () => {
+    try { await handlers.close_item_on_other_channels(db, { item_id: id, sold_channel_id: null }); } catch (e) { console.error("[delete] channel close", e); }
+    await db.from("items").delete().eq("id", id);
+  });
   return NextResponse.json({ ok: true });
 }

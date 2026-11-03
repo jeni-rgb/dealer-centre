@@ -9,7 +9,7 @@ import { Icon, Phone, Pill, TicketCard, Toggle, ToggleGroup } from "@/components
 type Centre = { id: string; name: string; hasShop: boolean };
 type Props = {
   dealerCode: string; nextNumber: number; centres: Centre[]; hasOwnShopify: boolean;
-  defaults: { own: boolean; shop: boolean }; printers: { id: string; name: string }[]; starter?: boolean; aiEnabled?: boolean;
+  defaults: { own: boolean; shop: boolean }; printers: { id: string; name: string; browser?: boolean; w?: number | null; h?: number | null }[]; starter?: boolean; aiEnabled?: boolean;
 };
 
 /** Shrinks a photo to a small JPEG data URL so the AI request stays light. */
@@ -108,6 +108,11 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       const j = await r.json();
       if (r.status === 402) { setLimit(true); throw new Error(j.error); }
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
+      const pr = printers.find((p) => p.id === printer);
+      if (label && pr?.browser) {
+        window.location.href = `/app/labels/print?ids=${j.item.id}${pr.w ? `&w=${pr.w}` : ""}${pr.h ? `&h=${pr.h}` : ""}&listed=1`;
+        return;
+      }
       setDone({ sku: j.item.sku, id: j.item.id });
     } catch (e) {
       const m = e instanceof Error ? e.message : String(e);
