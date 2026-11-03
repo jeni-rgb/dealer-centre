@@ -6,6 +6,7 @@ export const PRINTER_MODELS = [
   { id: "dymo-57x32", name: "Dymo LabelWriter 550 (57 × 32 mm, 11354)", w: 57, h: 32, note: "" },
   { id: "dymo-54x25", name: "Dymo LabelWriter 550 (54 × 25 mm, 11352)", w: 54, h: 25, note: "" },
   { id: "other-62x29", name: "Other, 62 × 29 mm roll", w: 62, h: 29, note: "" },
+  { id: "other-80x50", name: "Other, 80 × 50 mm label", w: 80, h: 50, note: "Larger labels, e.g. thermal printers with 80 × 50 rolls." },
 ] as const;
 export type PrinterModelId = (typeof PRINTER_MODELS)[number]["id"];
 export const modelById = (id: string) => PRINTER_MODELS.find((m) => m.id === id) ?? PRINTER_MODELS[0];

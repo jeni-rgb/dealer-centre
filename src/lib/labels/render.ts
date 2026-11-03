@@ -57,19 +57,34 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
   const priceW = bold.widthOfTextAtSize(price, priceSize);
   page.drawText(price, { x: w - pad - priceW, y: pad, size: priceSize, font: bold });
 
-  // Title, truncated to fit the remaining width
+  // Title, truncated to fit the remaining width. Taller labels (40mm+) get two title lines and separate centre/dealer lines.
   const titleSize = 7 * k;
+  const smallSize = 5.5 * k;
   const maxTitleW = w - pad * 2 - priceW - 2 * MM * k;
-  let title = input.title;
-  while (sans.widthOfTextAtSize(title, titleSize) > maxTitleW && title.length > 3) title = title.slice(0, -2) + "…";
-  page.drawText(title, { x: pad, y: pad + 1, size: titleSize, font: sans });
-
-  const small = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean).join(" · ");
-  if (small) {
-    const smallSize = 5.5 * k;
-    let line = small;
-    while (sans.widthOfTextAtSize(line, smallSize) > maxTitleW && line.length > 3) line = line.slice(0, -2) + "…";
-    page.drawText(line, { x: pad, y: pad + 1 + titleSize + 1, size: smallSize, font: sans, color: rgb(0.3, 0.3, 0.3) });
+  const tall = h >= 40 * MM;
+  const fit = (t: string, size: number) => {
+    let out = t;
+    while (sans.widthOfTextAtSize(out, size) > maxTitleW && out.length > 3) out = out.slice(0, -2) + "…";
+    return out;
+  };
+  let titleLines: string[];
+  if (tall && sans.widthOfTextAtSize(input.title, titleSize) > maxTitleW) {
+    const words = input.title.split(/\s+/);
+    let first = "";
+    while (words.length && sans.widthOfTextAtSize((first + " " + words[0]).trim(), titleSize) <= maxTitleW) first = (first + " " + words.shift()).trim();
+    if (!first) first = fit(words.shift() ?? "", titleSize);
+    titleLines = words.length ? [first, fit(words.join(" "), titleSize)] : [first];
+  } else titleLines = [fit(input.title, titleSize)];
+  let y = pad + 1;
+  for (const line of [...titleLines].reverse()) {
+    page.drawText(line, { x: pad, y, size: titleSize, font: sans });
+    y += titleSize + 1;
+  }
+  const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
+  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(" · ")] : [];
+  for (const line of smallLines) {
+    page.drawText(fit(line, smallSize), { x: pad, y, size: smallSize, font: sans, color: rgb(0.3, 0.3, 0.3) });
+    y += smallSize + 1;
   }
 
   return pdf.save();
