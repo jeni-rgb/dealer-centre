@@ -127,17 +127,20 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
   const centre = (t: string, size: number, font: Font) => (w - font.widthOfTextAtSize(t, size)) / 2;
 
   // Bottom band: barcode + SKU on the left, boxed dealer code on the right.
-  const skuSize = 7 * s;
-  const bcH = 8 * MM * s;
-  const bandH = bcH + skuSize + 1.5;
+  const bcH = 6.5 * MM * s;
+  const skuGap = 1.5 * MM * s;
+  const skuMax = 15 * s;
   const codeSize = Math.min(16 * s, (innerW * 0.3) / Math.max(1, bold.widthOfTextAtSize(input.dealerCode, 1)));
   const boxW = bold.widthOfTextAtSize(input.dealerCode, codeSize) + 3 * MM * s;
   const boxX = w - pad - boxW;
+  const skuText = displaySku(input.sku);
+  const skuSize = Math.min(skuMax, (boxX - pad - skuGap) / Math.max(1, bold.widthOfTextAtSize(skuText, 1)));
+  const bandH = bcH + skuSize * 0.72 + 1.2 * MM * s;
   ops.push({ kind: "rect", x: boxX, y: pad, width: boxW, height: bandH, line: 1.2 * s });
   ops.push({ kind: "text", text: input.dealerCode, x: boxX + (boxW - bold.widthOfTextAtSize(input.dealerCode, codeSize)) / 2, y: pad + bandH / 2 - codeSize * 0.36, size: codeSize, font: "bold" });
   const bcW = Math.min(bcH * barAspect * 1.6, boxX - pad - 2 * MM * s);
-  ops.push({ kind: "barcode", x: pad, y: pad + skuSize + 1.5, width: bcW, height: bcH });
-  ops.push({ kind: "text", text: displaySku(input.sku), x: pad, y: pad, size: skuSize, font: "mono" });
+  ops.push({ kind: "barcode", x: pad, y: pad + bandH - bcH, width: bcW, height: bcH });
+  ops.push({ kind: "text", text: skuText, x: pad, y: pad, size: skuSize, font: "bold" });
 
   let bottom = pad + bandH + 1.5 * MM * s;
   const centreName = input.centreName?.trim();
