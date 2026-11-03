@@ -134,6 +134,7 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
         <div className="card px-4 py-3.5 text-[14px]">Email on every sale. Push arrives with the App Store build.</div>
       </Section>
 
+      <a href="/account" className="btn-outline">Set or change password</a>
       <form action="/api/auth/signout" method="post"><button className="btn-ghost">Sign out</button></form>
     </>
   );
