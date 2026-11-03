@@ -109,7 +109,10 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       if (r.status === 402) { setLimit(true); throw new Error(j.error); }
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
       setDone({ sku: j.item.sku, id: j.item.id });
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
+    } catch (e) {
+      const m = e instanceof Error ? e.message : String(e);
+      setErr(/load failed|failed to fetch|network/i.test(m) ? "Connection dropped while saving. Tap List item again to retry — it won't create a duplicate." : m);
+    } finally { setBusy(false); }
   }
 
   const reset = () => { setDone(null); setTitle(""); setDescription(""); setPrice(""); setCost(""); setFiles([]); };

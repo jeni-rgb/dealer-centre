@@ -33,6 +33,10 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }
+  // Retry guard: a resubmit of the same item within 10 minutes returns the first one, never a duplicate.
+  const { data: dup } = await db.from("items").select("*").eq("dealer_id", dealerId).eq("title", input.title).eq("price_pence", input.price_pence)
+    .gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (dup && input.source === "app") return dup;
   const { data: sku, error: skuErr } = await db.rpc("next_sku", { p_dealer_id: dealerId });
   if (skuErr || !sku) throw new Error(skuErr?.message ?? "sku failed");
 
