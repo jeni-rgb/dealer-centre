@@ -77,11 +77,12 @@ export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }
       <style>{`@page { size: ${w}mm ${h}mm; margin: 0 } @media print { body * { visibility: hidden } .print-area, .print-area * { visibility: visible } .print-area { position: absolute; left: 0; top: 0 } .print-area img { width: ${w}mm; height: ${h}mm; display: block; break-after: page; margin: 0; border: 0 } }`}</style>
       <div className="mx-auto flex max-w-md flex-col gap-3 p-4 print:hidden">
         <h1 className="text-[22px] font-semibold">Print {labels.length} label{labels.length === 1 ? "" : "s"}</h1>
-        <p className="text-[13px] text-ink-muted">{w} × {h} mm. Tap Send to printer app, then pick your printer&apos;s app (e.g. Jadens) from the list.</p>
-        <button onClick={sharePdf} disabled={!pdf} className={`${btn} bg-accent text-white disabled:opacity-50`}>{pdf ? "Send to printer app" : "Preparing labels…"}</button>
+        <p className="text-[13px] text-ink-muted">{w} × {h} mm.</p>
+        <button onClick={() => { markPrinted(); window.location.href = pdfUrl; }} className={`${btn} bg-accent text-white`}>Open label to print</button>
+        <p className="text-[13px] text-ink-muted">Then tap Share (square with arrow) and choose Jadens, or Print.</p>
+        <button onClick={sharePdf} disabled={!pdf} className="text-center text-[14px] underline disabled:opacity-50">{pdf ? "Send PDF to printer app" : "Preparing PDF…"}</button>
         {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
-        <button onClick={() => { window.print(); markPrinted(); }} className={`${btn} border border-border bg-white`}>Print (AirPrint)</button>
-        <a href={pdfUrl} onClick={markPrinted} className="text-center text-[14px] underline">Open as PDF</a>
+        <button onClick={() => { window.print(); markPrinted(); }} className="text-center text-[14px] underline">Print (AirPrint)</button>
         {listed && <a href="/app/items/new" className="text-center text-[15px] font-semibold text-accent underline">Listed ✓ · List another</a>}
         <a href="/app/labels" className="text-center text-[14px] underline">Back to labels</a>
         {msg && <p className="text-[13px] text-danger">{msg}</p>}
