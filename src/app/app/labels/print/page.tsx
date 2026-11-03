@@ -2,12 +2,11 @@ import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { renderLabelSvg } from "@/lib/labels/render";
 import { PrintView } from "./view";
-import { labelToken } from "@/lib/labels/token";
 
 export const dynamic = "force-dynamic";
 
 export default async function PrintLabels({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const me = await requireDealer();
+  await requireDealer();
   const sp = await searchParams;
   const num = (v?: string) => { const n = Number(v); return n >= 20 && n <= 200 ? n : undefined; };
   const widthMm = num(sp.w) ?? 62, heightMm = num(sp.h) ?? 29;
@@ -32,7 +31,5 @@ export default async function PrintLabels({ searchParams }: { searchParams: Prom
     })),
   );
   const pdfUrl = `/api/labels/batch?ids=${ids.join(",")}&w=${widthMm}&h=${heightMm}`;
-  let tokenUrl = pdfUrl;
-  try { tokenUrl = `${pdfUrl}&t=${labelToken(ids.join(","), widthMm, heightMm, me.dealer_id)}`; } catch {}
-  return <PrintView labels={labels} w={widthMm} h={heightMm} pdfUrl={pdfUrl} tokenUrl={tokenUrl} itemIds={ids} listed={!!(sp as Record<string, string | undefined>).listed} />;
+  return <PrintView labels={labels} w={widthMm} h={heightMm} pdfUrl={pdfUrl} itemIds={ids} listed={!!(sp as Record<string, string | undefined>).listed} />;
 }
