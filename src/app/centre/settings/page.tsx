@@ -4,7 +4,7 @@ import { currentCentre } from "@/lib/centre";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Pill } from "@/components/ui";
 import { ResetPin } from "./pin";
-import { CentrePrinterForm, CentreTermsForm } from "./forms";
+import { CentrePrinterForm, CentreTermsForm, RemovePrinter } from "./forms";
 
 export default async function CentreSettings({ searchParams }: { searchParams: Promise<{ centre?: string }> }) {
   const { centre: cp } = await searchParams;
@@ -13,7 +13,7 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
   const sb = await supabaseServer();
   const [{ data: channels }, { data: printers }] = await Promise.all([
     sb.from("channels_public").select("type, external_account_id, status, last_webhook_at").eq("owner_type", "centre").eq("owner_id", centre.id),
-    sb.from("printers").select("id, name, provider, provider_id, status").eq("owner_type", "centre").eq("owner_id", centre.id),
+    sb.from("printers").select("id, name, provider, provider_id, status, label_width_mm, label_height_mm").eq("owner_type", "centre").eq("owner_id", centre.id).neq("status", "removed"),
   ]);
   const ch = (t: string) => (channels ?? []).find((c) => c.type === t);
 
@@ -42,7 +42,7 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
       </Card>
 
       <Card title="Till printer">
-        <div className="divide-y divide-border">{(printers ?? []).map((p) => <div key={p.id} className="flex items-center justify-between py-3 text-[14px]"><span>{p.name}</span><span className="text-[12px] text-ink-muted">{p.provider === "printnode" ? `PrintNode ${p.provider_id}` : "Opens a PDF on the till"}</span></div>)}</div>
+        <div className="divide-y divide-border">{(printers ?? []).map((p) => <div key={p.id} className="flex items-center justify-between py-3 text-[14px]"><span>{p.name}</span><span className="flex items-center gap-3 text-[12px] text-ink-muted">{p.label_width_mm} × {p.label_height_mm} mm · {p.provider === "printnode" ? `PrintNode ${p.provider_id}` : "Opens a PDF on the till"}<RemovePrinter id={p.id} name={p.name} /></span></div>)}</div>
         <CentrePrinterForm centreId={centre.id} />
         <p className="mt-3 text-[12px] text-ink-muted">For labels to print without anyone touching a computer, install the PrintNode client on the till PC or a Raspberry Pi next to the printer and enter its printer ID.</p>
       </Card>

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { PRINTER_MODELS } from "@/lib/labels/models";
+import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER } from "@/lib/labels/models";
 import { useRouter } from "next/navigation";
 
 export function CentreTermsForm({ centreId, initial }: { centreId: string; initial: { commission: number; online: number; share: number; rent_day: number; statement_day: number } }) {
@@ -29,23 +29,34 @@ export function CentrePrinterForm({ centreId }: { centreId: string }) {
   const [name, setName] = useState("Till printer");
   const [provider, setProvider] = useState<"browser" | "printnode">("browser");
   const [pid, setPid] = useState("");
-  const [model, setModel] = useState<string>(PRINTER_MODELS[0].id);
+  const [model, setModel] = useState<string>("");
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!model) return;
     await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, provider, provider_id: pid || undefined, centre_id: centreId, model }) });
     router.refresh();
   }
   return (
     <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
       <input className="field !h-10 !w-48 !text-[14px]" value={name} onChange={(e) => setName(e.target.value)} />
-      <select className="field !h-10 !w-72 !text-[14px]" value={model} onChange={(e) => setModel(e.target.value)}>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+      <label className="flex w-full flex-col gap-1 text-[12px] text-ink-muted">{SIZE_LABEL}<select required className="field !h-10 !w-72 !text-[14px]" value={model} onChange={(e) => setModel(e.target.value)}><option value="" disabled>{SIZE_PLACEHOLDER}</option>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select><span>{SIZE_HELP}</span></label>
       <select className="field !h-10 !w-40 !text-[14px]" value={provider} onChange={(e) => setProvider(e.target.value as "browser" | "printnode")}><option value="browser">Browser print</option><option value="printnode">PrintNode</option></select>
       {provider === "printnode" && <input className="field !h-10 !w-32 !text-[14px]" placeholder="Printer ID" value={pid} onChange={(e) => setPid(e.target.value)} />}
-      <button className="btn-sm-secondary">Add printer</button>
+      <button className="btn-sm-secondary" disabled={!model}>Add printer</button>
     </form>
   );
 }
 
 function Field({ value, onChange, label, suffix }: { value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; label: string; suffix: string }) {
   return <label className="flex flex-col gap-1 text-[12px] text-ink-muted">{label}<span className="flex items-center gap-1"><input className="field num !h-10 !w-24 !text-[14px]" inputMode="decimal" value={value} onChange={onChange} /><span>{suffix}</span></span></label>;
+}
+
+export function RemovePrinter({ id, name }: { id: string; name: string }) {
+  const router = useRouter();
+  async function remove() {
+    if (!confirm(`Remove "${name}"? Labels already printed are kept.`)) return;
+    await fetch(`/api/printers?id=${id}`, { method: "DELETE" });
+    router.refresh();
+  }
+  return <button type="button" className="text-danger underline" onClick={remove}>Remove</button>;
 }
