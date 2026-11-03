@@ -54,7 +54,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
 
   async render_label(db, p) {
     const jobId = p.print_job_id as string;
-    const { data: pj } = await db.from("print_jobs").select("*, items(*), dealers(code), printers(provider, provider_id, label_width_mm, label_height_mm)").eq("id", jobId).single();
+    const { data: pj } = await db.from("print_jobs").select("*, items(*), dealers(code, name), printers(provider, provider_id, label_width_mm, label_height_mm)").eq("id", jobId).single();
     if (!pj || pj.status === "not_printed") return;
     const item = pj.items as ItemRow;
     let centreName: string | null = null;
@@ -65,6 +65,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
     const pdf = await renderLabelPdf({
       sku: item.sku,
       dealerCode: (pj.dealers as { code: string }).code,
+      dealerName: (pj.dealers as { name?: string | null }).name ?? null,
       title: item.title,
       pricePence: item.price_pence,
       centreName,
