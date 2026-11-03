@@ -18,7 +18,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
     const r = await fetch("/api/labels/print", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: ids, printer_id: printer || undefined }) });
     const j = await r.json();
     setBusy(null);
-    if (j.browser) { const w = window.open(j.browser, "_blank"); if (!w) window.location.href = j.browser; }
+    if (j.browser) { window.location.href = String(j.browser).replace("/api/labels/batch", "/app/labels/print"); return; }
     router.refresh();
   }
 
