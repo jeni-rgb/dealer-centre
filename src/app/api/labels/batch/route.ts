@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   if (!ids.length) return new NextResponse("no ids", { status: 400 });
 
   const sb = await supabaseServer();
-  const { data: items } = await sb.from("items").select("sku, title, price_pence, centres(name), dealers(code)").in("id", ids);
+  const { data: items } = await sb.from("items").select("sku, title, price_pence, centres(name), dealers(code, name)").in("id", ids);
   if (!items?.length) return new NextResponse("not found", { status: 404 });
 
   const pdf = await renderLabelBatch(
@@ -20,6 +20,7 @@ export async function GET(req: Request) {
       title: i.title,
       pricePence: i.price_pence,
       dealerCode: (i.dealers as unknown as { code: string }).code,
+      dealerName: (i.dealers as unknown as { name?: string | null }).name ?? null,
       centreName: (i.centres as unknown as { name: string } | null)?.name ?? null,
     })),
   );

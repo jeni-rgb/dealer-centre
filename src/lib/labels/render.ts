@@ -8,6 +8,7 @@ export type LabelInput = {
   title: string;
   pricePence: number;
   centreName?: string | null;
+  dealerName?: string | null;
   qrUrl?: string | null;
   widthMm?: number;
   heightMm?: number;
@@ -63,8 +64,12 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
   while (sans.widthOfTextAtSize(title, titleSize) > maxTitleW && title.length > 3) title = title.slice(0, -2) + "…";
   page.drawText(title, { x: pad, y: pad + 1, size: titleSize, font: sans });
 
-  if (input.centreName) {
-    page.drawText(input.centreName, { x: pad, y: pad + 1 + titleSize + 1, size: 5.5 * k, font: sans, color: rgb(0.3, 0.3, 0.3) });
+  const small = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean).join(" · ");
+  if (small) {
+    const smallSize = 5.5 * k;
+    let line = small;
+    while (sans.widthOfTextAtSize(line, smallSize) > maxTitleW && line.length > 3) line = line.slice(0, -2) + "…";
+    page.drawText(line, { x: pad, y: pad + 1 + titleSize + 1, size: smallSize, font: sans, color: rgb(0.3, 0.3, 0.3) });
   }
 
   return pdf.save();
