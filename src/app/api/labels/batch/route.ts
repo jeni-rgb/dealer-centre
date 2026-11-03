@@ -7,6 +7,9 @@ import { renderLabelBatch } from "@/lib/labels/render";
 export async function GET(req: Request) {
   const me = await getMe();
   if (!me?.dealer_id) return new NextResponse("sign in", { status: 401 });
+  const url = new URL(req.url);
+  const num = (k: string) => { const n = Number(url.searchParams.get(k)); return n >= 20 && n <= 200 ? n : undefined; };
+  const widthMm = num("w"), heightMm = num("h");
   const ids = (new URL(req.url).searchParams.get("ids") ?? "").split(",").filter(Boolean).slice(0, 200);
   if (!ids.length) return new NextResponse("no ids", { status: 400 });
 
@@ -22,6 +25,8 @@ export async function GET(req: Request) {
       dealerCode: (i.dealers as unknown as { code: string }).code,
       dealerName: (i.dealers as unknown as { name?: string | null }).name ?? null,
       centreName: (i.centres as unknown as { name: string } | null)?.name ?? null,
+      widthMm,
+      heightMm,
     })),
   );
   return new NextResponse(Buffer.from(pdf), {

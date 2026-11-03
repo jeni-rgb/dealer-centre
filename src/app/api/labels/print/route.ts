@@ -19,6 +19,13 @@ export async function POST(req: Request) {
     const { data: last } = await db.from("print_jobs").select("printer_id").eq("dealer_id", me.dealer_id).not("printer_id", "is", null).order("updated_at", { ascending: false }).limit(1).maybeSingle();
     printerId = last?.printer_id ?? null;
   }
+  // Only PrintNode printers print from the server queue. Browser printers open the PDF straight away.
+  let size: { w: number; h: number } | null = null;
+  if (printerId) {
+    const { data: pr } = await db.from("printers").select("provider, provider_id, label_width_mm, label_height_mm").eq("id", printerId).maybeSingle();
+    if (pr?.label_width_mm && pr?.label_height_mm) size = { w: pr.label_width_mm, h: pr.label_height_mm };
+    if (!(pr?.provider === "printnode" && pr.provider_id)) printerId = null;
+  }
   const { data: items } = await db.from("items").select("id").eq("dealer_id", me.dealer_id).in("id", p.data.item_ids);
   let queued = 0;
   for (const it of items ?? []) {
@@ -29,5 +36,5 @@ export async function POST(req: Request) {
       : await db.from("print_jobs").insert(row).select("id").single();
     if (pj && printerId) { await enqueue(db, "render_label", { print_job_id: pj.id }); queued++; }
   }
-  return NextResponse.json({ queued, printer_id: printerId, browser: !printerId ? `/api/labels/batch?ids=${p.data.item_ids.join(",")}` : null });
+  return NextResponse.json({ queued, printer_id: printerId, browser: !printerId ? `/api/labels/batch?ids=${p.data.item_ids.join(",")}${size ? `&w=${size.w}&h=${size.h}` : ""}` : null });
 }
