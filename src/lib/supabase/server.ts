@@ -12,6 +12,7 @@ export async function supabaseServer(): Promise<SupabaseClient> {
   if (isDemo()) return (await demoClient()) as any;
   const store = await cookies();
   return createServerClient(url, anon, {
+    cookieOptions: { maxAge: 400 * 24 * 60 * 60, sameSite: "lax", secure: true, path: "/" },
     cookies: {
       getAll: () => store.getAll(),
       setAll: (all) => {
