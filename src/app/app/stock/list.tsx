@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DaysBand, Pill, Sku, money, when } from "@/components/ui";
 
 type Row = {
@@ -10,6 +11,7 @@ type Row = {
 };
 
 export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | "sold"; filter: string }) {
+  const q = useSearchParams().get("q") ?? "";
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [selecting, setSelecting] = useState(false);
   const [noLabelOnly, setNoLabelOnly] = useState(false);
@@ -21,8 +23,8 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
     <>
       <div className="flex items-center justify-between">
         <div className="flex rounded-[10px] bg-surface-2 p-0.5">
-          <Link href="/app/stock" className={`h-9 rounded-[8px] px-4 text-[13px] font-semibold leading-9 ${mode === "live" ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}>Live</Link>
-          <Link href="/app/stock?f=sold" className={`h-9 rounded-[8px] px-4 text-[13px] font-semibold leading-9 ${mode === "sold" ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}>Sold</Link>
+          <Link href={`/app/stock${q ? `?q=${encodeURIComponent(q)}` : ""}`} className={`h-9 rounded-[8px] px-4 text-[13px] font-semibold leading-9 ${mode === "live" ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}>Live</Link>
+          <Link href={`/app/stock?f=sold${q ? `&q=${encodeURIComponent(q)}` : ""}`} className={`h-9 rounded-[8px] px-4 text-[13px] font-semibold leading-9 ${mode === "sold" ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}>Sold</Link>
         </div>
         {mode === "live" && (
           <button className="text-[13px] font-medium text-accent" onClick={() => { setSelecting(!selecting); setSel(new Set()); }}>{selecting ? "Done" : "Select"}</button>
