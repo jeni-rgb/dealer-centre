@@ -24,7 +24,7 @@ export type CreateItemInput = z.infer<typeof CreateItemInput>;
  */
 export class PlanLimitError extends Error {}
 
-export async function createItem(db: Admin, dealerId: string, input: CreateItemInput) {
+export async function createItem(db: Admin, dealerId: string, input: CreateItemInput, jobIds: string[] = []) {
   // Plans are by items sold a month, not items listed. Listing is never blocked; the Today screen
   // nudges an upgrade when a dealer has sold past their tier this month. Only a lapsed plan stops listing.
   const { data: dealer } = await db.from("dealers").select("plan, monthly_sold_limit").eq("id", dealerId).single();
@@ -33,6 +33,10 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }
+  // Retry guard: a resubmit of the same item within 10 minutes returns the first one, never a duplicate.
+  const { data: dup } = await db.from("items").select("*").eq("dealer_id", dealerId).eq("title", input.title).eq("price_pence", input.price_pence)
+    .gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (dup && input.source === "app") return dup;
   const { data: sku, error: skuErr } = await db.rpc("next_sku", { p_dealer_id: dealerId });
   if (skuErr || !sku) throw new Error(skuErr?.message ?? "sku failed");
 
@@ -74,10 +78,10 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
     if (c.type === "shopify" && input.on_own_shopify) targets.push(c.id);
   }
 
-  for (const channelId of targets) {
+  await Promise.all(targets.map(async (channelId) => {
     const { data: l } = await db.from("item_listings").insert({ item_id: item.id, channel_id: channelId }).select("id").single();
-    if (l) await enqueue(db, "sync_item_to_channel", { listing_id: l.id });
-  }
+    if (l) { const id = await enqueue(db, "sync_item_to_channel", { listing_id: l.id }); if (id) jobIds.push(id); }
+  }));
 
   // Every listed item has a label record. Print now sends it; off leaves it as not_printed.
   const printNow = input.print_now && !!input.printer_id;
@@ -86,7 +90,7 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
     .insert({ item_id: item.id, dealer_id: dealerId, printer_id: input.printer_id ?? null, status: printNow ? "queued" : "not_printed", requested_at: printNow ? new Date().toISOString() : null })
     .select("id")
     .single();
-  if (pj && printNow) await enqueue(db, "render_label", { print_job_id: pj.id });
+  if (pj && printNow) { const id = await enqueue(db, "render_label", { print_job_id: pj.id }); if (id) jobIds.push(id); }
 
   return item;
 }

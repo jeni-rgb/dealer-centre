@@ -22,6 +22,19 @@ async function toDataUrl(f: File, max = 1024): Promise<string> {
   return cv.toDataURL("image/jpeg", 0.8);
 }
 
+/** Resizes an iPhone photo (often 3-5MB) to a ~300KB JPEG before upload. */
+async function compress(f: File, max = 1600): Promise<Blob> {
+  try {
+    const img = await createImageBitmap(f);
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+    cv.getContext("2d")!.drawImage(img, 0, 0, cv.width, cv.height);
+    const b = await new Promise<Blob | null>((res) => cv.toBlob(res, "image/jpeg", 0.8));
+    return b && b.size < f.size ? b : f;
+  } catch { return f; }
+}
+
 export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers, starter = false, aiEnabled = false }: Props) {
   const previewSku = `${dealerCode}${String(nextNumber).padStart(4, "0")}`;
   const [title, setTitle] = useState("");
@@ -40,6 +53,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [files, setFiles] = useState<File[]>([]);
   const [shopFiles, setShopFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState("Listing…");
   const [err, setErr] = useState<string | null>(null);
   const [limit, setLimit] = useState(false);
   const [done, setDone] = useState<{ sku: string; id: string } | null>(null);
@@ -65,17 +79,24 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     const pence = Math.round(parseFloat(price || "0") * 100);
     if (title.trim().length < 2) return setErr("Give it a title.");
     if (!(pence > 0)) return setErr("Enter a price.");
-    setBusy(true);
+    setBusy(true); setStep("Listing…");
     try {
       const sb = supabaseBrowser();
-      const photos: { path: string; url: string; role: "reference" | "listing" }[] = [];
+      const all = [...files.slice(0, 2).map((f) => [f, "reference"] as const), ...shopFiles.slice(0, 10).map((f) => [f, "listing"] as const)];
+      let n = 0;
+      if (all.length) setStep(`Uploading photos 0/${all.length}…`);
       const up = async (f: File, role: "reference" | "listing") => {
-        const path = `items/${crypto.randomUUID()}.${f.name.split(".").pop() ?? "jpg"}`;
-        const { error } = await sb.storage.from("files").upload(path, f, { contentType: f.type });
-        if (!error) photos.push({ path, url: sb.storage.from("files").getPublicUrl(path).data.publicUrl, role });
+        const blob = await compress(f);
+        const jpeg = blob !== f;
+        const path = `items/${crypto.randomUUID()}.${jpeg ? "jpg" : (f.name.split(".").pop() ?? "jpg")}`;
+        const { error } = await sb.storage.from("files").upload(path, blob, { contentType: jpeg ? "image/jpeg" : f.type });
+        setStep(`Uploading photos ${++n}/${all.length}…`);
+        return error ? null : { path, url: sb.storage.from("files").getPublicUrl(path).data.publicUrl, role };
       };
-      for (const f of files.slice(0, 2)) await up(f, "reference");
-      for (const f of shopFiles.slice(0, 10)) await up(f, "listing");
+      const t0 = performance.now();
+      const photos = (await Promise.all(all.map(([f, role]) => up(f, role)))).filter((p): p is NonNullable<typeof p> => !!p);
+      console.log(`[list] photos ${Math.round(performance.now() - t0)}ms`);
+      setStep("Saving…");
       const r = await fetch("/api/items", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -88,7 +109,10 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       if (r.status === 402) { setLimit(true); throw new Error(j.error); }
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
       setDone({ sku: j.item.sku, id: j.item.id });
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
+    } catch (e) {
+      const m = e instanceof Error ? e.message : String(e);
+      setErr(/load failed|failed to fetch|network/i.test(m) ? "Connection dropped while saving. Tap List item again to retry — it won't create a duplicate." : m);
+    } finally { setBusy(false); }
   }
 
   const reset = () => { setDone(null); setTitle(""); setDescription(""); setPrice(""); setCost(""); setFiles([]); };
@@ -219,7 +243,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
           {err && <p className={`text-[13px] ${limit ? "text-warning" : "text-danger"}`}>{err}{limit && <> <Link href="/api/billing/portal" className="underline">Upgrade</Link></>}</p>}
         </div>
         <div className="sticky bottom-0 border-t border-border bg-white px-5 pb-7 pt-3">
-          <button className="btn" disabled={busy}>{busy ? "Listing…" : "List item"}</button>
+          <button className="btn" disabled={busy}>{busy ? step : "List item"}</button>
         </div>
       </form>
     </Phone>

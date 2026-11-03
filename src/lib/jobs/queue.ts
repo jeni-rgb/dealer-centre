@@ -12,7 +12,24 @@ export type JobType =
 const BACKOFF_MINUTES = [1, 5, 15, 60, 240];
 
 export async function enqueue(db: Admin, type: JobType, payload: Record<string, unknown>, runAt?: Date) {
-  await db.from("jobs").insert({ type, payload, next_run_at: (runAt ?? new Date()).toISOString() });
+  const { data } = await db.from("jobs").insert({ type, payload, next_run_at: (runAt ?? new Date()).toISOString() }).select("id").single();
+  return (data?.id as string | undefined) ?? null;
+}
+
+/** Runs specific queued jobs straight away (used from after() so the user never waits). */
+export async function runJobsNow(db: Admin, ids: string[], timeoutMs = 25_000) {
+  if (!ids.length) return;
+  const { handlers } = await import("@/lib/jobs/handlers");
+  const { data } = await db.from("jobs").update({ status: "running" }).in("id", ids).eq("status", "queued").select("*");
+  await Promise.all(((data ?? []) as { id: string; type: JobType; payload: Record<string, unknown>; attempts: number }[]).map(async (j) => {
+    try {
+      await Promise.race([
+        handlers[j.type](db, j.payload),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), timeoutMs)),
+      ]);
+      await completeJob(db, j.id);
+    } catch (e) { await failJob(db, j.id, j.attempts, e); }
+  }));
 }
 
 export async function claimJobs(db: Admin, limit = 50) {
