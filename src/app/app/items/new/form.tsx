@@ -110,7 +110,8 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
       const pr = printers.find((p) => p.id === printer);
       if (label && pr?.browser) {
-        window.location.href = `/app/labels/print?ids=${j.item.id}${pr.w ? `&w=${pr.w}` : ""}${pr.h ? `&h=${pr.h}` : ""}&listed=1`;
+        try { fetch("/api/labels/mark", { method: "POST", keepalive: true, headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: [j.item.id] }) }); } catch {}
+        window.location.href = `/api/labels/batch?ids=${j.item.id}${pr.w ? `&w=${pr.w}` : ""}${pr.h ? `&h=${pr.h}` : ""}`;
         return;
       }
       setDone({ sku: j.item.sku, id: j.item.id });
