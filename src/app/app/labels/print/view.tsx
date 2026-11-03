@@ -30,7 +30,7 @@ async function toPng(svg: string, wMm: number, hMm: number): Promise<Blob> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function PrintView({ labels, w, h, pdfUrl, itemIds = [] }: { labels: Label[]; w: number; h: number; pdfUrl: string; itemIds?: string[] }) {
+export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }: { listed?: boolean; labels: Label[]; w: number; h: number; pdfUrl: string; itemIds?: string[] }) {
   const markPrinted = () => { if (itemIds.length) fetch("/api/labels/mark", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: itemIds }), keepalive: true }).catch(() => {}); };
   const [files, setFiles] = useState<File[] | null>(null);
   const [urls, setUrls] = useState<string[]>([]);
@@ -82,6 +82,7 @@ export function PrintView({ labels, w, h, pdfUrl, itemIds = [] }: { labels: Labe
         {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
         <button onClick={() => { window.print(); markPrinted(); }} className={`${btn} border border-border bg-white`}>Print (AirPrint)</button>
         <a href={pdfUrl} onClick={markPrinted} className="text-center text-[14px] underline">Open as PDF</a>
+        {listed && <a href="/app/items/new" className="text-center text-[15px] font-semibold text-accent underline">Listed ✓ · List another</a>}
         <a href="/app/labels" className="text-center text-[14px] underline">Back to labels</a>
         {msg && <p className="text-[13px] text-danger">{msg}</p>}
       </div>
