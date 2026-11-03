@@ -13,7 +13,7 @@ export default async function Labels() {
     sb.from("print_jobs").select("printer_id").eq("dealer_id", me.dealer_id).not("printer_id", "is", null).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   const rows = (jobs ?? [])
-    .filter((j) => (j.items as unknown as { status: string })?.status === "live" || j.status !== "not_printed")
+    .filter((j) => { const st = (j.items as unknown as { status: string } | null)?.status; return st === "live" || (!!st && !["not_printed", "queued", "ready", "failed"].includes(j.status)); })
     .map((j) => {
       const it = j.items as unknown as { sku: string; title: string; photos: { url?: string }[] };
       return { id: j.id, item_id: j.item_id, status: j.status, sku: it.sku, title: it.title, photo: it.photos?.[0]?.url ?? null, at: j.updated_at };

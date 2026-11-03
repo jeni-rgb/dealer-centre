@@ -30,7 +30,8 @@ async function toPng(svg: string, wMm: number, hMm: number): Promise<Blob> {
   } finally { URL.revokeObjectURL(url); }
 }
 
-export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number; h: number; pdfUrl: string }) {
+export function PrintView({ labels, w, h, pdfUrl, itemIds = [] }: { labels: Label[]; w: number; h: number; pdfUrl: string; itemIds?: string[] }) {
+  const markPrinted = () => { if (itemIds.length) fetch("/api/labels/mark", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: itemIds }), keepalive: true }).catch(() => {}); };
   const [files, setFiles] = useState<File[] | null>(null);
   const [urls, setUrls] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number
 
   async function sharePdf() {
     if (!pdf) return;
-    try { await navigator.share({ files: [pdf] }); }
+    try { await navigator.share({ files: [pdf] }); markPrinted(); }
     catch (e) { if ((e as Error).name !== "AbortError") setMsg("Sharing isn't available here. Tap Open as PDF, then Share."); }
   }
 
@@ -66,7 +67,7 @@ export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number
 
   async function share() {
     if (!files) return;
-    try { await navigator.share({ files }); }
+    try { await navigator.share({ files }); markPrinted(); }
     catch (e) { if ((e as Error).name !== "AbortError") { setCanShare(false); setMsg("Sharing isn't available here. Save each image below and print it from your printer app."); } }
   }
 
@@ -79,8 +80,8 @@ export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number
         <p className="text-[13px] text-ink-muted">{w} × {h} mm. Tap Send to printer app, then pick your printer&apos;s app (e.g. Jadens) from the list.</p>
         <button onClick={sharePdf} disabled={!pdf} className={`${btn} bg-accent text-white disabled:opacity-50`}>{pdf ? "Send to printer app" : "Preparing labels…"}</button>
         {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
-        <button onClick={() => window.print()} className={`${btn} border border-border bg-white`}>Print (AirPrint)</button>
-        <a href={pdfUrl} className="text-center text-[14px] underline">Open as PDF</a>
+        <button onClick={() => { window.print(); markPrinted(); }} className={`${btn} border border-border bg-white`}>Print (AirPrint)</button>
+        <a href={pdfUrl} onClick={markPrinted} className="text-center text-[14px] underline">Open as PDF</a>
         <a href="/app/labels" className="text-center text-[14px] underline">Back to labels</a>
         {msg && <p className="text-[13px] text-danger">{msg}</p>}
       </div>

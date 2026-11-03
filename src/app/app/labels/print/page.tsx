@@ -31,5 +31,5 @@ export default async function PrintLabels({ searchParams }: { searchParams: Prom
     })),
   );
   const pdfUrl = `/api/labels/batch?ids=${ids.join(",")}&w=${widthMm}&h=${heightMm}`;
-  return <PrintView labels={labels} w={widthMm} h={heightMm} pdfUrl={pdfUrl} />;
+  return <PrintView labels={labels} w={widthMm} h={heightMm} pdfUrl={pdfUrl} itemIds={ids} />;
 }
