@@ -9,12 +9,26 @@ import { Icon, Phone, Pill, TicketCard, Toggle, ToggleGroup } from "@/components
 type Centre = { id: string; name: string; hasShop: boolean };
 type Props = {
   dealerCode: string; nextNumber: number; centres: Centre[]; hasOwnShopify: boolean;
-  defaults: { own: boolean; shop: boolean }; printers: { id: string; name: string }[]; starter?: boolean;
+  defaults: { own: boolean; shop: boolean }; printers: { id: string; name: string }[]; starter?: boolean; aiEnabled?: boolean;
 };
 
-export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers, starter = false }: Props) {
+/** Shrinks a photo to a small JPEG data URL so the AI request stays light. */
+async function toDataUrl(f: File, max = 1024): Promise<string> {
+  const img = await createImageBitmap(f);
+  const k = Math.min(1, max / Math.max(img.width, img.height));
+  const cv = document.createElement("canvas");
+  cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+  cv.getContext("2d")!.drawImage(img, 0, 0, cv.width, cv.height);
+  return cv.toDataURL("image/jpeg", 0.8);
+}
+
+export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, defaults, printers, starter = false, aiEnabled = false }: Props) {
   const previewSku = `${dealerCode}${String(nextNumber).padStart(4, "0")}`;
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [ai, setAi] = useState(aiEnabled);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiErr, setAiErr] = useState<string | null>(null);
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
   const [delivery, setDelivery] = useState<Delivery>("small");
@@ -30,6 +44,20 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [limit, setLimit] = useState(false);
   const [done, setDone] = useState<{ sku: string; id: string } | null>(null);
   const c = centres.find((x) => x.id === centre);
+
+  async function describe() {
+    const f = files[0] ?? shopFiles[0];
+    if (!f) return;
+    setAiErr(null); setAiBusy(true);
+    try {
+      const r = await fetch("/api/ai/describe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: await toDataUrl(f) }) });
+      if (r.status === 503) { setAi(false); return; }
+      const j = await r.json();
+      if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Couldn't write a description");
+      if (j.title) setTitle(j.title);
+      if (j.description) setDescription(j.description);
+    } catch (e) { setAiErr(e instanceof Error ? e.message : String(e)); } finally { setAiBusy(false); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +79,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       const r = await fetch("/api/items", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          title: title.trim(), price_pence: pence, cost_pence: cost ? Math.round(parseFloat(cost) * 100) : null,
+          title: title.trim(), description: description.trim() || undefined, price_pence: pence, cost_pence: cost ? Math.round(parseFloat(cost) * 100) : null,
           centre_id: centre || null, photos, delivery, on_own_shopify: own, on_centre_shopify: shop && !!c?.hasShop,
           print_now: label && !!printer, printer_id: printer || null,
         }),
@@ -63,7 +91,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   }
 
-  const reset = () => { setDone(null); setTitle(""); setPrice(""); setCost(""); setFiles([]); };
+  const reset = () => { setDone(null); setTitle(""); setDescription(""); setPrice(""); setCost(""); setFiles([]); };
   const status = (on: boolean, text = "Syncing") => on ? <Pill kind="accent">{text}</Pill> : <Pill kind="neutral">Not listed</Pill>;
 
   if (done) {
@@ -115,7 +143,16 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
 
           <TicketCard sku={previewSku} hint="Assigned by the app, goes on the label and the till" />
 
+          {ai && (files.length > 0 || shopFiles.length > 0) && (
+            <div className="flex flex-col gap-1">
+              <button type="button" className="btn-secondary" onClick={describe} disabled={aiBusy}>{aiBusy ? "Writing…" : "Write description with AI"}</button>
+              <span className="text-[12px] text-ink-muted">{aiErr ?? "A suggestion from the photo. Check and edit it before listing."}</span>
+            </div>
+          )}
+
           <div><label className="field-label" htmlFor="title">Title</label><input id="title" className="field" placeholder="What is it" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+
+          <div><label className="field-label" htmlFor="description">Description</label><textarea id="description" className="field min-h-[96px] py-2.5" placeholder="Optional. Condition, material, anything a buyer should know" maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
 
           <div>
             <label className="field-label" htmlFor="price">Price</label>

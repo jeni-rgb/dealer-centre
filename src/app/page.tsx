@@ -107,7 +107,7 @@ export default function Landing() {
           <h2 className="max-w-2xl text-[36px] leading-[1.08] md:text-[44px]">List it. Sell it anywhere. It comes off everywhere else.</h2>
           <div className="mt-12 grid gap-10 md:grid-cols-3">
             {[
-              ["List it on your phone", "Photo, title, price. The app gives it a ticket number and prints the barcoded label at the centre.", "/screens/dealer-list.webp"],
+              ["List it on your phone", "Photo, title, price. Snap a photo and AI writes the description for you, ready to edit. The app gives it a ticket number and prints the barcoded label at the centre.", "/screens/dealer-list.webp"],
               ["It sells, anywhere", "On the floor the till scans the ticket. Online it sells on your Shopify or the centre shop. The other places close instantly.", "/screens/dealer-sold.webp"],
               ["You hear, the statement writes itself", "A buzz on your phone with what sold and for how much. Commission, rent and payouts worked out at month end.", "/screens/dealer-statement.webp"],
             ].map(([t, b, img], i) => (
