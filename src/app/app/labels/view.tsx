@@ -10,7 +10,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
   const router = useRouter();
   const [printer, setPrinter] = useState(lastPrinterId ?? printers[0]?.id ?? "");
   const [busy, setBusy] = useState<string | null>(null);
-  const notPrinted = rows.filter((r) => r.status === "not_printed" || r.status === "ready" || r.status === "failed");
+  const notPrinted = rows.filter((r) => r.status === "not_printed" || r.status === "ready" || r.status === "failed" || r.status === "queued");
   const printed = rows.filter((r) => !notPrinted.includes(r)).slice(0, 30);
 
   async function print(ids: string[]) {
@@ -18,7 +18,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
     const r = await fetch("/api/labels/print", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: ids, printer_id: printer || undefined }) });
     const j = await r.json();
     setBusy(null);
-    if (j.browser) window.open(j.browser, "_blank");
+    if (j.browser) { const w = window.open(j.browser, "_blank"); if (!w) window.location.href = j.browser; }
     router.refresh();
   }
 
