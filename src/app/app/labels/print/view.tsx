@@ -35,6 +35,21 @@ export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number
   const [urls, setUrls] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(true);
+  const [pdf, setPdf] = useState<File | null>(null);
+
+  useEffect(() => {
+    let gone = false;
+    fetch(pdfUrl).then((r) => (r.ok ? r.blob() : Promise.reject(new Error("pdf")))).then((b) => {
+      if (!gone) setPdf(new File([b], "labels.pdf", { type: "application/pdf" }));
+    }).catch(() => setMsg("Couldn't prepare the PDF. Use Open as PDF instead."));
+    return () => { gone = true; };
+  }, [pdfUrl]);
+
+  async function sharePdf() {
+    if (!pdf) return;
+    try { await navigator.share({ files: [pdf] }); }
+    catch (e) { if ((e as Error).name !== "AbortError") setMsg("Sharing isn't available here. Tap Open as PDF, then Share."); }
+  }
 
   useEffect(() => {
     let gone = false;
@@ -62,7 +77,8 @@ export function PrintView({ labels, w, h, pdfUrl }: { labels: Label[]; w: number
       <div className="mx-auto flex max-w-md flex-col gap-3 p-4 print:hidden">
         <h1 className="text-[22px] font-semibold">Print {labels.length} label{labels.length === 1 ? "" : "s"}</h1>
         <p className="text-[13px] text-ink-muted">{w} × {h} mm. Tap Send to printer app, then pick your printer&apos;s app (e.g. Jadens) from the list.</p>
-        {canShare && <button onClick={share} disabled={!files} className={`${btn} bg-accent text-white disabled:opacity-50`}>{files ? "Send to printer app" : "Preparing labels…"}</button>}
+        <button onClick={sharePdf} disabled={!pdf} className={`${btn} bg-accent text-white disabled:opacity-50`}>{pdf ? "Send to printer app" : "Preparing labels…"}</button>
+        {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
         <button onClick={() => window.print()} className={`${btn} border border-border bg-white`}>Print (AirPrint)</button>
         <a href={pdfUrl} className="text-center text-[14px] underline">Open as PDF</a>
         <a href="/app/labels" className="text-center text-[14px] underline">Back to labels</a>
