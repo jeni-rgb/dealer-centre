@@ -48,7 +48,8 @@ export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }
 
   async function sharePdf() {
     if (!pdf) return;
-    try { await navigator.share({ files: [pdf] }); markPrinted(); }
+    markPrinted();
+    try { await navigator.share({ files: [pdf] }); }
     catch (e) { if ((e as Error).name !== "AbortError") setMsg("Sharing isn't available here. Tap Open as PDF, then Share."); }
   }
 
@@ -78,13 +79,13 @@ export function PrintView({ labels, w, h, pdfUrl, itemIds = [], listed = false }
       <div className="mx-auto flex max-w-md flex-col gap-3 p-4 print:hidden">
         <h1 className="text-[22px] font-semibold">Print {labels.length} label{labels.length === 1 ? "" : "s"}</h1>
         <p className="text-[13px] text-ink-muted">{w} × {h} mm.</p>
-        <button onClick={() => { markPrinted(); window.location.href = pdfUrl; }} className={`${btn} bg-accent text-white`}>Open label to print</button>
-        <p className="text-[13px] text-ink-muted">Then tap Share (square with arrow) and choose Jadens, or Print.</p>
-        <button onClick={sharePdf} disabled={!pdf} className="text-center text-[14px] underline disabled:opacity-50">{pdf ? "Send PDF to printer app" : "Preparing PDF…"}</button>
+        <button onClick={sharePdf} disabled={!pdf} className={`${btn} bg-accent text-white disabled:opacity-50`}>{pdf ? "Print label (send to Jadens)" : "Preparing label…"}</button>
+        <p className="text-[13px] text-ink-muted">Then tap Print, then Share, and choose Jadens.</p>
         {canShare && files && <button onClick={share} className="text-center text-[14px] underline">Share as images</button>}
         <button onClick={() => { window.print(); markPrinted(); }} className="text-center text-[14px] underline">Print (AirPrint)</button>
         {listed && <a href="/app/items/new" className="text-center text-[15px] font-semibold text-accent underline">Listed ✓ · List another</a>}
         <a href="/app/labels" className="text-center text-[14px] underline">Back to labels</a>
+        <a href={pdfUrl} onClick={markPrinted} className="mt-4 text-center text-[12px] text-ink-muted underline">Open PDF in browser</a>
         {msg && <p className="text-[13px] text-danger">{msg}</p>}
       </div>
       <div className="print-area mx-auto flex max-w-md flex-col items-center gap-4 p-4 print:p-0">
