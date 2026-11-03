@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Pill, Sku, when } from "@/components/ui";
 
 type Row = { id: string; item_id: string; status: string; sku: string; title: string; photo: string | null; at: string };
-type Printer = { id: string; name: string; kind: string; cloud: boolean };
+type Printer = { id: string; name: string; kind: string; cloud: boolean; size?: string };
 
 export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; printers: Printer[]; lastPrinterId: string | null }) {
   const router = useRouter();
@@ -30,7 +30,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
           {printers.length === 0 && <div className="px-4 py-3.5 text-[13px] text-ink-muted">No printer yet. Join a centre to use its till printer, or add your own in Settings. Labels still open as a PDF you can print from this phone.</div>}
           {printers.map((p) => (
             <button key={p.id} onClick={() => setPrinter(p.id)} className={`flex min-h-[60px] items-center justify-between px-4 py-3 text-left ${printer === p.id ? "bg-accent-soft" : "bg-white"}`}>
-              <span className="flex flex-col gap-0.5"><span className="text-[15px] font-medium">{p.name}</span><span className="text-[12px] text-ink-muted">{p.kind}{p.cloud ? " · prints without a computer" : " · opens a PDF"}</span></span>
+              <span className="flex flex-col gap-0.5"><span className="text-[15px] font-medium">{p.name}</span><span className="text-[12px] text-ink-muted">{p.kind}{p.size ? ` · ${p.size}` : ""}{p.cloud ? " · prints without a computer" : ""}</span></span>
               <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-success-dot" /><span className={`flex h-5 w-5 items-center justify-center rounded-full border ${printer === p.id ? "border-accent bg-accent text-white" : "border-border"}`}>{printer === p.id && "✓"}</span></span>
             </button>
           ))}

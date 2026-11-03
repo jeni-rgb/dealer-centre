@@ -20,7 +20,7 @@ export default async function DealerSignup({ searchParams }: { searchParams: Pro
     const [{ data: d }, { data: c }, { data: ch }, { count }] = await Promise.all([
       sb.from("dealers").select("name, code, plan, stripe_customer_id").eq("id", me.dealer_id).single(),
       sb.from("dealer_centres").select("status, centres(name)").eq("dealer_id", me.dealer_id).is("left_at", null),
-      sb.from("channels_public").select("type").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).eq("type", "shopify"),
+      sb.from("channels_public").select("type").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).neq("status", "removed").eq("type", "shopify"),
       sb.from("printers").select("id", { count: "exact", head: true }).eq("owner_type", "dealer").eq("owner_id", me.dealer_id),
     ]);
     dealer = d;

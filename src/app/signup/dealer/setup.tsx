@@ -1,5 +1,5 @@
 "use client";
-import { PRINTER_MODELS } from "@/lib/labels/models";
+import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER } from "@/lib/labels/models";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -201,9 +201,9 @@ function Centre({ hp, centres, onDone }: { hp: HP; centres: { name: string; stat
 
 function Printers({ hp, ownPrinters, centres, onDone }: { hp: HP; ownPrinters: number; centres: { name: string }[]; onDone: () => void }) {
   const [name, setName] = useState("");
-  const [model, setModel] = useState<string>(PRINTER_MODELS[0].id);
+  const [model, setModel] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  async function add() { setBusy(true); await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name.trim() || "My label printer", provider: "browser", model }) }); setBusy(false); onDone(); }
+  async function add() { if (!model) return; setBusy(true); await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name.trim() || "My label printer", provider: "browser", model }) }); setBusy(false); onDone(); }
   return (
     <>
       <StepHeader {...hp} title="Label printers" sub="Labels print at the centre when you list. Add another printer if you also label at home." />
@@ -213,9 +213,9 @@ function Printers({ hp, ownPrinters, centres, onDone }: { hp: HP; ownPrinters: n
           {centres.length === 0 && <div className="flex items-center justify-between px-4 py-3 text-ink-muted"><span>Centre printer</span><span>Added when your centre approves you</span></div>}
           {ownPrinters > 0 && <div className="flex items-center justify-between px-4 py-3"><span>Your printer{ownPrinters > 1 ? "s" : ""}</span><Pill kind="success">{ownPrinters} added</Pill></div>}
         </div>
-        <select className="field" value={model} onChange={(e) => setModel(e.target.value)}>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+        <label className="flex flex-col gap-1 text-[13px] font-medium">{SIZE_LABEL}<select required className="field" value={model} onChange={(e) => setModel(e.target.value)}><option value="" disabled>{SIZE_PLACEHOLDER}</option>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select><span className="text-[12px] font-normal text-ink-muted">{SIZE_HELP}</span></label>
         <input className="field" placeholder="Brother QL at home" value={name} onChange={(e) => setName(e.target.value)} />
-        <button className="btn" disabled={busy} onClick={add}>Add another printer</button>
+        <button className="btn" disabled={busy || !model} onClick={add}>Add another printer</button>
         <p className="text-[12px] text-ink-muted">Labels open as a PDF sized to the roll. Direct Bluetooth printing arrives with the App Store build.</p>
       </div>
     </>

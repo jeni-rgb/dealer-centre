@@ -9,4 +9,9 @@ export const PRINTER_MODELS = [
   { id: "other-80x50", name: "Other, 80 × 50 mm label", w: 80, h: 50, note: "Larger labels, e.g. thermal printers with 80 × 50 rolls." },
 ] as const;
 export type PrinterModelId = (typeof PRINTER_MODELS)[number]["id"];
+export const modelBySize = (w: number, h: number) => PRINTER_MODELS.find((m) => m.w === w && m.h === h)?.id ?? "";
+export const sizeText = (w?: number | null, h?: number | null) => (w && h ? `${w} × ${h} mm` : "");
+export const SIZE_LABEL = "What printer/label size do you have? (required)";
+export const SIZE_HELP = "Check the label roll size, e.g. 80 × 50 mm. Pick Other if not listed.";
+export const SIZE_PLACEHOLDER = "Choose your printer type…";
 export const modelById = (id: string) => PRINTER_MODELS.find((m) => m.id === id) ?? PRINTER_MODELS[0];

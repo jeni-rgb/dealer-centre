@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { PRINTER_MODELS } from "@/lib/labels/models";
+import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER, modelBySize } from "@/lib/labels/models";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
@@ -11,12 +11,15 @@ type Dealer = { name: string; code: string; plan: string; trial_ends_at: string 
 export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
   email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
   centres: { id: string; name: string; status: string; rent_pence: number; rent_mode: string }[];
-  printers: { id: string; name: string; own: boolean; cloud: boolean }[];
+  printers: { id: string; name: string; own: boolean; cloud: boolean; w: number; h: number }[];
 }) {
   const router = useRouter();
   const [shop, setShop] = useState("");
   const [printerName, setPrinterName] = useState("");
-  const [printerModel, setPrinterModel] = useState<string>(PRINTER_MODELS[0].id);
+  const [printerModel, setPrinterModel] = useState<string>("");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editModel, setEditModel] = useState("");
   const [personEmail, setPersonEmail] = useState("");
   const [peopleMsg, setPeopleMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,8 +31,18 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
   }
   async function addPrinter(e: React.FormEvent) {
     e.preventDefault();
+    if (!printerModel) return;
     await fetch("/api/printers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: printerName.trim(), provider: "browser", model: printerModel }) });
-    setPrinterName(""); router.refresh();
+    setPrinterName(""); setPrinterModel(""); router.refresh();
+  }
+  async function removePrinter(id: string, name: string) {
+    if (!confirm(`Remove "${name}"? Labels already printed are kept.`)) return;
+    await fetch(`/api/printers?id=${id}`, { method: "DELETE" });
+    router.refresh();
+  }
+  async function saveEdit(id: string) {
+    await fetch("/api/printers", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, name: editName.trim() || undefined, model: editModel || undefined }) });
+    setEditing(null); router.refresh();
   }
 
   async function people_(body: Record<string, unknown>) {
@@ -99,10 +112,21 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
 
       <Section title="Printers">
         <div className="card divide-y divide-border">
-          {printers.map((p) => (
-            <div key={p.id} className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{p.name}</span><span className="text-[12px] text-ink-muted">{p.own ? "Your printer" : "Shop printer, from your centre"}{p.cloud ? " · prints without a computer" : ""}</span></span><span className="h-2 w-2 rounded-full bg-success-dot" /></div>
+          {printers.map((p) => editing === p.id ? (
+            <div key={p.id} className="flex flex-col gap-2 px-4 py-3">
+              <input className="field !h-10 !text-[14px]" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <select className="field !h-10 !text-[13px]" value={editModel} onChange={(e) => setEditModel(e.target.value)}><option value="" disabled>{SIZE_PLACEHOLDER}</option>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+              <div className="flex gap-2"><button type="button" className="btn-sm" onClick={() => saveEdit(p.id)}>Save</button><button type="button" className="btn-sm-secondary" onClick={() => setEditing(null)}>Cancel</button></div>
+            </div>
+          ) : (
+            <div key={p.id} className="flex items-center justify-between gap-3 px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{p.name}</span><span className="text-[12px] text-ink-muted">{p.own ? "Your printer" : "Shop printer, from your centre"} · {p.w} × {p.h} mm{p.cloud ? " · prints without a computer" : ""}</span></span>
+              {p.own ? <span className="flex shrink-0 gap-3 text-[13px]"><button type="button" className="text-accent" onClick={() => { setEditing(p.id); setEditName(p.name); setEditModel(modelBySize(p.w, p.h)); }}>Edit</button><button type="button" className="text-danger" onClick={() => removePrinter(p.id, p.name)}>Remove</button></span> : <span className="h-2 w-2 rounded-full bg-success-dot" />}
+            </div>
           ))}
-          <form onSubmit={addPrinter} className="flex flex-col gap-2 px-4 py-3"><div className="flex gap-2"><input className="field !h-10 !text-[14px]" placeholder="Add your own, e.g. Brother at home" value={printerName} onChange={(e) => setPrinterName(e.target.value)} /><button className="btn-sm-secondary">Add</button></div><select className="field !h-10 !text-[13px]" value={printerModel} onChange={(e) => setPrinterModel(e.target.value)}>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select></form>
+          <form onSubmit={addPrinter} className="flex flex-col gap-2 px-4 py-3">
+            <label className="flex flex-col gap-1 text-[13px] font-medium">{SIZE_LABEL}<select required className="field !h-10 !text-[13px]" value={printerModel} onChange={(e) => setPrinterModel(e.target.value)}><option value="" disabled>{SIZE_PLACEHOLDER}</option>{PRINTER_MODELS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select><span className="text-[12px] font-normal text-ink-muted">{SIZE_HELP}</span></label>
+            <div className="flex gap-2"><input className="field !h-10 !text-[14px]" placeholder="Printer name, e.g. Brother at home" value={printerName} onChange={(e) => setPrinterName(e.target.value)} /><button className="btn-sm-secondary" disabled={!printerModel || !printerName.trim()}>Add</button></div>
+          </form>
         </div>
       </Section>
 
