@@ -94,7 +94,9 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       const providerJobId = await r.text();
       await db.from("print_jobs").update({ status: "sent", pdf_path: path, provider_job_id: providerJobId }).eq("id", jobId);
     } else {
-      await db.from("print_jobs").update({ status: "ready", pdf_path: path }).eq("id", jobId);
+      // Don't undo "printed": the user may have tapped Open label to print before this background render finished.
+      await db.from("print_jobs").update({ pdf_path: path }).eq("id", jobId);
+      await db.from("print_jobs").update({ status: "ready" }).eq("id", jobId).neq("status", "printed");
     }
   },
 
