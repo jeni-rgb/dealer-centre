@@ -4,9 +4,9 @@ import { getMe } from "@/lib/auth";
 
 const Input = z.object({ image: z.string().startsWith("data:image/").max(4_000_000) });
 
-// Best effort per dealer limit. Serverless instances each keep their own count, which is fine as a brake on runaway use.
+// Runaway-use brake only, not a working cap. A normal listing session (about 40 an hour, including retries) should never hit this. Serverless instances each keep their own count.
 const WINDOW_MS = 60 * 60 * 1000;
-const MAX_PER_WINDOW = 40;
+const MAX_PER_WINDOW = 200;
 const hits = new Map<string, number[]>();
 function allow(key: string) {
   const now = Date.now();
