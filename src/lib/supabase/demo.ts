@@ -21,8 +21,8 @@ const IDS = {
   ch_shopify: "33333333-3333-3333-3333-333333333332",
   ch_square: "33333333-3333-3333-3333-333333333333",
   ch_centre_shop: "33333333-3333-3333-3333-333333333334",
-  printer_centre: "44444444-4444-4444-4444-444444444441",
-  printer_own: "44444444-4444-4444-4444-444444444442",
+  printer_centre: "44444444-4444-4444-8444-444444444441",
+  printer_own: "44444444-4444-4444-8444-444444444442",
 };
 
 const items = [
@@ -151,6 +151,10 @@ const T: Record<string, Record<string, unknown>[]> = {
 T.channels_public = T.channels;
 T.items_centre_view = T.items.map(({ cost_pence: _c, ...rest }) => rest);
 void monthDay;
+// One copy for every server bundle, so a saved name is still there on the next page.
+const shared = globalThis as typeof globalThis & { __dcDemo?: typeof T };
+if (!shared.__dcDemo) shared.__dcDemo = T;
+const tables = () => shared.__dcDemo!;
 
 /* ---------- a tiny query builder over the fixtures ---------- */
 type Row = Record<string, unknown>;
@@ -210,12 +214,13 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
   limit(n: number) { this.lim = n; return this; }
   single() { this.mode = "single"; return this; }
   maybeSingle() { this.mode = "maybe"; return this; }
-  // writes are no ops in demo mode
-  insert() { return this; } update() { return this; } upsert() { return this; } delete() { return this; }
+  private patch: Row | null = null;
+  // inserts stay no ops; updates stick in memory so a corrected name shows on the next page
+  insert() { return this; } update(row: Row) { this.patch = row; return this; } upsert() { return this; } delete() { return this; }
   private embed(r: Row, rels: Rel[] = this.rels, table: string = this.table): Row {
     const out = { ...r };
     for (const rel of rels) {
-      const target = T[rel.table] ?? T[rel.alias];
+      const target = tables()[rel.table] ?? tables()[rel.alias];
       if (!target) continue;
       const fk = rel.fk ?? FK[rel.table];
       if (fk && r[fk] !== undefined) {
@@ -229,7 +234,8 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
     return out;
   }
   private run() {
-    let rows = (T[this.table] ?? []).filter((r) => this.filters.every((f) => f(r)));
+    let rows = (tables()[this.table] ?? []).filter((r) => this.filters.every((f) => f(r)));
+    if (this.patch) for (const r of rows) Object.assign(r, this.patch);
     if (this.orderBy) { const { col, asc } = this.orderBy; rows = [...rows].sort((a, b) => (String(a[col] ?? "") < String(b[col] ?? "") ? -1 : 1) * (asc ? 1 : -1)); }
     if (this.lim) rows = rows.slice(0, this.lim);
     const count = rows.length;
@@ -262,7 +268,7 @@ export async function demoRole(): Promise<"dealer" | "centre" | "admin"> {
 
 export async function demoClient() {
   const role = await demoRole();
-  const user = T.users.find((u) => (role === "dealer" ? u.id === IDS.user_dealer : role === "centre" ? u.id === IDS.user_centre : u.id === IDS.user_admin))!;
+  const user = tables().users.find((u) => (role === "dealer" ? u.id === IDS.user_dealer : role === "centre" ? u.id === IDS.user_centre : u.id === IDS.user_admin))!;
   return {
     from: (table: string) => new Q(table),
     rpc,
@@ -273,7 +279,7 @@ export async function demoClient() {
 
 /** Admin client without cookies, for API routes and layouts in demo mode. */
 export function demoSyncClient() {
-  const user = T.users[0];
+  const user = tables().users[0];
   return {
     from: (table: string) => new Q(table),
     rpc,

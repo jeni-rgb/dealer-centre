@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { renderLabelPdf, renderLabelBatch } from "@/lib/labels/render";
+import { renderLabelPdf, renderLabelBatch, renderLabelSvg } from "@/lib/labels/render";
+import { nextLabelTitle } from "@/lib/labels/title";
 
 describe("labels", () => {
   it("renders a single label PDF at 62x29mm", async () => {
@@ -15,5 +16,13 @@ describe("labels", () => {
     const { PDFDocument } = await import("pdf-lib");
     const doc = await PDFDocument.load(pdf);
     expect(doc.getPageCount()).toBe(2);
+  });
+  it("prints the corrected name and leaves an unchanged name alone", async () => {
+    const svg = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Victorian walnut writing slope", pricePence: 14500 });
+    expect(svg).toContain("Victorian walnut writing slope");
+    expect(svg).toContain("B14 0372");
+    expect(nextLabelTitle("Oak coffer", "Oak coffer")).toEqual({ title: null, error: null });
+    expect(nextLabelTitle("Oak coffer", "  Oak chest  ")).toEqual({ title: "Oak chest", error: null });
+    expect(nextLabelTitle("Oak coffer", " ")).toEqual({ title: null, error: "Enter the name of the piece." });
   });
 });

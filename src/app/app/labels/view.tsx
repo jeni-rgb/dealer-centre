@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, Sku, when } from "@/components/ui";
+import { nextLabelTitle } from "@/lib/labels/title";
 
 type Row = { id: string; item_id: string; status: string; sku: string; title: string; photo: string | null; at: string };
 type Printer = { id: string; name: string; kind: string; cloud: boolean; size?: string };
@@ -9,12 +10,29 @@ type Printer = { id: string; name: string; kind: string; cloud: boolean; size?: 
 export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; printers: Printer[]; lastPrinterId: string | null }) {
   const router = useRouter();
   const [printer, setPrinter] = useState(lastPrinterId ?? printers[0]?.id ?? "");
+  const [names, setNames] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   const notPrinted = rows.filter((r) => r.status === "not_printed" || r.status === "ready" || r.status === "failed" || r.status === "queued");
   const printed = rows.filter((r) => !notPrinted.includes(r)).slice(0, 30);
 
+  async function saveNames(ids: string[]) {
+    for (const id of ids) {
+      const row = rows.find((r) => r.item_id === id);
+      if (!row) continue;
+      const next = nextLabelTitle(row.title, names[id] ?? row.title);
+      if (next.error) { setErr(next.error); return false; }
+      if (!next.title) continue;
+      const r = await fetch(`/api/items/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: next.title }) });
+      if (!r.ok) { setErr((await r.json().catch(() => ({}))).error ?? "Could not save the name."); return false; }
+    }
+    return true;
+  }
+
   async function print(ids: string[]) {
     setBusy(ids.length === 1 ? ids[0] : "all");
+    setErr(null);
+    if (!(await saveNames(ids))) { setBusy(null); return; }
     const r = await fetch("/api/labels/print", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: ids, printer_id: printer || undefined }) });
     const j = await r.json();
     setBusy(null);
@@ -43,6 +61,9 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
         </div>
       </div>
 
+      <p className="text-[13px] text-ink-muted">Wrong name? Change it, then print. The ticket number stays the same.</p>
+      {err && <p className="text-[13px] text-danger">{err}</p>}
+
       <div>
         <div className="flex items-center justify-between pb-2">
           <h2 className="text-[16px] font-semibold">Not printed <span className="text-ink-muted">{notPrinted.length}</span></h2>
@@ -52,11 +73,19 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
         {notPrinted.length === 0 && <p className="card p-4 text-[14px] text-ink-muted">Every item has a label. Nice.</p>}
         <div className="flex flex-col gap-2">
           {notPrinted.map((r) => (
-            <div key={r.id} className="row">
-              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[10px] bg-surface-2">{r.photo && <img src={r.photo} alt="" className="h-full w-full object-cover" />}</div>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate text-[14px] font-medium">{r.title}</span><span className="text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /> {r.status === "failed" && <Pill kind="danger">Failed</Pill>}</span></div>
-              <button className="btn-sm-secondary" disabled={busy !== null} onClick={() => print([r.item_id])}>{busy === r.item_id ? "…" : "Print"}</button>
-              <button className="text-[12px] font-medium text-ink-muted underline" disabled={busy !== null} onClick={() => mark([r.item_id])}>{busy === `m${r.item_id}` ? "…" : "Mark printed"}</button>
+            <div key={r.id} className="row !items-stretch">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[10px] bg-surface-2">{r.photo && <img src={r.photo} alt="" className="h-full w-full object-cover" />}</div>
+                  <NameField id={r.item_id} value={names[r.item_id] ?? r.title} onChange={(v) => setNames((s) => ({ ...s, [r.item_id]: v }))} />
+                </div>
+                <div className="flex items-center justify-end gap-3">
+                  {r.status === "failed" && <Pill kind="danger">Failed</Pill>}
+                  <span className="mr-auto text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /></span>
+                  <button className="btn-sm-secondary" disabled={busy !== null} onClick={() => print([r.item_id])}>{busy === r.item_id ? "…" : "Print"}</button>
+                  <button className="text-[12px] font-medium text-ink-muted underline" disabled={busy !== null} onClick={() => mark([r.item_id])}>{busy === `m${r.item_id}` ? "…" : "Mark printed"}</button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -67,14 +96,28 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
           <h2 className="pb-2 text-[16px] font-semibold">Printed</h2>
           <div className="flex flex-col gap-2">
             {printed.map((r) => (
-              <div key={r.id} className="row !min-h-[56px]">
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="truncate text-[14px]">{r.title}</span><span className="text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /> · {r.status === "sent" ? "Sent to printer" : r.status === "queued" ? "Queued" : "Printed"} · {when(r.at)}</span></div>
-                <button className="text-[13px] font-medium text-accent" onClick={() => print([r.item_id])}>Reprint</button>
+              <div key={r.id} className="row !items-stretch">
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <NameField id={r.item_id} value={names[r.item_id] ?? r.title} onChange={(v) => setNames((s) => ({ ...s, [r.item_id]: v }))} />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /> · {r.status === "sent" ? "Sent to printer" : r.status === "queued" ? "Queued" : "Printed"} · {when(r.at)}</span>
+                    <button className="text-[13px] font-medium text-accent disabled:opacity-50" disabled={busy !== null} onClick={() => print([r.item_id])}>Reprint</button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function NameField({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <label className="sr-only" htmlFor={`name-${id}`}>Name on the label</label>
+      <input id={`name-${id}`} value={value} onChange={(e) => onChange(e.target.value)} className="w-full min-w-0 rounded-[8px] border border-border bg-white px-2 py-1 text-[14px] font-medium outline-none focus:border-accent" />
+    </div>
   );
 }
