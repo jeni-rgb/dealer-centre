@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { nextLabelTitle } from "@/lib/labels/title";
 
 type Sale = { id: string; amount_pence: number; payment_type: string | null; sold_at: string } | null;
 
-export function ItemActions({ id, status, price, sale, atCentre, cost = null }: { id: string; status: string; price: number; sale: Sale; atCentre: boolean; cost?: number | null }) {
+export function ItemActions({ id, status, price, title, sale, atCentre, cost = null }: { id: string; status: string; price: number; title: string; sale: Sale; atCentre: boolean; cost?: number | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<"none" | "price" | "sold" | "correct" | "cost">("none");
+  const [mode, setMode] = useState<"none" | "price" | "sold" | "correct" | "cost" | "label">("none");
+  const [name, setName] = useState(title);
   const [newCost, setNewCost] = useState(cost !== null ? (cost / 100).toString() : "");
   const [newPrice, setNewPrice] = useState((price / 100).toString());
   const [paid, setPaid] = useState(((sale?.amount_pence ?? price) / 100).toString());
@@ -26,6 +28,22 @@ export function ItemActions({ id, status, price, sale, atCentre, cost = null }: 
   }
   const pence = (v: string) => Math.round(parseFloat(v || "0") * 100);
 
+  async function reprint() {
+    const next = nextLabelTitle(title, name);
+    if (next.error) return setErr(next.error);
+    setBusy(true); setErr(null);
+    if (next.title) {
+      const saved = await fetch(`/api/items/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: next.title }) });
+      if (!saved.ok) { setBusy(false); return setErr((await saved.json().catch(() => ({}))).error ?? "Could not save the name."); }
+    }
+    const r = await fetch("/api/labels/print", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_ids: [id] }) });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok) return setErr(j.error ?? "Something went wrong");
+    if (j.browser) { window.location.href = String(j.browser).replace("/api/labels/batch", "/app/labels/print"); return; }
+    setMode("none"); router.refresh();
+  }
+
   return (
     <div className="flex flex-col gap-2.5">
       {status === "live" && mode === "none" && (
@@ -33,9 +51,22 @@ export function ItemActions({ id, status, price, sale, atCentre, cost = null }: 
           <button className="btn" onClick={() => setMode("sold")}>Mark as sold</button>
           <div className="grid grid-cols-2 gap-2.5">
             <button className="btn-secondary" onClick={() => setMode("price")}>Edit price</button>
-            <button className="btn-outline" disabled={busy} onClick={() => call("/api/labels/print", "POST", { item_ids: [id] })}>Reprint label</button>
+            <button className="btn-outline" disabled={busy} onClick={() => { setName(title); setErr(null); setMode("label"); }}>Reprint label</button>
           </div>
         </>
+      )}
+
+      {mode === "label" && (
+        <div className="card flex flex-col gap-3 p-4">
+          <span className="text-[13px] font-medium">Name on the label</span>
+          <input className="field" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          <p className="text-[12px] text-ink-muted">Stock, the till and any shop use this name. The ticket number stays the same.</p>
+          {err && <p className="text-[13px] text-danger">{err}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-outline" onClick={() => { setMode("none"); setName(title); }}>Cancel</button>
+            <button className="btn-dark" disabled={busy} onClick={() => reprint()}>Reprint</button>
+          </div>
+        </div>
       )}
 
       {mode === "price" && (

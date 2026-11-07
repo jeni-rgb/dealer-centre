@@ -3,8 +3,10 @@ import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { enqueue } from "@/lib/jobs/queue";
+import { isDemo } from "@/lib/supabase/demo";
 
-const Input = z.object({ item_ids: z.array(z.string().uuid()).min(1).max(200), printer_id: z.string().uuid().optional() });
+const itemId = isDemo() ? z.string().min(1).max(80) : z.string().uuid();
+const Input = z.object({ item_ids: z.array(itemId).min(1).max(200), printer_id: z.string().uuid().optional() });
 
 /** Queue labels for items on a chosen printer. Creates or re-queues the item's print job. */
 export async function POST(req: Request) {
