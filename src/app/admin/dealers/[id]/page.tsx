@@ -6,6 +6,9 @@ import { dealerOverview } from "@/lib/admin/centre";
 import { periodLabel } from "@/lib/statements/compute";
 import { Actions } from "../../actions";
 import { MoveCentre } from "./move";
+import { BuyTokens } from "@/components/buy-tokens";
+import { canStartDealerTrial, dealerPlanSentence } from "@/lib/billing/plan-copy";
+import { reconcileDealerTrial } from "@/lib/billing/dealer-trial";
 
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "never");
 
@@ -15,12 +18,17 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
   const db = supabaseAdmin();
   const o = await dealerOverview(db, id);
   if (!o) notFound();
-  const d = o.dealer;
+  let d = o.dealer;
+  if (d.stripe_subscription_id && d.plan === "trial" && !d.placeholder) {
+    const synced = await reconcileDealerTrial(db, d).catch((e) => { console.error("[dealer trial]", e); return null; });
+    if (synced) d = { ...d, plan: synced.plan, trial_ends_at: synced.trial_ends_at };
+  }
   const [{ data: log }, { data: allCentres }] = await Promise.all([
     db.from("admin_actions").select("action, created_at, users:actor_id(email)").eq("target_type", "dealer").eq("target_id", id).order("created_at", { ascending: false }).limit(20),
     db.from("centres").select("id, name").neq("status", "unclaimed").order("name"),
   ]);
-  const tier = d.monthly_sold_limit >= 100000 ? "Pro, over 50" : d.monthly_sold_limit > 25 ? "Trade, 26 to 50" : "Starter, up to 25";
+  const tier = d.monthly_sold_limit >= 100000 ? "Pro, unlimited" : d.monthly_sold_limit > 25 ? "Trade, 26 to 50" : "Starter, up to 25";
+  const startTrial = canStartDealerTrial(d);
   const over = d.monthly_sold_limit < 100000 && o.month.count > d.monthly_sold_limit;
   const shop = o.channels.find((c) => c.type === "shopify");
   const api = `/api/admin/dealers/${id}`;
@@ -33,7 +41,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
           <Link href="/admin" className="text-[12px] text-ink-muted">‹ All dealers</Link>
           <h1 className="text-[26px] font-semibold">{d.name} <span className="ticket text-[16px] text-ink-muted">{d.code}</span></h1>
           <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">
-            {d.placeholder ? <Pill kind="neutral">Not on the app (centre added)</Pill> : d.plan === "pro" ? <Pill kind="success">Paying</Pill> : d.plan === "trial" ? <Pill kind="warning">Trial{d.trial_ends_at ? ` to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</Pill> : d.plan === "comp" ? <Pill kind="accent">Free</Pill> : <Pill kind="danger">{d.plan}</Pill>}
+            {d.placeholder ? <Pill kind="neutral">Not on the app (centre added)</Pill> : d.plan === "pro" ? <Pill kind="success">Paying</Pill> : d.plan === "trial" && d.trial_ends_at ? <Pill kind="warning">Trial to {new Date(d.trial_ends_at).toLocaleDateString("en-GB")}</Pill> : d.plan === "trial" ? <Pill kind="warning">Onboarding</Pill> : d.plan === "comp" ? <Pill kind="accent">Free</Pill> : <Pill kind="danger">{d.plan}</Pill>}
             <span>{tier}</span><span>· since {new Date(d.created_at).toLocaleDateString("en-GB")}</span>
           </p>
         </div>
@@ -44,7 +52,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-        <Kpi label="Sold this month" value={String(o.month.count)} sub={d.monthly_sold_limit >= 100000 ? "no cap" : `of ${d.monthly_sold_limit} on plan`} tone={over ? "warning" : undefined} />
+        <Kpi label="Sold this month" value={String(o.month.count)} sub={d.monthly_sold_limit >= 100000 ? "unlimited" : `of ${d.monthly_sold_limit} on plan`} tone={over ? "warning" : undefined} />
         <Kpi label="Sales this month" value={money(o.month.gross)} />
         <Kpi label="Live items" value={String(o.items_live)} />
         <Kpi label="Centres" value={String(active.length)} sub={active.map((c) => c.name).join(", ") || "none"} />
@@ -56,7 +64,8 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
           <h2 className="mb-3 text-[15px] font-semibold">Account</h2>
           <dl className="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">
             <dt className="text-ink-muted">Sign ins</dt><dd>{o.users.length ? o.users.map((u) => <span key={u.id} className="block">{u.email}</span>) : <span className="text-ink-muted">none, placeholder dealer</span>}</dd>
-            <dt className="text-ink-muted">Plan</dt><dd>{d.plan} · {tier}{d.trial_ends_at ? ` · trial/free until ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</dd>
+            <dt className="text-ink-muted">Plan</dt><dd className="flex flex-wrap items-center gap-2"><span>{tier}. {dealerPlanSentence(d)}</span>{startTrial && <Actions endpoint={api} actions={[{ label: "Stock is ready, start 5 day trial", body: { action: "start_trial" }, confirm: "Start a 5 day trial? The dealer is emailed the first payment date. The card is charged when those 5 days end." }]} />}</dd>
+            <dt className="text-ink-muted">Listing</dt><dd>{d.listing_mode === "self" ? "Dealer lists their own stock" : d.listing_mode === "staff" ? `We list the stock. ${d.listing_tokens_bought > 0 ? `${d.listing_tokens} tokens left` : "No tokens paid yet, so do not photograph stock yet."}` : "Already with us before tokens. You can list their stock."}{d.listing_mode === "staff" && <BuyTokens dealerId={id} next={`/admin/dealers/${id}`} />}</dd>
             <dt className="text-ink-muted">Stripe</dt><dd>{d.stripe_subscription_id ?? <span className="text-ink-muted">no subscription</span>}</dd>
             <dt className="text-ink-muted">Own Shopify</dt><dd>{shop ? `${shop.status} · ${shop.external_account_id} · last event ${when(shop.last_webhook_at)}` : "not connected"}</dd>
             <dt className="text-ink-muted">Defaults</dt><dd>own Shopify {d.default_own_shopify ? "on" : "off"} · centre shop {d.default_centre_shopify ? "on" : "off"}</dd>

@@ -16,7 +16,9 @@ export function Actions({ endpoint, actions }: { endpoint: string; actions: { la
     const j = await r.json().catch(() => ({}));
     setBusy(null);
     if (!r.ok) { setOut(`Failed: ${j.error ?? r.status}`); return; }
-    setOut(j.link ? `Done. One use link: ${j.link}` : j.pin ? `New till PIN: ${j.pin} (shown once)` : j.until ? `Done, until ${new Date(j.until).toLocaleDateString("en-GB")}` : "Done.");
+    const base = j.link ? `Done. One use link: ${j.link}` : j.pin ? `New till PIN: ${j.pin} (shown once)` : j.until ? `Done, until ${new Date(j.until).toLocaleDateString("en-GB")}` : "Done.";
+    const mail = j.emailed ? " Dealer emailed the first payment date." : j.email_error ? ` Trial started but the email failed: ${j.email_error}` : "";
+    setOut(`${base}${j.until ? mail : ""}${j.note ? ` ${j.note}` : ""}`);
     router.refresh();
   }
   return (

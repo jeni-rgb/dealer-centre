@@ -106,6 +106,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
         }),
       });
       const j = await r.json();
+      if (j.code === "tokens") throw new Error(j.error);
       if (r.status === 402) { setLimit(true); throw new Error(j.error); }
       if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not list");
       const pr = printers.find((p) => p.id === printer);

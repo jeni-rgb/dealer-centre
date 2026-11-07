@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://thedealercentre.co.uk/terms" },
 };
 
-const UPDATED = "2 November 2026";
+const UPDATED = "7 November 2026";
 
 const sections: { title: string; body: string[] }[] = [
   {
@@ -35,7 +35,7 @@ const sections: { title: string; body: string[] }[] = [
     "title": "Dealer plans",
     "body": [
       "Dealers choose a plan based on how many items they sell each month. Listing is never limited.",
-      "Starter costs £25 a month for up to 25 items sold a month. Trade costs £100 a month for 26 to 50 items sold a month and adds the centre online shop. Pro costs £150 a month for over 50 items sold a month and adds any number of centres, accountant export and phone support. All prices in these terms are plus VAT.",
+      "Starter costs £25 a month for up to 25 items sold a month. Trade costs £100 a month for 26 to 50 items sold a month and adds the centre online shop. Pro costs £150 a month for unlimited sales and adds any number of centres, accountant export and phone support. All prices in these terms are plus VAT.",
       "If you sell more than your plan allows, we will ask you to move up. You can change or cancel your plan at any time from Settings, which opens a secure page run by Stripe."
     ]
   },
@@ -50,7 +50,7 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Free trials",
     "body": [
-      "Dealers get 14 days free. Centres on the own till plan get 14 days free. We take card details at the start but charge nothing until the trial ends, and we email you before the first payment. If you cancel before the trial ends, you pay nothing. There is no trial on the kit plan."
+      "If you list your own stock, you add a card when you sign up and the first 5 days are £0.00, then your plan price. We email you three days before the first payment. If you ask Dealer Centre to list your stock, you pay £1 plus VAT for each item we list, and you add a card for the monthly plan. That plan is £0.00 while we list the stock. When we say the stock is ready, you get 5 days at £0.00, then the plan price. We email you the date of the first payment when that trial starts, and again three days before the payment. If you cancel before the first payment, you pay nothing for the subscription. Centres on the own till plan get 14 days free from the day they add a card. There is no trial on the kit plan."
     ]
   },
   {
