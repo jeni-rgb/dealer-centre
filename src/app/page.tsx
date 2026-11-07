@@ -87,7 +87,6 @@ export default function Landing() {
               <Link href="/signup?as=centre" className="btn !w-auto !px-7">I run a centre</Link>
               <Link href="/signup?as=dealer" className="btn-outline !w-auto !px-7">I&rsquo;m a dealer</Link>
             </div>
-            <p className="mt-4 text-[13px] text-ink-muted">Dealers from £25 a month plus VAT. List your own stock and the first 5 days are £0.00. We can list it for you at £1 plus VAT an item, and the monthly plan stays £0.00 until that stock is ready. Centres from £249 a month plus VAT, with 14 days free if they already have a till.</p>
           </div>
           <div className="relative order-first mx-auto flex items-start justify-center md:order-none">
             <Phone src="/screens/dealer-today.webp" alt="Today screen: sales this month, recent sales" className="w-[220px] -rotate-3 md:w-[300px]" priority />
@@ -153,7 +152,6 @@ export default function Landing() {
             <p className="mt-6 text-[18px] leading-8 text-ink-muted">You should be out on the stall, talking to people, not at the kitchen table typing titles into a phone. Say the word and Dealer Centre lists the stock for you.</p>
             <p className="mt-4 text-[18px] leading-8">We photograph each piece, write the ticket, print the label and put it on the item, there on the pitch. You still keep the app in your pocket. You see what sold on the floor. If you take the cash yourself, you mark it sold. The statement still adds itself up at the end of the month.</p>
             <p className="hand mt-6 text-[32px] leading-none text-forest">£1 per item plus VAT.</p>
-            <p className="mt-4 max-w-xl text-[16px] leading-7 text-ink-muted">The monthly plan is £0.00 while we do the listing. When the stock is ready you get 5 days at £0.00, then your usual price. If you would rather list it yourself, add your card and the first 5 days are £0.00.</p>
             <Link href="/signup?as=dealer" className="btn mt-8 !w-auto !px-7">Help me list the stock</Link>
           </div>
           <div className="flex justify-center">
