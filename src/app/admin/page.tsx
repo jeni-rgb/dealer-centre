@@ -64,7 +64,7 @@ export default async function Admin() {
               <tr key={d.id} className="border-b border-border">
                 <td className="px-5 py-2"><a className="font-medium text-accent" href={`/admin/dealers/${d.id}`}>{d.name}</a></td>
                 <td className="ticket py-2 text-[12px]">{d.code}</td>
-                <td className="py-2">{d.plan}{d.plan === "trial" && d.trial_ends_at ? ` to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</td>
+                <td className="py-2">{d.plan === "trial" && !d.trial_ends_at ? "onboarding" : d.plan === "trial" && d.trial_ends_at ? `trial to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : d.plan}</td>
                 <td className="py-2 text-xs">{sh ? sh.status : "–"}</td>
                 <td className="num py-2 text-right">{money(byDealer.get(d.id) ?? 0)}</td>
                 <td className="py-2 text-right text-xs text-ink-3">{new Date(d.created_at).toLocaleDateString("en-GB")}</td>

@@ -45,9 +45,9 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.user_admin, email: "jeni@thedealercentre.com", role: "platform_admin", is_platform_admin: true, dealer_id: null },
   ],
   dealers: [
-    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: d(-26), stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, default_own_shopify: true, default_centre_shopify: false, created_at: d(4) },
-    { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, placeholder: false, monthly_sold_limit: 50, created_at: d(40) },
-    { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, created_at: d(55) },
+    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: null, stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, default_own_shopify: true, default_centre_shopify: false, created_at: d(4) },
+    { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, placeholder: false, monthly_sold_limit: 50, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, created_at: d(40) },
+    { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, created_at: d(55) },
   ],
   centres: [
     { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },

@@ -18,11 +18,11 @@ const PROOF: { liveAt: string; founder: string } | null = null;
 const dealerPlans = [
   { name: "Starter", price: "£25", who: "Up to 25 items sold a month", forWho: "A pitch you top up at weekends", bits: ["Unlimited stock listed", "Ticket numbers and labels", "Centre till, End of day, notifications", "Your own Shopify", "Margin on every item", "Monthly statement with PDF"], not: ["Centre online shop", "More than one centre"] },
   { name: "Trade", price: "£100", who: "26 to 50 items sold a month", forWho: "Full time at one centre", bits: ["Everything in Starter", "Centre online shop", "Priority support"], not: ["More than one centre"], featured: true },
-  { name: "Pro", price: "£150", who: "Over 50 items sold a month", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
+  { name: "Pro", price: "£150", who: "Unlimited sales", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
 ];
 
 const compare: [string, string, string, string][] = [
-  ["Items sold a month", "Up to 25", "26 to 50", "Over 50"],
+  ["Items sold a month", "Up to 25", "26 to 50", "Unlimited"],
   ["Stock you can list", "Unlimited", "Unlimited", "Unlimited"],
   ["Centres you sell at", "One", "One", "Any number"],
   ["Ticket numbers and labels", "✓", "✓", "✓"],
@@ -42,7 +42,7 @@ const faqs = [
   ["Who posts what sells online?", "We do, all of it. A Dealer Centre runner collects from every centre every other day, packs the item at our unit and posts it, and our online shop manager handles the buyer from first question to delivery. The centre does nothing and the dealer does nothing: leave the item where it is. The buyer pays postage at checkout and that covers the delivery, so the dealer's share is worked out on the item price."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
   ["What does the centre pay?", "Two plans. Kit plan, £299 a month + VAT: for centres with no POS, a 12 month subscription with the Square Register Retail Kit included, set up on site and yours to keep after 12 months, no free trial. Own till plan, £249 a month + VAT: you already have a POS, keep it; Square connects directly and any other till works beside our till screen. Monthly, 14 days free, cancel any time. Both include unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission (15% to Dealer Centre, 5% to the centre)."],
-  ["Is there a contract?", "Dealers: no, monthly, cancel from Settings, 14 days free. Kit plan centres: 12 months, then monthly and the kit is yours. Own till plan centres: monthly, no commitment."],
+  ["Is there a contract?", "Dealers: monthly, cancel from Settings. List your own stock and the first 5 days are £0.00, then your plan price. Starter is up to 25 sold a month, Trade is 26 to 50, Pro is unlimited. Ask Dealer Centre to list the stock and you pay £1 plus VAT per item. The monthly plan is £0.00 while we do that, then £0.00 for 5 days, then the plan price. Kit plan centres: 12 months, then monthly, and the kit is yours. Own till plan centres: monthly, 14 days free, no commitment."],
   ["We have a till that is not Square. Does it work?", "Yes. Card payments carry on through your machine. Sales are recorded on the Dealer Centre till screen beside it (an iPad with a PIN) or at End of day, and the item comes off the online shop the moment it is recorded. Square is the only till that connects directly, which is why the kit plan uses it."],
   ["Can I get my data out?", "Yes. Your stock list exports as a spreadsheet from Stock, every statement downloads as a PDF, and centres can export dealers and sales as CSV. If you leave, email hello@thedealercentre.co.uk and we send you everything."],
   ["Who can see what I paid?", "Only you. Cost prices are never shown to the centre, to other dealers, or on any shop. The centre sees your stock, your sales and your statement, nothing more."],
@@ -67,7 +67,7 @@ export default function Landing() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Logo size={34} />
         <nav className="hidden items-center gap-7 text-[14px] font-medium text-ink-muted md:flex">
-          <a href="#dealers">For dealers</a><a href="#centres">For centres</a><a href="#online-shop">Online shop</a><a href="#pricing">Pricing</a><a href="#kit">Kit</a><Link href="/guides/dealers">Guides</Link>
+          <a href="#dealers">For dealers</a><a href="#listing">We list it</a><a href="#centres">For centres</a><a href="#online-shop">Online shop</a><a href="#pricing">Pricing</a><a href="#kit">Kit</a><Link href="/guides/dealers">Guides</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/signin" className="text-[14px] font-medium">Sign in</Link>
@@ -87,7 +87,7 @@ export default function Landing() {
               <Link href="/signup?as=centre" className="btn !w-auto !px-7">I run a centre</Link>
               <Link href="/signup?as=dealer" className="btn-outline !w-auto !px-7">I&rsquo;m a dealer</Link>
             </div>
-            <p className="mt-4 text-[13px] text-ink-muted">Dealers from £25 a month + VAT. Centres from £249 a month + VAT. 14 days free for dealers and for centres with their own till.</p>
+            <p className="mt-4 text-[13px] text-ink-muted">Dealers from £25 a month plus VAT. List your own stock and the first 5 days are £0.00. We can list it for you at £1 plus VAT an item, and the monthly plan stays £0.00 until that stock is ready. Centres from £249 a month plus VAT, with 14 days free if they already have a till.</p>
           </div>
           <div className="relative order-first mx-auto flex items-start justify-center md:order-none">
             <Phone src="/screens/dealer-today.webp" alt="Today screen: sales this month, recent sales" className="w-[220px] -rotate-3 md:w-[300px]" priority />
@@ -141,6 +141,23 @@ export default function Landing() {
               ].map(([t, b]) => <div key={t}><h3 className="text-[17px] font-bold leading-6">{t}</h3><p className="mt-1.5 text-[14px] leading-6 text-ink-muted">{b}</p></div>)}
             </div>
             <div className="mt-8 flex flex-wrap gap-3"><Link href="/signup?as=dealer" className="btn !w-auto !px-7">List my first item</Link><Link href="/guides/dealers" className="btn-outline !w-auto !px-7">Read the dealer guide</Link></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="listing" className="bg-gold-soft py-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 md:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <p className="text-[15px] font-semibold text-accent">A person, at the pitch</p>
+            <h2 className="mt-3 text-[36px] leading-[1.05] md:text-[52px]">We will come and list the stock with you.</h2>
+            <p className="mt-6 text-[18px] leading-8 text-ink-muted">You should be out on the stall, talking to people, not at the kitchen table typing titles into a phone. Say the word and Dealer Centre lists the stock for you.</p>
+            <p className="mt-4 text-[18px] leading-8">We photograph each piece, write the ticket, print the label and put it on the item, there on the pitch. You still keep the app in your pocket. You see what sold on the floor. If you take the cash yourself, you mark it sold. The statement still adds itself up at the end of the month.</p>
+            <p className="hand mt-6 text-[32px] leading-none text-forest">£1 per item plus VAT.</p>
+            <p className="mt-4 max-w-xl text-[16px] leading-7 text-ink-muted">The monthly plan is £0.00 while we do the listing. When the stock is ready you get 5 days at £0.00, then your usual price. If you would rather list it yourself, add your card and the first 5 days are £0.00.</p>
+            <Link href="/signup?as=dealer" className="btn mt-8 !w-auto !px-7">Help me list the stock</Link>
+          </div>
+          <div className="flex justify-center">
+            <Phone src="/screens/dealer-list.webp" alt="Listing a piece from the pitch, with its ticket and price" className="w-[260px] rotate-2 md:w-[300px]" />
           </div>
         </div>
       </section>
@@ -244,14 +261,14 @@ export default function Landing() {
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-center text-[36px] leading-[1.08] md:text-[44px]">Dealers pay by what they sell. Centres pay one price, till included.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">14 days free on every plan, card at sign up, nothing charged until day 14, cancel any time. List as much stock as you like. All prices + VAT.</p>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">List your own stock: £0.00 for 5 days, then the plan price. We list it for you: £1 plus VAT an item, and the monthly plan is £0.00 until the stock is ready, then 5 days at £0.00. Centres with their own till: 14 days free. Kit plan: no free trial. All prices plus VAT.</p>
           <div className="mt-10 grid gap-5 md:grid-cols-3">
             {dealerPlans.map((p) => (
               <div key={p.name} className={`card relative flex flex-col p-7 ${p.featured ? "border-accent ring-1 ring-accent" : ""}`}>
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Most dealers</span>}
                 <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
-                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">/month + VAT</span></div>
-                <div className="mt-1 text-[13px] font-semibold text-forest">14 days free, then {p.price} a month + VAT</div>
+                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">a month plus VAT</span></div>
+                <div className="mt-1 text-[13px] font-semibold text-forest">£0.00 for 5 days, then {p.price} a month plus VAT</div>
                 <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
                 <div className="text-[13px] text-ink-muted">{p.forWho}</div>
                 <ul className="mt-5 flex flex-col gap-2 text-[14px] font-medium">{p.bits.map((b) => <li key={b} className="border-b border-border pb-2 last:border-0">{b}</li>)}</ul>
@@ -260,6 +277,7 @@ export default function Landing() {
               </div>
             ))}
           </div>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Want us to list the stock? That is £1 per item plus VAT, paid when you buy the tokens. The monthly price on these cards is still £0.00 until the stock is ready, then 5 days at £0.00.</p>
           <div className="card mt-8 overflow-hidden">
             <div className="border-b border-border px-6 py-4"><h4 className="text-[16px] font-semibold">What is in each plan</h4><p className="text-[13px] text-ink-muted">The only things that change between plans are how much you sell, where, and whether you use the centre&rsquo;s online shop.</p></div>
             <div className="overflow-x-auto">

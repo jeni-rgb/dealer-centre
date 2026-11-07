@@ -4,9 +4,11 @@ import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER, modelBySize } 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
+import { BuyTokens } from "@/components/buy-tokens";
+import { dealerPlanSentence } from "@/lib/billing/plan-copy";
 
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
-type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; default_own_shopify: boolean; default_centre_shopify: boolean };
+type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; listing_mode: string | null; listing_tokens: number; listing_tokens_bought: number; default_own_shopify: boolean; default_centre_shopify: boolean };
 
 export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
   email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
@@ -69,7 +71,8 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
       <Section title="Account">
         <div className="card divide-y divide-border">
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{dealer.name}</span><span className="text-[12px] text-ink-muted">{email}</span></span><span className="ticket text-[16px]">{dealer.code}</span></div>
-          <Link href="/api/billing/portal" className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealer.plan === "trial" ? `Trial, ends ${dealer.trial_ends_at ? new Date(dealer.trial_ends_at).toLocaleDateString("en-GB") : ""}` : dealer.plan} · {dealer.monthly_sold_limit >= 100000 ? "over 50" : dealer.monthly_sold_limit > 25 ? "26 to 50" : `up to ${dealer.monthly_sold_limit}`} items sold a month</span></span><span className="text-[13px] font-medium text-accent">Manage online</span></Link>
+          <Link href="/api/billing/portal" className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealerPlanSentence(dealer)}</span></span><span className="text-[13px] font-medium text-accent">Manage online</span></Link>
+          {dealer.listing_mode === "staff" && <div className="px-4 py-3.5"><span className="block text-[15px] font-medium">Listing tokens</span><span className="text-[12px] text-ink-muted">{dealer.listing_tokens_bought > 0 ? `${dealer.listing_tokens} left. £1 plus VAT each. We photograph the stock from these.` : "None paid yet. We photograph the stock after you pay, £1 plus VAT each."}</span><BuyTokens next="/app/settings" /></div>}
         </div>
       </Section>
 

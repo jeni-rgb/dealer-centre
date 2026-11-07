@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Admin } from "@/lib/supabase/server";
 import { enqueue } from "@/lib/jobs/queue";
+import { consumeStaffToken, staffListingGate } from "@/lib/billing/tokens";
 
 export const CreateItemInput = z.object({
   title: z.string().min(2).max(120),
@@ -22,9 +23,15 @@ export type CreateItemInput = z.infer<typeof CreateItemInput>;
  * Core flow 1. Creates the item with its SKU and one listing per target channel,
  * then enqueues the fan out. Returns in well under a second.
  */
-export class PlanLimitError extends Error {}
+export class PlanLimitError extends Error {
+  code: string;
+  constructor(message: string, code = "plan_limit") {
+    super(message);
+    this.code = code;
+  }
+}
 
-export async function createItem(db: Admin, dealerId: string, input: CreateItemInput, jobIds: string[] = []) {
+export async function createItem(db: Admin, dealerId: string, input: CreateItemInput, jobIds: string[] = [], opts?: { staffListing?: boolean }) {
   // Plans are by items sold a month, not items listed. Listing is never blocked; the Today screen
   // nudges an upgrade when a dealer has sold past their tier this month. Only a lapsed plan stops listing.
   const { data: dealer } = await db.from("dealers").select("plan, monthly_sold_limit").eq("id", dealerId).single();
@@ -32,6 +39,11 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   if (dealer && (dealer.monthly_sold_limit ?? 25) <= 25) input.on_centre_shopify = false;
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
+  }
+  if (opts?.staffListing) {
+    const gate = await staffListingGate(db, dealerId);
+    if (gate === "need_purchase") throw new PlanLimitError("Listing tokens have not been paid for this dealer yet. Buy them before we photograph the stock. They are £1 plus VAT each.", "tokens");
+    if (gate === "none_left") throw new PlanLimitError("No listing tokens left. Buy more before we photograph another item.", "tokens");
   }
   // Retry guard: a resubmit of the same item within 10 minutes returns the first one, never a duplicate.
   const { data: dup } = await db.from("items").select("*").eq("dealer_id", dealerId).eq("title", input.title).eq("price_pence", input.price_pence)
@@ -61,6 +73,14 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
     .select("*")
     .single();
   if (error || !item) throw new Error(error?.message ?? "item insert failed");
+  if (opts?.staffListing) {
+    try {
+      await consumeStaffToken(db, dealerId, item.id);
+    } catch {
+      await db.from("items").delete().eq("id", item.id);
+      throw new PlanLimitError("No listing tokens left. Buy more before we photograph another item.", "tokens");
+    }
+  }
 
   // Target channels: the centre's Square if placed at a centre, the dealer's own Square if any,
   // the dealer's Shopify if connected and wanted.

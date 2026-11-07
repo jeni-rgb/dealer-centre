@@ -15,13 +15,13 @@ export async function POST(req: Request) {
     const t0 = Date.now();
     const db = supabaseAdmin();
     const jobIds: string[] = [];
-    const item = await createItem(db, me.dealer_id, parsed.data, jobIds);
+    const item = await createItem(db, me.dealer_id, parsed.data, jobIds, { staffListing: !!(me.is_platform_admin && me.impersonating) });
     console.log(`[items] created ${item.sku} in ${Date.now() - t0}ms, ${jobIds.length} jobs to background`);
     // Shopify/Square sync and label rendering run after the response, not on the daily cron.
     after(() => runJobsNow(db, jobIds));
     return NextResponse.json({ item });
   } catch (e) {
-    if (e instanceof PlanLimitError) return NextResponse.json({ error: e.message, code: "plan_limit" }, { status: 402 });
+    if (e instanceof PlanLimitError) return NextResponse.json({ error: e.message, code: e.code }, { status: e.code === "tokens" ? 409 : 402 });
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }

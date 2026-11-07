@@ -4,12 +4,14 @@ import Stripe from "stripe";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
+import { pushStripeTrialEnd, startDealerTrial } from "@/lib/billing/dealer-trial";
 
 const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("resend_link"), email: z.string().email() }),
   z.object({ action: z.literal("set_limit"), monthly_sold_limit: z.union([z.literal(25), z.literal(50), z.literal(100000)]) }),
   z.object({ action: z.literal("set_plan"), plan: z.enum(["trial", "pro", "comp", "cancelled", "lapsed"]) }),
   z.object({ action: z.literal("extend_trial"), days: z.number().int().min(1).max(365) }),
+  z.object({ action: z.literal("start_trial") }),
   z.object({ action: z.literal("cancel_subscription"), at_period_end: z.boolean().default(true) }),
   z.object({ action: z.literal("move_centre"), from_centre_id: z.string().uuid().nullable(), to_centre_id: z.string().uuid(), move_items: z.boolean().default(true) }),
   z.object({ action: z.literal("note"), note: z.string().max(2000) }),
@@ -34,9 +36,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
     if (a.action === "extend_trial") {
       const base = dealer.trial_ends_at && new Date(dealer.trial_ends_at) > new Date() ? new Date(dealer.trial_ends_at) : new Date();
       const until = new Date(base.getTime() + a.days * 86400000);
+      if (dealer.stripe_subscription_id && process.env.STRIPE_SECRET_KEY && process.env.DEMO_MODE !== "1") await pushStripeTrialEnd(dealer.stripe_subscription_id, until);
       await db.from("dealers").update({ plan: dealer.plan === "pro" ? "pro" : "trial", trial_ends_at: until.toISOString() }).eq("id", dealerId);
-      if (dealer.stripe_subscription_id && process.env.STRIPE_SECRET_KEY) await new Stripe(process.env.STRIPE_SECRET_KEY).subscriptions.update(dealer.stripe_subscription_id, { trial_end: Math.floor(until.getTime() / 1000), proration_behavior: "none" }).catch(() => null);
       result = { until: until.toISOString() };
+    }
+    if (a.action === "start_trial") {
+      if (process.env.DEMO_MODE === "1") {
+        const until = new Date(Date.now() + 5 * 86400000).toISOString();
+        result = { until, emailed: false, note: "Demo only. Nothing was charged." };
+      } else result = await startDealerTrial(db, dealerId);
     }
     if (a.action === "cancel_subscription") {
       if (!dealer.stripe_subscription_id || !process.env.STRIPE_SECRET_KEY) throw new Error("no Stripe subscription on this dealer");
