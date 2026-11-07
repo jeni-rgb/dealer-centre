@@ -15,7 +15,7 @@ export default async function Settings() {
     supabaseAdmin().from("users").select("id, email").eq("dealer_id", me.dealer_id).order("email"),
   ]);
   return (
-    <Screen title="Settings" back={{ href: "/app" }}>
+    <Screen title="Account" back={{ href: "/app" }}>
       <SettingsView
         email={me.email}
         meId={me.id}
