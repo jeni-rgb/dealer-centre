@@ -83,7 +83,7 @@ export function DealerNav({ active }: { active: "today" | "stock" | "statement" 
     ["today", "/app", "home", "Today"],
     ["stock", "/app/stock", "stock", "Stock"],
     ["statement", "/app/statements", "statement", "Statement"],
-    ["settings", "/app/settings", "settings", "Settings"],
+    ["settings", "/app/settings", "settings", "Account"],
   ];
   return (
     <nav aria-label="Main" className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-border bg-surface/95 px-2 pb-6 pt-2 backdrop-blur">

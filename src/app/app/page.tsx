@@ -5,16 +5,14 @@ import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
 import { displaySku } from "@/lib/sku";
-import { dealerPlanSentence } from "@/lib/billing/plan-copy";
-import { dealerWithListing } from "@/lib/billing/tokens";
 
 export default async function Today() {
   const me = await requireDealer();
   const sb = await supabaseServer();
-  const [{ data: summary }, { data: recent }, dealer, { data: centres }, { data: toPrint }, { data: old }] = await Promise.all([
+  const [{ data: summary }, { data: recent }, { data: dealer }, { data: centres }, { data: toPrint }, { data: old }] = await Promise.all([
     sb.rpc("dealer_summary", { p_dealer_id: me.dealer_id }),
     sb.from("sales").select("id, amount_pence, sold_at, ticket_no, item_id, items(title, photos), channels:channel_id(type, owner_type)").eq("dealer_id", me.dealer_id).is("voided_at", null).order("sold_at", { ascending: false }).limit(3),
-    dealerWithListing(sb, me.dealer_id, "name, code, plan, trial_ends_at, monthly_sold_limit"),
+    sb.from("dealers").select("name, code, monthly_sold_limit").eq("id", me.dealer_id).single(),
     sb.from("dealer_centres").select("status, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null),
     sb.from("print_jobs").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).in("status", ["not_printed", "ready"]),
     sb.from("items").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).eq("status", "live").lte("listed_at", new Date(Date.now() - 90 * 86400000).toISOString()),
@@ -37,7 +35,7 @@ export default async function Today() {
             <span className="flex items-center gap-2 text-[12px] text-header-muted"><span className="tag tag-dark !h-6 !text-[11px]">{dealer?.code}</span>{dealer?.name}{centreName ? ` · ${centreName}` : ""}</span>
             <span className="text-[20px] font-semibold capitalize">{greeting}, {firstName}</span>
           </div>
-          <Link href="/app/settings" aria-label="Settings" className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10">{Icon.settings}</Link>
+          <Link href="/app/settings" aria-label="Account" className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10">{Icon.settings}</Link>
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] text-header-muted">Sales this month</span>
@@ -67,9 +65,6 @@ export default async function Today() {
         <NotificationsCard vapidPublicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
         {dealer && dealer.monthly_sold_limit < 100000 && (s.items_sold_month ?? 0) >= dealer.monthly_sold_limit && (
           <Link href="/api/billing/portal" className="card flex items-center justify-between border-accent p-4 text-[14px]"><span><span className="block font-medium">Good month: {s.items_sold_month} sold</span><span className="text-[12px] text-ink-muted">That is the {dealer.monthly_sold_limit} on your plan. Nothing stops, but please move up a tier before the next one.</span></span><span className="text-[13px] font-medium text-accent">Upgrade</span></Link>
-        )}
-        {dealer?.plan === "trial" && (
-          <p className="text-[12px] text-ink-muted">{dealerPlanSentence(dealer)} <Link className="text-accent" href="/api/billing/portal">Manage plan</Link></p>
         )}
         {pending.map((c) => (
           <div key={c.centre_id} className="rounded-[14px] border border-[#FDE68A] bg-warning-soft px-3.5 py-3 text-[13px] text-warning">
