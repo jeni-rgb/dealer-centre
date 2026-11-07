@@ -122,6 +122,20 @@ const T: Record<string, Record<string, unknown>[]> = {
     { sale_id: "o4", centre_id: IDS.centre, status: "despatched", collected_at: d(4), at_unit_at: d(4), despatched_at: d(4), slip_printed_at: d(4), carrier: "Royal Mail", tracking: "RM123456001GB", note: null, shopify_fulfilled: true },
   ],
   admin_actions: [],
+  stock_checks: [
+    { id: "sc1", centre_id: IDS.centre, dealer_id: IDS.dealer, started_by: IDS.user_dealer, started_at: d(1, 17, 30), finished_at: d(1, 17, 52), status: "done", note: null },
+    { id: "sc2", centre_id: IDS.centre, dealer_id: null, started_by: IDS.user_centre, started_at: d(1, 17, 10), finished_at: d(1, 18, 25), status: "done", note: null },
+  ],
+  stock_check_scans: [],
+  stock_check_lines: [
+    ...["sc1", "sc2"].flatMap((c) => ["i01", "i02", "i03", "i05"].map((item_id, n) => ({ id: `${c}f${n}`, check_id: c, item_id, raw: null, outcome: "found", resolution: null, resolved_by: null, resolved_at: null, price_pence: null }))),
+    ...["sc1", "sc2"].flatMap((c) => [
+      { id: `${c}m1`, check_id: c, item_id: "i04", raw: null, outcome: "missing", resolution: null, resolved_by: null, resolved_at: null, price_pence: 48000 },
+      { id: `${c}m2`, check_id: c, item_id: "i06", raw: null, outcome: "missing", resolution: "stolen", resolved_by: IDS.user_centre, resolved_at: d(0, 9, 0), price_pence: 39500 },
+      { id: `${c}s1`, check_id: c, item_id: "i09", raw: "B140362", outcome: "sold_on_shelf", resolution: null, resolved_by: null, resolved_at: null, price_pence: 3300 },
+      { id: `${c}u1`, check_id: c, item_id: null, raw: "B140999", outcome: "not_on_system", resolution: null, resolved_by: null, resolved_at: null, price_pence: null },
+    ]),
+  ],
   centre_commissions: [
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
@@ -191,6 +205,7 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
     return this;
   }
   contains() { return this; }
+  overlaps() { this.filters.push(() => false); return this; }
   order(c: string, o?: { ascending?: boolean }) { this.orderBy = { col: c, asc: o?.ascending ?? true }; return this; }
   limit(n: number) { this.lim = n; return this; }
   single() { this.mode = "single"; return this; }
@@ -251,7 +266,7 @@ export async function demoClient() {
   return {
     from: (table: string) => new Q(table),
     rpc,
-    auth: { getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
+    auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
     storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
   };
 }
@@ -262,7 +277,7 @@ export function demoSyncClient() {
   return {
     from: (table: string) => new Q(table),
     rpc,
-    auth: { getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
+    auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
     storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
   };
 }

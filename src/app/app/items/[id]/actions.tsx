@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 
 type Sale = { id: string; amount_pence: number; payment_type: string | null; sold_at: string } | null;
 
-export function ItemActions({ id, status, price, sale, atCentre }: { id: string; status: string; price: number; sale: Sale; atCentre: boolean }) {
+export function ItemActions({ id, status, price, sale, atCentre, cost = null }: { id: string; status: string; price: number; sale: Sale; atCentre: boolean; cost?: number | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<"none" | "price" | "sold" | "correct">("none");
+  const [mode, setMode] = useState<"none" | "price" | "sold" | "correct" | "cost">("none");
+  const [newCost, setNewCost] = useState(cost !== null ? (cost / 100).toString() : "");
   const [newPrice, setNewPrice] = useState((price / 100).toString());
   const [paid, setPaid] = useState(((sale?.amount_pence ?? price) / 100).toString());
   const [pay, setPay] = useState<"CASH" | "CARD">(sale?.payment_type === "CARD" ? "CARD" : "CASH");
@@ -76,6 +77,23 @@ export function ItemActions({ id, status, price, sale, atCentre }: { id: string;
           <p className="text-[12px] text-ink-muted">Dealers give discounts. Put the real figure here and the statement follows it. The ticket price is kept for reference.</p>
           {err && <p className="text-[13px] text-danger">{err}</p>}
           <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy} onClick={() => call(`/api/sales/${sale.id}`, "PATCH", { amount_pence: pence(paid), payment_type: pay })}>Save</button></div>
+        </div>
+      )}
+
+      {mode === "none" && (
+        <button className="btn-outline" onClick={() => setMode("cost")}>{cost === null ? "Add what you paid" : "Edit what you paid"}</button>
+      )}
+
+      {mode === "cost" && (
+        <div className="card flex flex-col gap-3 p-4">
+          <span className="text-[13px] font-medium">What you paid</span>
+          <Money v={newCost} set={setNewCost} />
+          <p className="text-[12px] text-ink-muted">Private. Only you see it. It works out your margin and the haggle guide, and goes nowhere else.</p>
+          {err && <p className="text-[13px] text-danger">{err}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-outline" onClick={() => { setMode("none"); setNewCost(cost !== null ? (cost / 100).toString() : ""); }}>Cancel</button>
+            <button className="btn-dark" disabled={busy} onClick={() => call(`/api/items/${id}`, "PATCH", { cost_pence: newCost.trim() === "" ? null : pence(newCost) })}>Save</button>
+          </div>
         </div>
       )}
 

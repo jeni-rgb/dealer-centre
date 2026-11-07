@@ -9,6 +9,8 @@ const Patch = z.object({
   price_pence: z.number().int().min(0).optional(),
   title: z.string().min(2).max(120).optional(),
   status: z.enum(["withdrawn", "live"]).optional(),
+  // What the dealer paid. Private, never synced to any channel. null clears it.
+  cost_pence: z.number().int().min(0).max(100000000).nullable().optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +26,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const upd: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.price_pence !== undefined || parsed.data.title !== undefined) upd.price_source = "app";
   await db.from("items").update(upd).eq("id", id);
+  // Cost only: private to the dealer, nothing to sync.
+  if (Object.keys(parsed.data).length === 1 && parsed.data.cost_pence !== undefined) return NextResponse.json({ ok: true });
 
   if (parsed.data.status === "withdrawn") {
     await enqueue(db, "close_item_on_other_channels", { item_id: id, sold_channel_id: null });

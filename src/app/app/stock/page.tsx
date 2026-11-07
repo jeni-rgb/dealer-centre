@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DealerNav, Empty, Screen } from "@/components/ui";
@@ -55,7 +56,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
   });
 
   return (
-    <Screen title="Stock">
+    <Screen title="Stock" right={<Link href="/app/stock-check" className="text-[13px] font-medium text-accent">Check</Link>}>
       <StockSearch initial={search} />
       <StockList rows={rows} mode={mode} filter={f ?? ""} />
       {rows.length === 0 && search.trim() ? <Empty text="No items match your search." /> : rows.length === 0 && (mode === "live" ? <Empty text="No stock listed yet." href="/app/items/new" cta="List your first item" /> : <Empty text="Nothing sold yet." />)}
