@@ -29,6 +29,8 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
   const unmatched = (sales ?? []).filter((s) => !s.dealer_id).length;
   const stale = (r: Row) => !r.last_sale_at || Date.now() - new Date(r.last_sale_at).getTime() > 30 * 86400000;
   const maxSales = Math.max(1, ...list.map((r) => Number(r.sales_month_pence)));
+  const { data: here } = await supabaseAdmin().from("item_places").select("qty, items(title, sku)").eq("centre_id", centre.id).gt("qty", 0).limit(12);
+  const floor = (here ?? []).map((p) => ({ title: (p.items as { title?: string } | null)?.title ?? "Item", sku: (p.items as { sku?: string } | null)?.sku ?? "", qty: p.qty as number }));
   let sumupSeen: string | null = null;
   if (env.sumup.configured()) {
     const db = supabaseAdmin();
@@ -57,6 +59,17 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
         <Kpi label="Unmatched sales" value={String(unmatched)} sub={unmatched ? "Till sales with no dealer" : "All sales assigned"} tone={unmatched ? "danger" : undefined} />
       </div>
 
+      {floor.length > 0 && (
+        <div className="card mb-8 overflow-hidden">
+          <div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Stock here</h2></div>
+          {floor.map((p, i) => (
+            <div key={i} className="flex items-center justify-between border-b border-border px-5 py-3 text-[14px] last:border-0">
+              <span className="font-medium">{p.title}</span>
+              <span>{p.qty} here</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Dealers ranked</h2><a className="text-[13px] font-medium text-accent" href={`/api/admin/export?centre=${centre.id}`}>Export CSV</a></div>
         <table className="w-full text-[14px]">

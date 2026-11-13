@@ -5,7 +5,17 @@ export async function expectedCount(db: Admin, centreId: string, dealerId: strin
   let q = db.from("items").select("id").eq("centre_id", centreId).eq("status", "live").lte("listed_at", startedAt);
   if (dealerId) q = q.eq("dealer_id", dealerId);
   const { data } = await q;
-  return (data ?? []).length;
+  const ids = new Set((data ?? []).map((i) => i.id as string));
+  const placed = await db.from("item_places").select("item_id, items!inner(status, dealer_id, listed_at)").eq("centre_id", centreId).gt("qty", 0);
+  if (!placed.error) {
+    for (const row of placed.data ?? []) {
+      const item = row.items as { status?: string; dealer_id?: string; listed_at?: string } | null;
+      if (!item || item.status !== "live" || (item.listed_at ?? "") > startedAt) continue;
+      if (dealerId && item.dealer_id !== dealerId) continue;
+      ids.add(row.item_id as string);
+    }
+  }
+  return ids.size;
 }
 
 /** Past checks with their headline numbers, newest first. */

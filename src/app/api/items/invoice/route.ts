@@ -4,12 +4,18 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { isDemo } from "@/lib/supabase/demo";
 import { createItem, PlanLimitError } from "@/lib/items/create";
+import { placesMatch } from "@/lib/stock/places";
 
+const Place = z.object({
+  centreId: z.string().nullable(),
+  qty: z.number().int().min(0).max(200),
+});
 const Variant = z.object({
   title: z.string().min(2).max(120),
   qty: z.number().int().min(1).max(200),
   sellPence: z.number().int().min(1).max(100000000),
   costPence: z.number().int().min(0).max(100000000),
+  places: z.array(Place).max(12).optional(),
 });
 const Input = z.object({
   invoiceId: z.string().min(2).max(80).nullable().optional(),
@@ -24,6 +30,9 @@ export async function POST(req: Request) {
   if (!me?.dealer_id) return NextResponse.json({ error: "Sign in" }, { status: 401 });
   const p = Input.safeParse(await req.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: "Check each colour, the number and the sell price" }, { status: 400 });
+  if (p.data.variants.some((v) => v.places?.length && !placesMatch(v.qty, v.places))) {
+    return NextResponse.json({ error: "Numbers must add up at each place" }, { status: 400 });
+  }
   const db = supabaseAdmin();
   const labels = p.data.labels ?? "box";
   if (p.data.invoiceId) {
@@ -40,13 +49,15 @@ export async function POST(req: Request) {
   const made: { id: string; sku: string; title: string; qty: number }[] = [];
   try {
     for (const v of p.data.variants) {
+      const places = (v.places ?? []).filter((place) => place.qty > 0);
+      const onlyCentre = places.length === 1 ? places[0].centreId : null;
       const item = await createItem(db, me.dealer_id, {
         title: v.title,
         delivery: "small",
         photos: [],
         price_pence: v.sellPence,
         cost_pence: v.costPence,
-        centre_id: link?.centre_id ?? null,
+        centre_id: onlyCentre ?? (places.length ? null : link?.centre_id ?? null),
         on_own_shopify: false,
         on_centre_shopify: false,
         print_now: false,
@@ -54,8 +65,18 @@ export async function POST(req: Request) {
         qty: v.qty,
         invoice_id: p.data.invoiceId ?? null,
       });
+      if (places.length) {
+        await db.from("item_places").insert(places.map((place) => ({ item_id: item.id, centre_id: place.centreId, qty: place.qty })));
+      }
       const copies = labels === "box" ? v.qty : 1;
-      await db.from("print_jobs").update({ copies }).eq("item_id", item.id);
+      const sheets = places.length ? places : [{ centreId: link?.centre_id ?? null, qty: copies }];
+      const { data: firstJob } = await db.from("print_jobs").select("id").eq("item_id", item.id).limit(1).maybeSingle();
+      for (let i = 0; i < sheets.length; i++) {
+        const sheet = sheets[i];
+        const row = { copies: labels === "kind" ? 1 : sheet.qty, centre_id: sheet.centreId, place_label: sheet.centreId ? null : "Home" };
+        if (i === 0 && firstJob) await db.from("print_jobs").update(row).eq("id", firstJob.id);
+        else await db.from("print_jobs").insert({ ...row, item_id: item.id, dealer_id: me.dealer_id, status: "not_printed" });
+      }
       made.push({ id: item.id, sku: item.sku, title: item.title, qty: v.qty });
     }
   } catch (e) {

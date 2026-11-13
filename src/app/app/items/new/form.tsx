@@ -63,7 +63,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [bulkQty, setBulkQty] = useState("");
   const [bulkCost, setBulkCost] = useState("");
   const [bulkSell, setBulkSell] = useState("");
-  const [colours, setColours] = useState<{ name: string; qty: string; sell: string }[]>([]);
+  const [colours, setColours] = useState<{ name: string; qty: string; sell: string; places: Record<string, string> }[]>([]);
   const [bulkNote, setBulkNote] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkDone, setBulkDone] = useState<{ id: string; sku: string; title: string; qty: number }[] | null>(null);
@@ -108,10 +108,14 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     if (!(qty > 0)) return setBulkNote("Enter how many.");
     const rows = colours.length
       ? colours
-      : [{ name: "", qty: String(qty), sell: bulkSell }];
+      : [{ name: "", qty: String(qty), sell: bulkSell, places: {} as Record<string, string> }];
     if (colours.length) {
       const sum = colours.reduce((a, row) => a + (Number(row.qty) || 0), 0);
       if (sum !== qty) return setBulkNote("Numbers must add up to the buy.");
+      for (const row of colours) {
+        const placed = Object.values(row.places).reduce((a, n) => a + (Number(n) || 0), 0);
+        if (placed !== Math.round(Number(row.qty))) return setBulkNote("Numbers must add up at each place.");
+      }
     }
     if (rows.some((row) => (colours.length > 0 && row.name.trim().length < 1) || !(Number(row.qty) > 0) || !(Number(row.sell) > 0))) {
       return setBulkNote(colours.length ? "Each colour needs a name, a number and a sell price." : "Enter a sell price.");
@@ -122,6 +126,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       qty: Math.round(Number(row.qty)),
       sellPence: Math.round(Number(row.sell) * 100),
       costPence: Number.isFinite(costPence) && costPence > 0 ? costPence : 0,
+      places: Object.entries(row.places).map(([id, n]) => ({ centreId: id === "home" ? null : id, qty: Math.round(Number(n) || 0) })).filter((p) => p.qty > 0),
     }));
     const r = await fetch("/api/items/invoice", {
       method: "POST",
@@ -273,14 +278,27 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             {colours.length === 0 && (
               <div><label className="field-label" htmlFor="bulk-sell">Sell price</label><input id="bulk-sell" className="field" inputMode="decimal" placeholder="0" value={bulkSell} onChange={(e) => setBulkSell(e.target.value)} /></div>
             )}
+            {colours.length > 0 && <p className="text-[13px] text-ink-muted">Away sales use Home.</p>}
             {colours.map((row, i) => (
-              <div key={i} className="grid grid-cols-[1fr_4rem_5rem] gap-2">
-                <input className="field" aria-label="Colour" placeholder="Blue" value={row.name} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))} />
-                <input className="field" aria-label="Number" inputMode="numeric" value={row.qty} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, qty: e.target.value } : r))} />
-                <input className="field" aria-label="Sell price" placeholder="Sell" inputMode="decimal" value={row.sell} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, sell: e.target.value } : r))} />
+              <div key={i} className="card flex flex-col gap-2 p-3">
+                <div className="grid grid-cols-[1fr_4rem_5rem] gap-2">
+                  <input className="field" aria-label="Colour" placeholder="Blue" value={row.name} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))} />
+                  <input className="field" aria-label="Number" inputMode="numeric" value={row.qty} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, qty: e.target.value } : r))} />
+                  <input className="field" aria-label="Sell price" placeholder="Sell" inputMode="decimal" value={row.sell} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, sell: e.target.value } : r))} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {centres.map((place) => (
+                    <label key={place.id} className="text-[13px] text-ink-muted">{place.name}
+                      <input className="field" aria-label={place.name} inputMode="numeric" value={row.places[place.id] ?? ""} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, places: { ...r.places, [place.id]: e.target.value } } : r))} />
+                    </label>
+                  ))}
+                  <label className="text-[13px] text-ink-muted">Home
+                    <input className="field" aria-label="Home" inputMode="numeric" value={row.places.home ?? ""} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, places: { ...r.places, home: e.target.value } } : r))} />
+                  </label>
+                </div>
               </div>
             ))}
-            <button type="button" className="btn-secondary" onClick={() => setColours((rows) => [...rows, { name: "", qty: rows.length === 0 ? bulkQty : "", sell: bulkSell }])}>Add colours</button>
+            <button type="button" className="btn-secondary" onClick={() => setColours((rows) => [...rows, { name: "", qty: rows.length === 0 ? bulkQty : "", sell: bulkSell, places: { home: "", ...Object.fromEntries(centres.map((place) => [place.id, ""])) } }])}>Add colours</button>
             {bulkNote && <p className="text-[14px]">{bulkNote}</p>}
           </div>
           <div className="sticky bottom-0 border-t border-border bg-white px-5 pb-7 pt-3">

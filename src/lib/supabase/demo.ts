@@ -17,6 +17,7 @@ const IDS = {
   dealer2: "22222222-2222-2222-2222-222222222223",
   dealer3: "22222222-2222-2222-2222-222222222224",
   centre: "11111111-1111-1111-1111-111111111111",
+  centre2: "11111111-1111-1111-1111-111111111112",
   ch_manual: "33333333-3333-3333-3333-333333333331",
   ch_shopify: "33333333-3333-3333-3333-333333333332",
   ch_square: "33333333-3333-3333-3333-333333333333",
@@ -51,10 +52,12 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   centres: [
     { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
+    { id: IDS.centre2, name: "Painted Barn", address: "The Street, Holt", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "BARN", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: null, created_at: d(8) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
     { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
+    { id: "dc4", dealer_id: IDS.dealer, centre_id: IDS.centre2, status: "active", square_category_id: null, pitch_numbers: ["2"], rent_pence: 15000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
     { id: "dc2", dealer_id: IDS.dealer2, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["3"], rent_pence: 13000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "centre", joined_at: d(40), left_at: null },
     { id: "dc3", dealer_id: IDS.dealer3, centre_id: IDS.centre, status: "pending", square_category_id: null, pitch_numbers: [], rent_pence: 9000, rent_mode: "rent", rent_schedule: "weekly_friday", rent_set_by: "dealer", joined_at: null, left_at: null },
   ],
@@ -157,8 +160,13 @@ const T: Record<string, Record<string, unknown>[]> = {
 };
 T.items.push(
   { id: "i20", dealer_id: IDS.dealer, centre_id: IDS.centre, sku: "B140380", alt_skus: [], title: "Key box, blue", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 8, qty_start: 10, invoice_id: "inv1" },
-  { id: "i21", dealer_id: IDS.dealer, centre_id: IDS.centre, sku: "B140381", alt_skus: [], title: "Key box, pink", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 1, qty_start: 10, invoice_id: "inv1" },
+  { id: "i21", dealer_id: IDS.dealer, centre_id: null, sku: "B140381", alt_skus: [], title: "Key box, pink", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 10, qty_start: 10, invoice_id: "inv1" },
 );
+T.item_places = [
+  { id: "pl1", item_id: "i21", centre_id: IDS.centre, qty: 5 },
+  { id: "pl2", item_id: "i21", centre_id: IDS.centre2, qty: 5 },
+  { id: "pl3", item_id: "i20", centre_id: IDS.centre, qty: 8 },
+];
 T.invoices = [
   { id: "inv1", dealer_id: IDS.dealer, supplier: "Box Co", file_path: null, file_name: "box-co.pdf", created_at: d(1) },
 ];
@@ -207,6 +215,7 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
   in(c: string, vs: unknown[]) { this.filters.push((r) => vs.includes(r[c])); return this; }
   is(c: string, v: unknown) { this.filters.push((r) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v)); return this; }
   not(c: string, op: string, v: unknown) { this.filters.push((r) => !(op === "is" && v === null ? r[c] == null : r[c] === v)); return this; }
+  gt(c: string, v: unknown) { this.filters.push((r) => Number(r[c]) > Number(v)); return this; }
   gte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) >= String(v)); return this; }
   lte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) <= String(v)); return this; }
   lt(c: string, v: unknown) { this.filters.push((r) => String(r[c]) < String(v)); return this; }

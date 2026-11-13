@@ -58,9 +58,10 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
     const { data: pj } = await db.from("print_jobs").select("*, items(*), dealers(code, name), printers(provider, provider_id, label_width_mm, label_height_mm)").eq("id", jobId).single();
     if (!pj || pj.status === "not_printed") return;
     const item = pj.items as ItemRow;
-    let centreName: string | null = null;
-    if (item.centre_id) {
-      const { data: c } = await db.from("centres").select("name").eq("id", item.centre_id).single();
+    let centreName: string | null = pj.place_label ?? null;
+    const placeCentre = pj.centre_id ?? (!pj.place_label ? item.centre_id : null);
+    if (!centreName && placeCentre) {
+      const { data: c } = await db.from("centres").select("name").eq("id", placeCentre).single();
       centreName = c?.name ?? null;
     }
     const dealer = pj.dealers as { code: string; name?: string | null };

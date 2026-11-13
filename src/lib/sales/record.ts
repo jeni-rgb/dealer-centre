@@ -2,7 +2,7 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow, IncomingLine } from "@/lib/channels/types";
 import { matchLine, type Candidate, type CategoryMap } from "./match";
 import { enqueue } from "@/lib/jobs/queue";
-import { afterSale } from "@/lib/invoices/lines";
+import { giveOneBack, takeOneAt } from "@/lib/stock/take";
 
 /**
  * record_sale: the single entry point for every sale from every channel.
@@ -61,6 +61,16 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
   if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
     const { data: direct } = await db.from("items").select("id, dealer_id, centre_id, sku, alt_skus").eq("centre_id", centreId).eq("status", "live").eq("sku", line.sku).maybeSingle();
     if (direct) m = { kind: "item", item: { item_id: direct.id, dealer_id: direct.dealer_id, centre_id: direct.centre_id, sku: direct.sku, alt_skus: direct.alt_skus ?? [], listing_external_id: null, listing_external_variant_id: null }, via: "sku" };
+    if (m.kind === "unmatched") {
+      const { data: placed } = await db.from("item_places").select("item_id").eq("centre_id", centreId).gt("qty", 0);
+      const ids = (placed ?? []).map((p) => p.item_id as string);
+      const { data: byPlace } = ids.length ? await db.from("items").select("id, dealer_id, centre_id, sku, alt_skus").in("id", ids).eq("status", "live").eq("sku", line.sku).maybeSingle() : { data: null };
+      if (byPlace) m = { kind: "item", item: { item_id: byPlace.id, dealer_id: byPlace.dealer_id, centre_id: byPlace.centre_id, sku: byPlace.sku, alt_skus: byPlace.alt_skus ?? [], listing_external_id: null, listing_external_variant_id: null }, via: "sku" };
+    }
+  }
+  if (m.kind === "unmatched" && channel.owner_type === "dealer" && line.sku) {
+    const { data: own } = await db.from("items").select("id, dealer_id, centre_id, sku, alt_skus").eq("dealer_id", channel.owner_id).eq("status", "live").eq("sku", line.sku).maybeSingle();
+    if (own) m = { kind: "item", item: { item_id: own.id, dealer_id: own.dealer_id, centre_id: own.centre_id, sku: own.sku, alt_skus: own.alt_skus ?? [], listing_external_id: null, listing_external_variant_id: null }, via: "sku" };
   }
   // Still nothing: an unknown ticket belongs to the dealer whose code it starts with.
   if (m.kind === "unmatched" && channel.type === "manual" && centreId && line.sku) {
@@ -87,10 +97,9 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
   };
 
   if (m.kind === "item") {
-    const { data: itemRow } = await db.from("items").select("listed_price_pence, price_pence, qty").eq("id", m.item.item_id).single();
+    const { data: itemRow } = await db.from("items").select("listed_price_pence, price_pence").eq("id", m.item.item_id).single();
     const listed = itemRow?.listed_price_pence ?? itemRow?.price_pence ?? null;
-    const held = typeof itemRow?.qty === "number" ? itemRow.qty : 1;
-    const next = afterSale(held);
+    const placeId = channel.owner_type === "centre" ? channel.owner_id : null;
     // Centre online shop: the 20% online commission (15% Dealer Centre, 5% the centre) is a fee on the sale
     let channelFee = 0;
     if (channel.owner_type === "centre" && channel.type === "shopify") {
@@ -103,8 +112,8 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
       .insert({ ...base, item_id: m.item.item_id, dealer_id: m.item.dealer_id, centre_id: channel.owner_type === "dealer" ? null : (centreId ?? m.item.centre_id), ticket_no: m.item.sku, listed_price_pence: listed, channel_fee_pence: channelFee })
       .select("id")
       .single();
-    await db.from("items").update(next.soldOut ? { qty: 0, status: "sold", sold_at: line.sold_at } : { qty: next.qty }).eq("id", m.item.item_id).eq("status", "live");
-    if (next.soldOut) await enqueue(db, "close_item_on_other_channels", { item_id: m.item.item_id, sold_channel_id: channel.id });
+    const taken = await takeOneAt(db, m.item.item_id, placeId, line.sold_at);
+    if (taken.soldOut) await enqueue(db, "close_item_on_other_channels", { item_id: m.item.item_id, sold_channel_id: channel.id });
     const online = channel.owner_type === "centre" && channel.type === "shopify";
     if (online && sale?.id) await db.from("fulfilments").upsert({ sale_id: sale.id, centre_id: centreId ?? m.item.centre_id }, { onConflict: "sale_id", ignoreDuplicates: true });
     await enqueue(db, "notify_sale", { sale_id: sale?.id, item_id: m.item.item_id, dealer_id: m.item.dealer_id, online });
@@ -125,18 +134,14 @@ export async function recordSale(db: Admin, channel: ChannelRow, line: IncomingL
 export async function voidSale(db: Admin, channel: ChannelRow, externalOrderId: string) {
   const { data: sales } = await db
     .from("sales")
-    .select("id, item_id")
+    .select("id, item_id, centre_id")
     .eq("channel_id", channel.id)
     .eq("external_order_id", externalOrderId)
     .is("voided_at", null);
   for (const s of sales ?? []) {
     await db.from("sales").update({ voided_at: new Date().toISOString() }).eq("id", s.id);
     if (s.item_id) {
-      const { data: item } = await db.from("items").select("qty, qty_start, status").eq("id", s.item_id).maybeSingle();
-      const start = typeof item?.qty_start === "number" ? item.qty_start : 1;
-      const qty = Math.min(start, (typeof item?.qty === "number" ? item.qty : 0) + 1);
-      const wasSold = item?.status === "sold";
-      await db.from("items").update({ qty, status: "live", sold_at: null }).eq("id", s.item_id);
+      const wasSold = await giveOneBack(db, s.item_id, s.centre_id ?? null);
       if (wasSold) await enqueue(db, "reopen_item_on_channels", { item_id: s.item_id });
     }
   }

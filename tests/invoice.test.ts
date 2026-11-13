@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { afterSale, fileAlreadyRecorded, linesFromAi, linesFromCsv, stockFlag } from "@/lib/invoices/lines";
+import { movePlaces, placesMatch, takeOnePlace } from "@/lib/stock/places";
 
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—·]/);
 
@@ -22,6 +23,18 @@ describe("invoice lines", () => {
     expect(stockFlag(2, 10)).toBe("low");
     expect(stockFlag(0, 10)).toBe("out");
     expect(stockFlag(1, 1)).toBe("ok");
-    for (const s of ["8 left", "Low", "Sold out", "One for each box", "One for each kind", "Invoice kept"]) noDash(s);
+    for (const s of ["8 left", "Low", "Sold out", "One for each box", "Home", "Move"]) noDash(s);
+    const places = [{ centreId: "looses", qty: 5 }, { centreId: "barn", qty: 5 }];
+    expect(placesMatch(10, places)).toBe(true);
+    expect(placesMatch(9, places)).toBe(false);
+    const sold = takeOnePlace(places, "looses");
+    expect(sold.taken).toBe(true);
+    expect(sold.places[0].qty).toBe(4);
+    expect(sold.places[1].qty).toBe(5);
+    expect(takeOnePlace(places, "home").taken).toBe(false);
+    const moved = movePlaces(places, "looses", "barn", 2);
+    expect(moved?.[0].qty).toBe(3);
+    expect(moved?.[1].qty).toBe(7);
+    expect(movePlaces(places, "looses", "barn", 9)).toBeNull();
   });
 });

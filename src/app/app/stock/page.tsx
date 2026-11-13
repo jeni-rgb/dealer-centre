@@ -39,6 +39,8 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
   const sf = searchFilter(search);
   if (sf) q = q.or(sf);
   const { data: items } = await q.limit(500);
+  const ids = (items ?? []).map((i) => i.id);
+  const { data: placeRows } = ids.length ? await sb.from("item_places").select("item_id, qty, centres(name)").in("item_id", ids) : { data: [] };
 
   const rows = (items ?? []).map((i) => {
     const listings = i.item_listings as unknown as { status: string; channels: { type: string; owner_type: string } | null }[];
@@ -55,6 +57,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
       centre_name: (i.centres as unknown as { name: string } | null)?.name ?? null,
       qty: typeof i.qty === "number" ? i.qty : 1,
       qty_start: typeof i.qty_start === "number" ? i.qty_start : 1,
+      places: (placeRows ?? []).filter((p) => p.item_id === i.id).map((p) => ({ name: (p.centres as { name?: string } | null)?.name ?? "Home", qty: p.qty as number })),
     };
   });
 
