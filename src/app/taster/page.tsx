@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { formatShortDate } from "@/lib/billing/pricing";
 import { AcceptTaster } from "./accept";
-import { PlanCompare } from "@/components/plan-compare";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +15,19 @@ export default async function TasterPage({ searchParams }: { searchParams: Promi
   return (
     <Shell>
       <p className="text-[13px] font-semibold text-accent">For {data.name}</p>
-      <h1 className="mt-2 text-[32px] font-bold leading-tight">2 weeks of named sales, and 25 labels on us.</h1>
+      <h1 className="mt-2 text-[32px] font-bold leading-tight">2 weeks of named sales. 25 labels free.</h1>
       {live ? (
-        <p className="mt-4 text-[16px] leading-7">You said yes. Named sales run until {formatShortDate(data.taster_ends_at!)}. We will label your first 25 items. After that you go back to Basic unless you join Full at £25 a month plus VAT by Direct Debit.</p>
+        <p className="mt-4 text-[16px] leading-7">Named sales until {formatShortDate(data.taster_ends_at!)}. Then Basic, unless you join Full at £25 a month plus VAT.</p>
       ) : (
         <>
-          <p className="mt-4 text-[16px] leading-7">Say yes and you get 2 weeks of Full, and we label your first 25 items for free. Nothing is charged. When the 2 weeks end you go back to Basic, unless you join Full.</p>
+          <p className="mt-4 text-[16px] leading-7">Nothing is charged. Then Basic, unless you join Full at £25 a month plus VAT.</p>
           <AcceptTaster token={t} />
-          <div className="mt-10"><PlanCompare showHeadline /></div>
+          <ul className="mt-8 flex flex-col gap-2 text-[15px] leading-6">
+            <li>Named sales, the minute they go through the till.</li>
+            <li>What each centre owes you, before payout.</li>
+            <li>Stock on the floor and what has sold.</li>
+          </ul>
+          <p className="mt-4 text-[14px]"><Link href="/#pricing" className="font-semibold text-accent">Full list</Link></p>
         </>
       )}
     </Shell>

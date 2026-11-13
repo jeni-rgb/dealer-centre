@@ -1,11 +1,48 @@
 <!-- Supabase > Authentication > Email Templates > Magic Link.
      Subject: Your Dealer Centre sign in link
-     Paste this as the WHOLE body. Delete Supabase's default text above and below it, otherwise the email shows two links. -->
-<div style="font-family: Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #FDFBEF; color: #1A1A17;">
-  <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: #5C5319;">DEALER CENTRE</div>
-  <h1 style="font-size: 22px; font-weight: 700; margin: 14px 0 8px; color: #1A1A17;">Sign in to Dealer Centre</h1>
-  <p style="font-size: 15px; line-height: 22px; color: #6E6A58; margin: 0 0 24px;">Tap the button and you are in. No password to remember. The link works once and expires in an hour.</p>
-  <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: #5C5319; color: #FDFBEF; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 26px; border-radius: 999px;">Sign in</a>
-  <p style="font-size: 12px; line-height: 18px; color: #6E6A58; margin: 24px 0 0;">Button not working? Copy this address into your browser:<br><span style="word-break: break-all; color: #6E6A58;">{{ .ConfirmationURL }}</span></p>
-  <p style="font-size: 12px; line-height: 18px; color: #9A9484; margin: 24px 0 0;">If you did not ask for this, ignore it. Nobody can sign in without this email.<br>Dealer Centre, Norwich</p>
-</div>
+     Paste this as the WHOLE body. The {{ .ConfirmationURL }} tag must stay exactly as written. -->
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Sign in</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&amp;display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background:#F4F0E4;">
+<div style="display:none;max-height:0;overflow:hidden;">The link works once.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F4F0E4" style="background:#F4F0E4;">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+<tr><td bgcolor="#FDFBEF" style="background:#FDFBEF;padding:28px 28px 8px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="44"><img src="https://thedealercentre.co.uk/icon-192.png" width="40" height="40" alt="Dealer Centre" style="display:block;border:0;width:40px;height:40px;"></td>
+<td style="padding-left:10px;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.04em;color:#5C5319;">DEALER CENTRE</td>
+</tr></table>
+<h1 style="margin:22px 0 8px;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:700;color:#1A1A17;">Sign in</h1>
+</td></tr>
+<tr><td bgcolor="#FDFBEF" style="background:#FDFBEF;padding:0 28px 28px;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;color:#6E6A58;">
+<p style="margin:0 0 14px;">Tap the button. The link works once. If you did not ask for this, ignore it.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" bgcolor="#5C5319">
+<!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ .ConfirmationURL }}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="16%" stroke="f" fillcolor="#5C5319">
+<w:anchorlock/>
+<center style="color:#FDFBEF;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;">Sign in</center>
+</v:roundrect>
+<![endif]-->
+<!--[if !mso]><!-->
+<a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#5C5319;color:#FDFBEF;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;line-height:48px;text-align:center;text-decoration:none;padding:0 28px;border-radius:8px;">Sign in</a>
+<!--<![endif]-->
+</td></tr></table>
+</td></tr>
+<tr><td style="padding:16px 8px 0;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6E6A58;">
+Dealer Centre<br>
+<a href="mailto:hello@thedealercentre.co.uk" style="color:#5C5319;text-decoration:underline;">hello@thedealercentre.co.uk</a>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

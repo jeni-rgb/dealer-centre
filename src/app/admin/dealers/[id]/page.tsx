@@ -8,9 +8,10 @@ import { Actions } from "../../actions";
 import { MoveCentre } from "./move";
 import { BuyTokens } from "@/components/buy-tokens";
 import { dealerPlanSentence } from "@/lib/billing/plan-copy";
+import { formatShortDate } from "@/lib/billing/pricing";
 import { reconcileDealerTrial } from "@/lib/billing/dealer-trial";
 
-const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "never");
+const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) : "never");
 
 /** One dealer: plan against usage, centres, connections, statements, and the buttons. */
 export default async function DealerAdmin({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +29,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
     db.from("centres").select("id, name").neq("status", "unclaimed").order("name"),
   ]);
   const tasterOn = !!d.taster_accepted_at && !!d.taster_ends_at && new Date(d.taster_ends_at).getTime() > Date.now();
+  const onFull = d.billing_model === "full" || (d.plan === "pro" && !d.billing_model);
   const legacy = !d.billing_model;
   const over = legacy && d.monthly_sold_limit < 100000 && o.month.count > d.monthly_sold_limit;
   const shop = o.channels.find((c) => c.type === "shopify");
@@ -41,8 +43,8 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
           <Link href="/admin" className="text-[12px] text-ink-muted">‹ All dealers</Link>
           <h1 className="text-[26px] font-semibold">{d.name} <span className="ticket text-[16px] text-ink-muted">{d.code}</span></h1>
           <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">
-            {d.placeholder ? <Pill kind="neutral">Basic, not signed in</Pill> : d.billing_model === "full" || (d.plan === "pro" && !d.billing_model) ? <Pill kind="success">{d.billing_model === "full" ? "Full" : "Paying, current plan"}</Pill> : tasterOn ? <Pill kind="warning">Taster until {new Date(d.taster_ends_at).toLocaleDateString("en-GB")}</Pill> : d.billing_model === "basic" ? <Pill kind="neutral">Basic</Pill> : d.plan === "comp" ? <Pill kind="accent">Free</Pill> : <Pill kind="warning">{d.plan}</Pill>}
-            <span>since {new Date(d.created_at).toLocaleDateString("en-GB")}</span>
+            {d.placeholder ? <Pill kind="neutral">Basic, not signed in</Pill> : onFull ? <Pill kind="success">{d.billing_model === "full" ? "Full" : "Paying, current plan"}</Pill> : tasterOn ? <Pill kind="warning">Taster until {formatShortDate(d.taster_ends_at!)}</Pill> : d.billing_model === "basic" ? <Pill kind="neutral">Basic</Pill> : d.plan === "comp" ? <Pill kind="accent">Free</Pill> : <Pill kind="warning">{d.plan}</Pill>}
+            <span>since {formatShortDate(d.created_at)}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -65,11 +67,11 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
           <dl className="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">
             <dt className="text-ink-muted">Sign ins</dt><dd>{o.users.length ? o.users.map((u) => <span key={u.id} className="block">{u.email}</span>) : <span className="text-ink-muted">none, placeholder dealer</span>}</dd>
             <dt className="text-ink-muted">Plan</dt><dd className="flex flex-wrap items-center gap-2"><span>{dealerPlanSentence(d)}</span>{d.billing_model !== "full" && d.plan !== "pro" && !tasterOn && <Actions endpoint={api} actions={[{ label: "Start 2 week taster", body: { action: "start_taster" }, confirm: "Start 2 weeks of named sales and 25 free labels? Nothing is charged." }]} />}</dd>
-            <dt className="text-ink-muted">Taster</dt><dd>{d.taster_accepted_at ? `Said yes ${new Date(d.taster_accepted_at).toLocaleDateString("en-GB")}.${d.taster_ends_at ? ` Named sales until ${new Date(d.taster_ends_at).toLocaleDateString("en-GB")}.` : ""} The crew can label the 25 free items.` : "Not yet. They have not said yes."}{d.taster_token ? <span className="mt-1 block text-[12px]"><a className="text-accent" href={`/taster?t=${d.taster_token}`}>Open the invite</a></span> : null}</dd>
-            <dt className="text-ink-muted">Labelling</dt><dd>{d.listing_mode === "self" ? "Dealer loads their own stock. Free." : d.listing_mode === "staff" ? `We label the stock. ${d.listing_tokens_bought > 0 ? `${d.listing_tokens} labels left. Further labels are 75p plus VAT.` : "No labels paid yet, so do not photograph stock yet."}` : "Not chosen yet. You can label once they say yes to the taster, or they can load their own stock."}{d.listing_mode === "staff" && <BuyTokens dealerId={id} next={`/admin/dealers/${id}`} />}</dd>
+            {!(onFull && !d.taster_accepted_at) && <><dt className="text-ink-muted">Taster</dt><dd>{d.taster_accepted_at ? `Said yes ${formatShortDate(d.taster_accepted_at)}.${d.taster_ends_at ? ` Named sales until ${formatShortDate(d.taster_ends_at)}.` : ""} 25 free labels.` : "Not yet."}{!onFull && d.taster_token ? <span className="mt-1 block text-[12px]"><a className="text-accent" href={`/taster?t=${d.taster_token}`}>Open the invite</a></span> : null}</dd></>}
+            <dt className="text-ink-muted">Labelling</dt><dd>{d.listing_mode === "self" ? "Dealer loads their own stock. Free." : d.listing_mode === "staff" ? `We label the stock. ${d.listing_tokens_bought > 0 ? `${d.listing_tokens} labels left. Further labels are 75p plus VAT.` : "No labels paid yet."}` : "Not chosen. Label after they say yes, or they load their own stock."}{d.listing_mode === "staff" && <BuyTokens dealerId={id} next={`/admin/dealers/${id}`} />}</dd>
             <dt className="text-ink-muted">Stripe</dt><dd>{d.stripe_subscription_id ?? <span className="text-ink-muted">no subscription</span>}</dd>
-            <dt className="text-ink-muted">Own Shopify</dt><dd>{shop ? `${shop.status} · ${shop.external_account_id} · last event ${when(shop.last_webhook_at)}` : "not connected"}</dd>
-            <dt className="text-ink-muted">Defaults</dt><dd>own Shopify {d.default_own_shopify ? "on" : "off"} · centre shop {d.default_centre_shopify ? "on" : "off"}</dd>
+            <dt className="text-ink-muted">Own Shopify</dt><dd>{shop ? `${shop.status}, ${shop.external_account_id}, last event ${when(shop.last_webhook_at)}` : "not connected"}</dd>
+            <dt className="text-ink-muted">Defaults</dt><dd>Your Shopify {d.default_own_shopify ? "on" : "off"}. Centre shop {d.default_centre_shopify ? "on" : "off"}.</dd>
             <dt className="text-ink-muted">Note</dt><dd className="whitespace-pre-wrap">{d.admin_note ?? <span className="text-ink-muted">none</span>}</dd>
           </dl>
           <div className="mt-4 border-t border-border pt-4">
@@ -86,7 +88,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
         <div className="card p-5">
           <h2 className="mb-3 text-[15px] font-semibold">Centres</h2>
           <div className="divide-y divide-border text-[13px]">
-            {o.centres.map((c) => <div key={c.centre_id} className="flex items-center justify-between py-2"><span><Link href={`/admin/centres/${c.centre_id}`} className="font-medium text-accent">{c.name}</Link> <span className="text-ink-muted">· pitch {c.pitch_numbers?.join(", ") || "?"} · {c.rent_mode === "rent" ? money(c.rent_pence) : "commission only"}</span></span>{c.left_at ? <Pill kind="neutral">left {new Date(c.left_at).toLocaleDateString("en-GB")}</Pill> : c.status === "pending" ? <Pill kind="warning">pending</Pill> : <Pill kind="success">active</Pill>}</div>)}
+            {o.centres.map((c) => <div key={c.centre_id} className="flex items-center justify-between py-2"><span><Link href={`/admin/centres/${c.centre_id}`} className="font-medium text-accent">{c.name}</Link> <span className="text-ink-muted">pitch {c.pitch_numbers?.join(", ") || "none"}, {c.rent_mode === "rent" ? money(c.rent_pence) : "commission only"}</span></span>{c.left_at ? <Pill kind="neutral">left {formatShortDate(c.left_at)}</Pill> : c.status === "pending" ? <Pill kind="warning">pending</Pill> : <Pill kind="success">active</Pill>}</div>)}
             {o.centres.length === 0 && <p className="py-4 text-ink-muted">Not at any centre.</p>}
           </div>
           <div className="mt-4 border-t border-border pt-4">
@@ -97,7 +99,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
         <div className="card overflow-hidden">
           <div className="border-b border-border px-5 py-3"><h2 className="text-[15px] font-semibold">Statements</h2></div>
           <div className="divide-y divide-border text-[13px]">
-            {o.statements.map((s, i) => <div key={i} className="flex items-center justify-between px-5 py-2"><span>{periodLabel(s.period)} <span className="text-ink-muted">· {s.centre}</span></span><span className="flex items-center gap-3"><span className="num">{money(s.net_pence)}</span>{s.paid_at ? <Pill kind="success">paid</Pill> : <Pill kind="warning">{s.status}</Pill>}</span></div>)}
+            {o.statements.map((s, i) => <div key={i} className="flex items-center justify-between px-5 py-2"><span>{periodLabel(s.period)}, {s.centre}</span><span className="flex items-center gap-3"><span className="num">{money(s.net_pence)}</span>{s.paid_at ? <Pill kind="success">paid</Pill> : <Pill kind="warning">{s.status}</Pill>}</span></div>)}
             {o.statements.length === 0 && <p className="px-5 py-6 text-center text-ink-muted">No statements issued yet.</p>}
           </div>
         </div>

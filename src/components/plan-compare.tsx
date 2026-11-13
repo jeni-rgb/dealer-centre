@@ -13,11 +13,7 @@ function split(line: string) {
   return { title: line.slice(0, cut), body: line.slice(cut + 2) };
 }
 
-function Mark({ ok }: { ok: boolean }) {
-  return <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-bold ${ok ? "bg-[#E7F6EC] text-[#1F7A3A]" : "bg-surface-2 text-ink-muted"}`}>{ok ? "✓" : "×"}</span>;
-}
-
-/** Public pricing page: a slim Basic card, a rich Full card, grouped tiles, and a check table. */
+/** Public pricing page: a slim Basic card, a rich Full card, and grouped tiles. */
 export function PlanCompare({ join = false, showHeadline = true, center = false, variant = "lite" }: { join?: boolean; showHeadline?: boolean; center?: boolean; variant?: "marketing" | "lite" }) {
   const tiles = FULL_POINTS.map(split);
   let tileNumber = 0;
@@ -29,7 +25,7 @@ export function PlanCompare({ join = false, showHeadline = true, center = false,
     return (
       <div className="flex flex-col gap-4 text-left">
         {showHeadline && <h2 className={`text-[22px] font-bold leading-tight ${center ? "text-center" : ""}`}>{COMPARE_HEADLINE}</h2>}
-        <div className="grid gap-3 md:grid-cols-[0.8fr_1.2fr]">
+        <div className="grid grid-cols-1 gap-3">
           <section className="rounded-[16px] border border-border bg-white p-4">
             <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">Basic</div>
             <div className="mt-1 text-[22px] font-bold">Free</div>
@@ -94,21 +90,6 @@ export function PlanCompare({ join = false, showHeadline = true, center = false,
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[22px] border border-border bg-white">
-        <div className="grid grid-cols-[1fr_72px_72px] border-b border-border px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-ink-muted md:grid-cols-[1fr_120px_120px] md:px-6">
-          <span />
-          <span className="text-center">Basic</span>
-          <span className="text-center text-accent">Full</span>
-        </div>
-        {tiles.map((t) => (
-          <div key={t.title} className="grid grid-cols-[1fr_72px_72px] items-center border-b border-border px-4 py-3 last:border-0 md:grid-cols-[1fr_120px_120px] md:px-6">
-            <span className="pr-3 text-[14px] font-medium md:text-[15px]">{t.title}</span>
-            <span className="flex justify-center"><Mark ok={false} /></span>
-            <span className="flex justify-center"><Mark ok /></span>
-          </div>
-        ))}
-      </div>
-
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-[22px] bg-surface-2 p-6">
           <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">Jody before</div>
@@ -118,9 +99,9 @@ export function PlanCompare({ join = false, showHeadline = true, center = false,
         <div className="rounded-[22px] border border-accent bg-white p-6">
           <div className="text-[12px] font-semibold uppercase tracking-wide text-accent">Jody with Full</div>
           <div className="mt-3 rounded-[16px] bg-accent px-4 py-4 text-cream">
-            <div className="text-[12px] text-[#E6E0BD]">This morning · Looses Emporium</div>
+            <div className="text-[12px] text-[#E6E0BD]">This morning at Looses Emporium</div>
             <div className="mt-1 flex items-baseline justify-between gap-3"><span className="text-[16px] font-semibold">Oak coffer</span><span className="figure text-[22px]">£395</span></div>
-            <div className="mt-2 text-[12px] text-[#E6E0BD]">This week £640 · last week £410 · goal £500</div>
+            <div className="mt-2 text-[12px] text-[#E6E0BD]">This week £640. Last week £410. Goal £500.</div>
           </div>
         </div>
       </div>

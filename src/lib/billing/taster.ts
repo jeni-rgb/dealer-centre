@@ -1,9 +1,10 @@
 import { randomBytes } from "crypto";
-import { Resend } from "resend";
 import type { Admin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
 import { pushToDealer } from "@/lib/push/send";
-import { LABEL_PENCE, TASTER_DAYS, TASTER_FREE_LABELS, tasterEndedLetter, tasterEndedPush, tasterInviteLetter } from "@/lib/billing/pricing";
+import { LABEL_PENCE, TASTER_DAYS, TASTER_FREE_LABELS, tasterEndedPush } from "@/lib/billing/pricing";
+import { sendBranded } from "@/lib/email/send";
+import { tasterEndedLetter, tasterInviteLetter } from "@/lib/email/letters";
 
 export { LABEL_PENCE, TASTER_DAYS, TASTER_FREE_LABELS };
 
@@ -17,15 +18,10 @@ export function tasterLink(token: string): string {
   return `${env.appUrl()}/taster?t=${token}`;
 }
 
-async function sendLetter(to: string[], letter: { subject: string; text: string }): Promise<"sent" | "skipped" | "failed"> {
-  if (process.env.DEMO_MODE === "1" || !process.env.RESEND_API_KEY || to.length === 0) return "skipped";
-  try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const { error } = await resend.emails.send({ from: env.emailFrom(), to, subject: letter.subject, text: letter.text });
-    return error ? "failed" : "sent";
-  } catch {
-    return "failed";
-  }
+async function centreName(db: Admin, dealerId: string): Promise<string> {
+  const { data } = await db.from("dealer_centres").select("centres(name)").eq("dealer_id", dealerId).is("left_at", null).limit(1);
+  const row = data?.[0] as { centres?: { name?: string } | null } | undefined;
+  return row?.centres?.name || "your centre";
 }
 
 /** Create the invite token. Email it when we have an address. Always return the link so staff can text or print it. */
@@ -38,7 +34,8 @@ export async function inviteBasicDealer(db: Admin, dealerId: string, name: strin
     taster_token: token,
     taster_invite_sent_at: email ? now : null,
   }).eq("id", dealerId);
-  const emailed = email ? await sendLetter([email], tasterInviteLetter(name, link)) : "skipped";
+  const centre = await centreName(db, dealerId);
+  const emailed = email ? await sendBranded([email], tasterInviteLetter(name, link, centre)) : "skipped";
   return { link, emailed };
 }
 
@@ -98,7 +95,8 @@ export async function notifyEndedTasters(db: Admin): Promise<{ notified: number 
     await db.from("dealers").update({ billing_model: "basic", taster_ended_notified_at: now }).eq("id", d.id);
     const { data: users } = await db.from("users").select("email").eq("dealer_id", d.id);
     const emails = [...new Set([...(users ?? []).map((u) => u.email), d.contact_email].filter((e): e is string => !!e))];
-    await sendLetter(emails, tasterEndedLetter(d.name, joinUrl));
+    const centre = await centreName(db, d.id);
+    await sendBranded(emails, tasterEndedLetter(d.name, joinUrl, centre));
     const push = tasterEndedPush();
     await pushToDealer(db, d.id, { title: push.title, body: push.body, url: "/signup?as=dealer", tag: `taster-end-${d.id}` }).catch(() => undefined);
     notified++;

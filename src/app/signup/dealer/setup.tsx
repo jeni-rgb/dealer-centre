@@ -1,7 +1,6 @@
 "use client";
 import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER } from "@/lib/labels/models";
 import { labelPriceLabel } from "@/lib/billing/pricing";
-import { PlanCompare } from "@/components/plan-compare";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,7 +41,7 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
           <StepHeader {...hp} title="You are set" sub="Anything skipped stays in Settings until it is done." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
-              <Row label="Business" ok={!!dealer} value={dealer ? `${dealer.name} · ${dealer.code}` : "Not done"} />
+              <Row label="Business" ok={!!dealer} value={dealer ? `${dealer.name}, ${dealer.code}` : "Not done"} />
               <Row label="Full plan" ok={!!dealer?.card_added_at || dealer?.plan === "pro"} value={dealer?.card_added_at || dealer?.plan === "pro" ? "£25 a month plus VAT" : "Not started"} />
               {staff && <Row label="Listing tokens" ok={(dealer?.listing_tokens_bought ?? 0) > 0} value={(dealer?.listing_tokens_bought ?? 0) > 0 ? `${dealer?.listing_tokens ?? 0} left` : "Not paid"} />}
               <Row label="Centre" ok={centres.length > 0} value={centres[0] ? `${centres[0].name}${centres[0].status === "active" ? "" : ", awaiting approval"}` : "None yet"} />
@@ -72,12 +71,12 @@ function WhoLists({ hp, initial, onDone }: { hp: HP; initial: ListMode | null; o
     onDone(pick);
   }
   const choices: { id: ListMode; title: string; sub: string }[] = [
-    { id: "staff", title: "Please label my stock", sub: "75p an item plus VAT. We photograph, write and label each piece." },
-    { id: "self", title: "I will load my own stock", sub: "Free. You photograph and label, or use the labels you already have." },
+    { id: "staff", title: "Label my stock", sub: "75p an item plus VAT." },
+    { id: "self", title: "I load my own stock", sub: "Free." },
   ];
   return (
     <>
-      <StepHeader {...hp} title="Who lists your stock?" sub="You can use the app either way, including marking something sold. This only decides who puts the items on." />
+      <StepHeader {...hp} title="Who lists your stock?" sub="Who puts the items on." />
       <div className="flex flex-col gap-3 px-5 pt-6">
         {choices.map((c) => (
           <button key={c.id} type="button" aria-pressed={pick === c.id} onClick={() => setPick(c.id)} className={`rounded-[16px] border p-4 text-left ${pick === c.id ? "border-2 border-gold bg-gold-soft" : "border-border bg-white"}`}>
@@ -95,15 +94,12 @@ function WhoLists({ hp, initial, onDone }: { hp: HP; initial: ListMode | null; o
 function CardPlan({ hp, staff }: { hp: HP; staff: boolean }) {
   return (
     <>
-      <StepHeader {...hp} title="Full, £25 a month" sub="Named sales at every centre, on one bill. Direct Debit. Plus VAT." />
+      <StepHeader {...hp} title="Full" sub="£25 a month plus VAT. Direct Debit. One bill." />
       <div className="flex flex-col gap-3 px-5 pt-6">
         <div className="card px-4 py-4 text-[15px] leading-6">
-          <p className="font-semibold">£25 a month plus VAT</p>
-          <p className="mt-2 text-ink-muted">You see every sale: the name, the price, the date and the centre. Unlimited sales. Cancel any month from Account.</p>
-          {staff && <p className="mt-2 text-ink-muted">Labelling is separate, 75p an item plus VAT, on the next step.</p>}
+          <p className="font-semibold">Named sales at every centre.</p>
+          {staff && <p className="mt-2 text-ink-muted">Labels are 75p an item plus VAT, next.</p>}
         </div>
-        <PlanCompare showHeadline={false} />
-        <p className="text-[12px] text-ink-muted">Taken by Direct Debit where your bank allows it, otherwise by card. Stripe runs the payment. There is no free trial on Full.</p>
         <a className="btn" href="/api/billing/checkout">Start Full</a>
       </div>
     </>
@@ -117,15 +113,15 @@ function HowMany({ hp }: { hp: HP }) {
   const href = ok ? `/api/billing/tokens?qty=${n}&next=${encodeURIComponent("/signup/dealer?step=centre")}` : "#";
   return (
     <>
-      <StepHeader {...hp} title="How many items?" sub="75p an item plus VAT. We photograph, write and label them after this is paid. You can buy more later." />
+      <StepHeader {...hp} title="How many items?" sub="75p an item plus VAT." />
       <div className="flex flex-col gap-3 px-5 pt-6">
-        <label className="text-[14px] font-medium" htmlFor="qty">How many items should we list?</label>
+        <label className="text-[14px] font-medium" htmlFor="qty">How many</label>
         <div className="card px-4 py-6"><input id="qty" inputMode="numeric" className="w-full bg-transparent text-center text-[44px] font-semibold outline-none" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, ""))} /></div>
         <div className="card px-4 py-3 text-[14px]">
           <div className="flex items-center justify-between"><span>{ok ? n : 0} labels</span><span className="font-semibold">{ok ? labelPriceLabel(n) : "£0.00 plus VAT"}</span></div>
           <div className="mt-1 text-[12px] text-ink-muted">75p each plus VAT</div>
         </div>
-        <p className="text-[13px] text-ink-muted">You can use the full app while we list, including marking something sold.</p>
+        <p className="text-[13px] text-ink-muted">Full stays on while we label.</p>
         <a className={`btn ${ok ? "" : "pointer-events-none opacity-50"}`} href={href}>{ok ? `Pay ${labelPriceLabel(n)}` : "Enter how many items"}</a>
       </div>
     </>

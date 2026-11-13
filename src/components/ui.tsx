@@ -11,7 +11,7 @@ export const when = (iso: string) => {
   if (days <= 0) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days} days ago`;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Europe/London" });
 };
 
 export function Sku({ sku, className = "", tag = false }: { sku: string; className?: string; tag?: boolean }) {

@@ -6,7 +6,8 @@ import {
   heldTrialEnd,
   shouldHoldStripeTrial,
 } from "@/lib/billing/plan-copy";
-import { BASIC_LINE, COMPARE_HEADLINE, FULL_POINTS, fullComparisonText, labelPriceLabel, namedSales, tasterEndedLetter, tasterInviteLetter } from "@/lib/billing/pricing";
+import { BASIC_LINE, COMPARE_HEADLINE, FULL_POINTS, fullComparisonText, labelPriceLabel, namedSales } from "@/lib/billing/pricing";
+import { saleLetter, statementLetter, tasterEndedLetter, tasterInviteLetter, welcomeLetter } from "@/lib/email/letters";
 
 const DAY = 86400;
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—]/);
@@ -24,13 +25,22 @@ describe("dealer pricing", () => {
     expect(labelPriceLabel(1)).toBe("£0.75 plus VAT");
     expect(labelPriceLabel(25)).toBe("£18.75 plus VAT");
     noDash(labelPriceLabel(4));
-    const invite = tasterInviteLetter("Bloom Antiques", "https://example.com/taster?t=abc");
-    const ended = tasterEndedLetter("Bloom Antiques", "https://example.com/signup");
+    const invite = tasterInviteLetter("Bloom Antiques", "https://example.com/taster?t=abc", "Looses Emporium");
+    const ended = tasterEndedLetter("Bloom Antiques", "https://example.com/signup", "Looses Emporium");
     noDash(invite.subject); noDash(invite.text); noDash(ended.subject); noDash(ended.text);
     noDash(COMPARE_HEADLINE); noDash(BASIC_LINE); noDash(fullComparisonText());
     for (const line of FULL_POINTS) noDash(line);
-    expect(invite.text).toContain(COMPARE_HEADLINE);
-    expect(ended.text).toContain("Weekly targets");
+    expect(invite.text).toContain("https://example.com/#pricing");
+    expect(ended.text).toContain("https://example.com/#pricing");
+    expect(invite.text).not.toContain("1. Every centre");
+    expect(invite.html).toContain("25 free labels");
+    expect(invite.html).toContain("Start my 2 weeks");
+    expect(invite.html).toContain('role="presentation"');
+    expect(invite.html).not.toContain("·");
+    expect(ended.html).toContain("Join Full");
+    expect(saleLetter({ title: "Oak coffer", amount: "£395", ticket: "B14 0362", place: "at Looses Emporium", when: "14:05", href: "https://example.com/app" }).html).toContain("Oak coffer");
+    expect(statementLetter({ dealerName: "Bloom", centreName: "Looses Emporium", period: "November 2026", net: "£640", sales: 4, href: "https://example.com/app/statements" }).subject).toContain("November 2026");
+    expect(welcomeLetter({ dealerName: "Bloom Antiques", addedBy: "jeni@example.com", href: "https://example.com/signin" }).html).toContain("Sign in");
     expect(invite.text).toContain("25");
     expect(ended.text).toContain("£25");
     expect(namedSales({ plan: "trial", billing_model: "basic" })).toBe(false);

@@ -3,12 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { Pill, money } from "@/components/ui";
 import { canonicalTicket, displaySku } from "@/lib/sku";
 import { guessColumns, mapBringRows, parseCsv } from "@/lib/full/sumup";
+import { londonDate } from "@/lib/full/weeks";
+import { UkDate } from "@/components/uk-date";
 
 type Line = { key: string; ticket: string; title: string | null; dealer: string | null; amount: string; payment: "CASH" | "CARD"; status: "ok" | "unknown" | "sold" | "looking" };
 
 export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: { centreId: string; centreName: string; onRecorded?: () => void; clearToken?: number }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = londonDate(new Date()).ymd;
   const [date, setDate] = useState(today);
+  const [fileMsg, setFileMsg] = useState<string | null>(null);
   const [ticket, setTicket] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [busy, setBusy] = useState(false);
@@ -24,7 +27,8 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
   async function fromFile(file: File) {
     const table = parseCsv(await file.text());
     const cols = table[0] ? guessColumns(table[0]) : null;
-    if (!cols) return;
+    if (!cols) { setFileMsg("Could not read that file."); return; }
+    setFileMsg(null);
     for (const row of mapBringRows(table, cols).rows) {
       const sku = canonicalTicket(row.ticket);
       if (lines.some((l) => l.ticket === sku)) continue;
@@ -78,24 +82,25 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between"><h1 className="text-[24px] font-semibold">End of day</h1><span className="text-[13px] text-ink-muted">{centreName}</span></div>
-      <p className="mb-4 text-[14px] text-ink-muted">Gather the tickets the till kept today. Add each one here, mark cash or card, press Record. Every dealer gets told their item sold.</p>
+      <p className="mb-4 text-[14px] text-ink-muted">Scan each ticket. Card or cash. Then Record.</p>
 
       {done && (
         <div className="mb-4 rounded-[14px] border border-[#A7F3D0] bg-success-soft px-4 py-3 text-[14px] text-success">
-          Recorded {done.matched} sale{done.matched === 1 ? "" : "s"}.{done.dealerOnly ? ` ${done.dealerOnly} matched a dealer but not an item.` : ""}{done.unmatched ? ` ${done.unmatched} could not be matched, check the admin health page.` : ""} Dealers have been notified.
-          <button className="ml-2 underline" onClick={() => setDone(null)}>Start another batch</button>
+          Recorded {done.matched} sale{done.matched === 1 ? "" : "s"}.{done.dealerOnly ? ` ${done.dealerOnly} matched a dealer, not an item.` : ""}{done.unmatched ? ` ${done.unmatched} unmatched.` : ""}
+          <button className="ml-2 underline" onClick={() => setDone(null)}>Another batch</button>
         </div>
       )}
 
       <div className="card mb-4 p-4">
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); add(ticket); }}>
-          <input ref={input} className="field ticket flex-1 uppercase !text-[18px]" placeholder="Scan or type ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} enterKeyHint="done" autoCapitalize="characters" autoCorrect="off" />
+          <input ref={input} className="field ticket flex-1 uppercase !text-[18px]" placeholder="Ticket number" aria-label="Ticket number" value={ticket} onChange={(e) => setTicket(e.target.value)} enterKeyHint="done" autoCapitalize="characters" autoCorrect="off" />
           <button type="submit" className="btn-dark !h-12">Add</button>
+          <label className="btn-secondary !h-12 cursor-pointer whitespace-nowrap !px-4">SumUp file<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) fromFile(f); }} /></label>
         </form>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-muted">
-          <label className="flex items-center gap-2 whitespace-nowrap">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
-          <span className="basis-full">Type the number off each ticket and press Enter, or scan it. For a paper book or SumUp, upload the file. Price and dealer fill in by themselves.</span>
-          <label className="btn-sm-secondary cursor-pointer">Upload a SumUp file<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) fromFile(f); }} /></label>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-ink-muted">
+          <span className="whitespace-nowrap">Sold on</span>
+          <UkDate value={date} max={today} onChange={setDate} />
+          {fileMsg && <span className="text-danger">{fileMsg}</span>}
         </div>
       </div>
 
@@ -105,7 +110,7 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="ticket text-[18px]">{displaySku(l.ticket)}</div>
-                <div className="truncate text-[13px] text-ink-muted">{l.status === "looking" ? "Looking up…" : l.status === "unknown" ? "Not in the app. Will be recorded against the ticket number only." : l.status === "sold" ? "Already recorded as sold" : `${l.title} · ${l.dealer}`}</div>
+                <div className="truncate text-[13px] text-ink-muted">{l.status === "looking" ? "Looking up" : l.status === "unknown" ? "Not in the app. Ticket number only." : l.status === "sold" ? "Already sold" : [l.title, l.dealer].filter(Boolean).join(", ")}</div>
               </div>
               <div className="flex items-center gap-2">
                 {l.status === "unknown" && <Pill kind="warning">Unknown</Pill>}
@@ -132,7 +137,7 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
             <div><div className="num text-[18px] font-semibold">{money(total)}</div><div className="text-[11px] text-header-muted">Total</div></div>
             <div><div className="num text-[18px] font-semibold">{money(cash)}</div><div className="text-[11px] text-header-muted">Cash</div></div>
           </div>
-          <button className="btn" disabled={busy || lines.some((l) => l.status === "looking")} onClick={submit}>{busy ? "Recording, a few seconds…" : `Record ${lines.filter((l) => l.status !== "sold").length} sale${lines.length === 1 ? "" : "s"}`}</button>
+          <button className="btn" disabled={busy || lines.some((l) => l.status === "looking")} onClick={submit}>{busy ? "Recording" : `Record ${lines.filter((l) => l.status !== "sold").length}`}</button>
         </div>
       )}
     </div>

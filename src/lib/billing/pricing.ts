@@ -96,41 +96,9 @@ export function dealerPlanSentence(d: BillingDealer): string {
   return `${d.plan}. ${band}.`;
 }
 
-export function tasterInviteLetter(name: string, link: string): { subject: string; text: string } {
-  return {
-    subject: "Your sales at the centre, and 2 free weeks",
-    text: `Hello ${name},
-
-Your centre uses Dealer Centre, so you already have a free Basic account. Say yes and you get 2 weeks of named sales, and we label your first 25 items for free. Nothing is charged. After that you go back to Basic unless you join Full.
-
-${link}
-
-${fullComparisonText()}
-
-Dealer Centre`,
-  };
-}
-
-export function tasterEndedLetter(name: string, joinUrl: string): { subject: string; text: string } {
-  return {
-    subject: "Your 2 weeks of named sales have ended",
-    text: `Hello ${name},
-
-Your 2 weeks of named sales have ended. You are back on Basic. If you do nothing, you stay there and nothing is charged.
-
-Join Full by Direct Debit:
-
-${joinUrl}
-
-${fullComparisonText()}
-
-Dealer Centre`,
-  };
-}
-
 export function tasterEndedPush(): { title: string; body: string } {
   return {
     title: "Your 2 weeks have ended",
-    body: "You are back on Basic. Join Full for £25 a month plus VAT by Direct Debit to keep named sales.",
+    body: "Back on Basic. Join Full, £25 a month plus VAT, by Direct Debit.",
   };
 }

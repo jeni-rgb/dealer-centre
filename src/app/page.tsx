@@ -241,7 +241,7 @@ export default function Landing() {
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <PlanCompare join center variant="marketing" />
-          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Basic needs no sign up: your centre adds you. Say yes to the invite for 2 weeks of named sales and 25 free labels, then you go back to Basic unless you join Full. We label at 75p an item plus VAT, or you load your own stock free. Centres get £2.50 off their monthly fee for each dealer on Full. All prices plus VAT.</p>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Labels are 75p an item plus VAT. Say yes for 2 weeks of Full and 25 labels free. Centres take £2.50 off each month for each dealer on Full.</p>
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
@@ -254,7 +254,7 @@ export default function Landing() {
                 <div className="rounded-[12px] bg-white/10 p-4">
                   <div className="text-[14px] font-semibold">Own till plan</div>
                   <div className="mt-1 flex items-baseline gap-1"><span className="figure text-[36px]">£249</span><span className="text-[13px] text-[#C9DCCF]">/month + VAT</span></div>
-                  <div className="mt-2 text-[13px] text-[#DCE8DD]">Already have a POS. Square connects directly; any other till works beside our till screen. Monthly, 14 days free, cancel any time.</div>
+                  <div className="mt-2 text-[13px] text-[#DCE8DD]">Already have a POS. Square connects directly. Any other till works beside our till screen. Monthly, 14 days free.</div>
                 </div>
               </div>
               <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both plans: unlimited dealers, statements and payouts worked out, and your own online shop built and run for you, no set up fee, 20% commission on what sells (15% Dealer Centre, 5% to your centre). £2.50 plus VAT off the monthly fee for each dealer on Full.</p>

@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessColumns, mapBringRows, parseCsv } from "@/lib/full/sumup";
+import { londonDate } from "@/lib/full/weeks";
+import { UkDate } from "@/components/uk-date";
 
 type Centre = { id: string; name: string };
 
@@ -12,7 +14,7 @@ export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centr
   const [ticket, setTicket] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
-  useEffect(() => { setDate(new Date().toISOString().slice(0, 10)); }, []);
+  useEffect(() => { setDate(londonDate(new Date()).ymd); }, []);
   const [preview, setPreview] = useState<{ ticket: string; amountPence: number; soldAt: string; payment: "CASH" | "CARD" }[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,7 +35,7 @@ export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centr
     file.text().then((text) => {
       const table = parseCsv(text);
       const cols = table[0] ? guessColumns(table[0]) : null;
-      if (!cols) return setMsg("Could not read that file. Use columns for the date, the amount and the ticket.");
+      if (!cols) return setMsg("Could not read that file. Need a date, an amount and a ticket.");
       const mapped = mapBringRows(table, cols);
       setPreview(mapped.rows);
       setMsg(mapped.skipped ? `${mapped.rows.length} ready. ${mapped.skipped} skipped.` : `${mapped.rows.length} ready.`);
@@ -57,7 +59,6 @@ export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centr
     <div className="flex flex-col gap-4">
       <section className="card flex flex-col gap-3 p-4">
         <h2 className="text-[16px] font-semibold">Weekly goal</h2>
-        <p className="text-[13px] text-ink-muted">This week against last week shows on Today. Set what you want to take.</p>
         <div className="flex gap-2">
           <div className="flex h-12 flex-1 items-center gap-1 rounded-[12px] border border-border px-3"><span className="text-ink-muted">£</span><input className="num min-w-0 flex-1 border-0 text-[18px] font-semibold outline-none" inputMode="decimal" value={goal} onChange={(e) => setGoal(e.target.value)} /></div>
           <button className="btn-dark !h-12 !w-auto !px-4" disabled={busy} onClick={() => save({ weekly_goal_pounds: Number(goal || 0) })}>Save</button>
@@ -66,16 +67,15 @@ export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centr
 
       <section className="card flex flex-col gap-3 p-4">
         <h2 className="text-[16px] font-semibold">Paper book or SumUp</h2>
-        <p className="text-[13px] text-ink-muted">For a centre that is not on our till. Type a ticket, or upload the SumUp file. Only your own tickets are recorded.</p>
         <select className="field" value={centre} onChange={(e) => setCentre(e.target.value)}>{centres.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <div className="grid grid-cols-2 gap-2">
-          <input className="field ticket uppercase" placeholder="Ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} />
-          <input className="field" inputMode="decimal" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        </div>
-        <input type="date" className="field" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} />
-        <button className="btn-outline" disabled={busy || !ticket || !amount} onClick={() => record([{ ticket, amountPence: Math.round(Number(amount) * 100), soldAt: `${date}T12:00:00.000Z`, payment: "CASH" }])}>Record this sale</button>
-        <label className="btn-secondary cursor-pointer">Upload a SumUp file<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} /></label>
-        {preview.length > 0 && <button className="btn" disabled={busy} onClick={() => record(preview)}>Record {preview.length} from the file</button>}
+        <label className="text-[13px] font-medium" htmlFor="desk-ticket">Ticket number</label>
+        <input id="desk-ticket" className="field ticket" placeholder="B14 0001" value={ticket} onChange={(e) => setTicket(e.target.value)} />
+        <label className="text-[13px] font-medium" htmlFor="desk-paid">What they paid</label>
+        <input id="desk-paid" className="field" inputMode="decimal" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <UkDate value={date} max={londonDate(new Date()).ymd} onChange={setDate} />
+        <button className="btn-outline" disabled={busy || !ticket || !amount || !date} onClick={() => record([{ ticket, amountPence: Math.round(Number(amount) * 100), soldAt: `${date}T12:00:00.000Z`, payment: "CASH" }])}>Record sale</button>
+        <label className="btn-secondary cursor-pointer">SumUp file<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }} /></label>
+        {preview.length > 0 && <button className="btn" disabled={busy} onClick={() => record(preview)}>Record {preview.length}</button>}
       </section>
 
       <section className="card flex flex-col gap-3 p-4">
@@ -84,11 +84,10 @@ export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centr
           <a className="btn-sm" href="/api/app/export?kind=sales">Download sales</a>
           <a className="btn-sm-secondary" href="/api/app/export?kind=stock">Download stock</a>
         </div>
-        <p className="text-[13px] text-ink-muted">A private link, read only, for ChatGPT or a spreadsheet. You can stop it any time.</p>
-        {token ? <p className="break-all text-[12px]">/api/feed/{token}?format=json</p> : <p className="text-[13px] text-ink-muted">No link yet.</p>}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {token && <button className="btn-sm" disabled={busy} onClick={() => { const url = `${window.location.origin}/api/feed/${token}?format=json`; navigator.clipboard.writeText(url).then(() => setMsg("Copied.")).catch(() => setMsg("Could not copy")); }}>Copy link</button>}
           <button className="btn-sm" disabled={busy} onClick={() => save({ export_token: "new" })}>New link</button>
-          {token && <button className="btn-sm-secondary" disabled={busy} onClick={() => save({ export_token: "stop" })}>Stop this link</button>}
+          {token && <button className="btn-sm-secondary" disabled={busy} onClick={() => save({ export_token: "stop" })}>Stop link</button>}
         </div>
       </section>
       {msg && <p className="text-[13px]">{msg}</p>}
