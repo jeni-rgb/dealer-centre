@@ -20,7 +20,7 @@ export default async function CentreSumup({ searchParams }: { searchParams: Prom
     <div className="flex max-w-xl flex-col gap-4">
       <h1 className="text-[24px] font-semibold">SumUp</h1>
       {conn ? <p className="text-[14px]">Connected.</p> : <a className="btn !w-auto" href={`/api/oauth/sumup?owner=centre&id=${centre.id}`}>Connect SumUp</a>}
-      <p className="text-[13px] text-ink-muted">Card sales come in each hour. A SumUp file upload of the same ticket and amount on the same day is not recorded twice.</p>
+      <p className="text-[13px] text-ink-muted">Card sales come in each morning. A SumUp file upload of the same ticket and amount on the same day is not recorded twice.</p>
       <SumupQueue rows={(rows ?? []).map((r) => ({ id: r.id, amount: money(r.amount_pence), when: r.paid_at ? ukDate(r.paid_at) : "", description: r.description ?? "" }))} />
     </div>
   );

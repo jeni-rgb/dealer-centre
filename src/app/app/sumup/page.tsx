@@ -17,7 +17,7 @@ export default async function DealerSumup() {
     : { data: [] };
   return (
     <Screen title="SumUp" back={{ href: "/app/settings" }}>
-      {conn ? <p className="text-[14px]">Connected. New card sales arrive each hour.</p> : <a className="btn" href="/api/oauth/sumup?owner=dealer">Connect SumUp</a>}
+      {conn ? <p className="text-[14px]">Connected. New card sales arrive each morning.</p> : <a className="btn" href="/api/oauth/sumup?owner=dealer">Connect SumUp</a>}
       <SumupQueue rows={(rows ?? []).map((r) => ({ id: r.id, amount: money(r.amount_pence), when: r.paid_at ? ukDate(r.paid_at) : "", description: r.description ?? "" }))} />
       <DealerNav active="settings" />
     </Screen>
