@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pill, money } from "@/components/ui";
 import { canonicalTicket, displaySku } from "@/lib/sku";
+import { guessColumns, mapBringRows, parseCsv } from "@/lib/full/sumup";
 
 type Line = { key: string; ticket: string; title: string | null; dealer: string | null; amount: string; payment: "CASH" | "CARD"; status: "ok" | "unknown" | "sold" | "looking" };
 
@@ -19,6 +20,22 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
   useEffect(() => { if (clearToken > 0) setDone(null); }, [clearToken]);
   // Wake the lookup function so the first scan of the day is not a cold start
   useEffect(() => { fetch(`/api/centres/${centreId}/sales?ticket=WARMUP`, { cache: "no-store" }).catch(() => {}); }, [centreId]);
+
+  async function fromFile(file: File) {
+    const table = parseCsv(await file.text());
+    const cols = table[0] ? guessColumns(table[0]) : null;
+    if (!cols) return;
+    for (const row of mapBringRows(table, cols).rows) {
+      const sku = canonicalTicket(row.ticket);
+      if (lines.some((l) => l.ticket === sku)) continue;
+      const key = crypto.randomUUID();
+      setLines((ls) => [{ key, ticket: sku, title: null, dealer: null, amount: (row.amountPence / 100).toString(), payment: row.payment, status: "looking" }, ...ls]);
+      let j: { item?: unknown } = {};
+      try { const r = await fetch(`/api/centres/${centreId}/sales?ticket=${encodeURIComponent(sku)}`, { cache: "no-store" }); j = await r.json(); } catch { j = {}; }
+      const item = (j.item ?? null) as { sku: string; title: string; status: string; dealer: { name: string; code: string } | null } | null;
+      setLines((ls) => ls.map((l) => l.key !== key ? l : { ...l, ticket: item?.sku ?? sku, title: item?.title ?? null, dealer: item?.dealer ? `${item.dealer.code} ${item.dealer.name}` : null, status: !item ? "unknown" : item.status === "sold" ? "sold" : "ok" }));
+    }
+  }
 
   async function add(raw: string) {
     const sku = canonicalTicket(raw);
@@ -77,7 +94,8 @@ export function EndOfDay({ centreId, centreName, onRecorded, clearToken = 0 }: {
         </form>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-muted">
           <label className="flex items-center gap-2 whitespace-nowrap">Sold on<input type="date" className="field !h-9 !w-40 !text-[13px]" value={date} max={today} onChange={(e) => setDate(e.target.value)} /></label>
-          <span className="basis-full">Type the number off each ticket and press Enter, or scan it with a Bluetooth scanner. Price and dealer fill in by themselves. If the dealer gave a discount, change the price to what was actually paid.</span>
+          <span className="basis-full">Type the number off each ticket and press Enter, or scan it. For a paper book or SumUp, upload the file. Price and dealer fill in by themselves.</span>
+          <label className="btn-sm-secondary cursor-pointer">Upload a SumUp file<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) fromFile(f); }} /></label>
         </div>
       </div>
 

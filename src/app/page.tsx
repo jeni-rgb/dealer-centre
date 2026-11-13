@@ -240,7 +240,7 @@ export default function Landing() {
       {/* Pricing */}
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <PlanCompare join center />
+          <PlanCompare join center variant="marketing" />
           <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Basic needs no sign up: your centre adds you. Say yes to the invite for 2 weeks of named sales and 25 free labels, then you go back to Basic unless you join Full. We label at 75p an item plus VAT, or you load your own stock free. Centres get £2.50 off their monthly fee for each dealer on Full. All prices plus VAT.</p>
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>

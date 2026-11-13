@@ -45,7 +45,7 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.user_admin, email: "jeni@thedealercentre.com", role: "platform_admin", is_platform_admin: true, dealer_id: null },
   ],
   dealers: [
-    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "trial", trial_ends_at: null, stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, billing_model: "basic", taster_token: "demo", taster_accepted_at: null, taster_ends_at: null, taster_invite_sent_at: null, taster_ended_notified_at: null, contact_email: "sam@bloomantiques.co.uk", default_own_shopify: true, default_centre_shopify: false, created_at: d(4) },
+    { id: IDS.dealer, name: "Bloom Antiques", code: "B14", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo", placeholder: false, item_limit: 250, monthly_sold_limit: 100000, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: d(4), billing_model: "full", weekly_goal_pence: 50000, export_token: "demodemoexporttoken01", taster_token: "demo", taster_accepted_at: null, taster_ends_at: null, taster_invite_sent_at: null, taster_ended_notified_at: null, contact_email: "sam@bloomantiques.co.uk", default_own_shopify: true, default_centre_shopify: false, created_at: d(4) },
     { id: IDS.dealer2, name: "J Harrison", code: "JH", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo2", item_limit: 100, placeholder: false, monthly_sold_limit: 50, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, created_at: d(40) },
     { id: IDS.dealer3, name: "Marsh Vintage", code: "MV", plan: "pro", trial_ends_at: null, stripe_customer_id: "cus_demo3", item_limit: 50, placeholder: false, monthly_sold_limit: 25, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, created_at: d(55) },
   ],
@@ -54,7 +54,7 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
-    { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
+    { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", floor_target: 10, joined_at: d(4), left_at: null },
     { id: "dc2", dealer_id: IDS.dealer2, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["3"], rent_pence: 13000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "centre", joined_at: d(40), left_at: null },
     { id: "dc3", dealer_id: IDS.dealer3, centre_id: IDS.centre, status: "pending", square_category_id: null, pitch_numbers: [], rent_pence: 9000, rent_mode: "rent", rent_schedule: "weekly_friday", rent_set_by: "dealer", joined_at: null, left_at: null },
   ],

@@ -4,6 +4,8 @@ import { NotificationsCard } from "@/components/notifications";
 import { dealerWithListing } from "@/lib/billing/tokens";
 import { namedSales } from "@/lib/billing/pricing";
 import { PlanCompare } from "@/components/plan-compare";
+import { pitchShort } from "@/lib/full/insights";
+import { sumBetween, weekRange } from "@/lib/full/weeks";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
@@ -12,14 +14,21 @@ import { displaySku } from "@/lib/sku";
 export default async function Today() {
   const me = await requireDealer();
   const sb = await supabaseServer();
-  const [{ data: summary }, { data: recent }, dealer, { data: centres }, { data: toPrint }, { data: old }] = await Promise.all([
+  const weeks = weekRange();
+  const goalSelect = await dealerWithListing(sb, me.dealer_id, "name, code, plan, trial_ends_at, monthly_sold_limit");
+  const goalRow = await sb.from("dealers").select("weekly_goal_pence").eq("id", me.dealer_id).maybeSingle();
+  const linksTry = await sb.from("dealer_centres").select("status, floor_target, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null);
+  const links = linksTry.error ? await sb.from("dealer_centres").select("status, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null) : linksTry;
+  const [{ data: summary }, { data: recent }, { data: weekSales }, { data: liveItems }, { data: toPrint }, { data: old }] = await Promise.all([
     sb.rpc("dealer_summary", { p_dealer_id: me.dealer_id }),
-    sb.from("sales").select("id, amount_pence, sold_at, ticket_no, item_id, items(title, photos), channels:channel_id(type, owner_type)").eq("dealer_id", me.dealer_id).is("voided_at", null).order("sold_at", { ascending: false }).limit(3),
-    dealerWithListing(sb, me.dealer_id, "name, code, plan, trial_ends_at, monthly_sold_limit"),
-    sb.from("dealer_centres").select("status, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null),
+    sb.from("sales").select("id, amount_pence, sold_at, ticket_no, item_id, items(title, photos), centres(name), channels:channel_id(type, owner_type)").eq("dealer_id", me.dealer_id).is("voided_at", null).order("sold_at", { ascending: false }).limit(3),
+    sb.from("sales").select("amount_pence, sold_at").eq("dealer_id", me.dealer_id).is("voided_at", null).gte("sold_at", weeks.lastStart.toISOString()).lt("sold_at", weeks.nextStart.toISOString()),
+    sb.from("items").select("centre_id").eq("dealer_id", me.dealer_id).eq("status", "live"),
     sb.from("print_jobs").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).in("status", ["not_printed", "ready"]),
     sb.from("items").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).eq("status", "live").lte("listed_at", new Date(Date.now() - 90 * 86400000).toISOString()),
   ]);
+  const dealer = goalSelect;
+  const centres = links.data;
   const s = (summary ?? {}) as Record<string, number>;
   const delta = (s.month ?? 0) - (s.last_month_to_date ?? 0);
   const hour = new Date().getHours();
@@ -66,7 +75,21 @@ export default async function Today() {
         </div>
 
         <NotificationsCard vapidPublicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
-        {dealer && dealer.billing_model === "basic" && <PlanCompare join />}
+        {dealer && namedSales(dealer) && (
+          <Link href="/app/desk" className="card p-4">
+            <div className="flex items-baseline justify-between"><span className="text-[13px] text-ink-muted">This week</span><span className="text-[13px] text-ink-muted">Last week {money(sumBetween(weekSales ?? [], weeks.lastStart, weeks.thisStart))}</span></div>
+            <div className="mt-1 figure text-[32px] leading-none">{money(sumBetween(weekSales ?? [], weeks.thisStart, weeks.nextStart))}</div>
+            {(goalRow.data?.weekly_goal_pence ?? 0) > 0 && <p className="mt-2 text-[13px] text-ink-muted">Goal {money(goalRow.data!.weekly_goal_pence)}. {sumBetween(weekSales ?? [], weeks.thisStart, weeks.nextStart) >= goalRow.data!.weekly_goal_pence ? "Goal met." : `${money(goalRow.data!.weekly_goal_pence - sumBetween(weekSales ?? [], weeks.thisStart, weeks.nextStart))} to go.`}</p>}
+          </Link>
+        )}
+        {dealer && namedSales(dealer) && (centres ?? []).map((c) => {
+          const name = (c.centres as unknown as { name: string } | null)?.name ?? "your centre";
+          const live = (liveItems ?? []).filter((i) => i.centre_id === c.centre_id).length;
+          const short = pitchShort(live, (c as { floor_target?: number | null }).floor_target ?? null);
+          if (!short) return null;
+          return <Link key={c.centre_id} href="/app/desk" className="rounded-[14px] border border-[#EBC9C1] bg-danger-soft px-3.5 py-3 text-[13px] text-danger">Your pitch at {name} needs filling, {short} item{short === 1 ? "" : "s"} short.</Link>;
+        })}
+        {dealer && !namedSales(dealer) && <PlanCompare join />}
         {pending.map((c) => (
           <div key={c.centre_id} className="rounded-[14px] border border-[#FDE68A] bg-warning-soft px-3.5 py-3 text-[13px] text-warning">
             Waiting for {(c.centres as unknown as { name: string })?.name} to approve you. Floor sales appear once they do.
@@ -87,7 +110,7 @@ export default async function Today() {
                 <div className="h-11 w-11 shrink-0 overflow-hidden rounded-[10px] bg-surface-2">{item?.photos?.[0]?.url && <img src={item.photos[0].url} alt="" className="h-full w-full object-cover" />}</div>
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[14px] font-medium">{dealer && !namedSales(dealer) ? "Sale" : (item?.title ?? (r.ticket_no ? "Till sale" : "Unmatched sale"))}</span>
-                  <span className="text-[12px] text-ink-muted">{r.ticket_no ? displaySku(r.ticket_no) : "No ticket"} · <ChannelLabel type={ch?.type} ownerType={ch?.owner_type} /> · {when(r.sold_at)}</span>
+                  <span className="text-[12px] text-ink-muted">{(r.centres as unknown as { name: string } | null)?.name ?? "Elsewhere"}{dealer && namedSales(dealer) && r.ticket_no ? <> · <span className="ticket">{displaySku(r.ticket_no)}</span></> : null} · <ChannelLabel type={ch?.type} ownerType={ch?.owner_type} /> · {when(r.sold_at)}</span>
                 </div>
                 <span className="num text-[15px] font-semibold">{money(r.amount_pence)}</span>
               </Link>
