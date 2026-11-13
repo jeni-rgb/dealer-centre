@@ -2,6 +2,7 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow } from "@/lib/channels/types";
 import { recordSale } from "@/lib/sales/record";
 import { refreshSumup } from "./oauth";
+import { fileAlreadyRecorded } from "@/lib/invoices/lines";
 import { findTicket, majorToPence } from "./match";
 import { transactionsFromCheckout, type SumupNotice } from "./events";
 
@@ -56,8 +57,8 @@ async function channelFor(db: Admin, conn: Conn): Promise<ChannelRow | null> {
 }
 
 async function alreadyTaken(db: Admin, ticket: string, amountPence: number, day: string): Promise<boolean> {
-  const { data } = await db.from("sales").select("id").eq("ticket_no", ticket).eq("amount_pence", amountPence).gte("sold_at", `${day}T00:00:00.000Z`).lt("sold_at", `${day}T23:59:59.999Z`).limit(1);
-  return !!data?.length;
+  const { data } = await db.from("sales").select("external_order_id").eq("ticket_no", ticket).eq("amount_pence", amountPence).gte("sold_at", `${day}T00:00:00.000Z`).lt("sold_at", `${day}T23:59:59.999Z`).limit(20);
+  return fileAlreadyRecorded((data ?? []).map((s) => String(s.external_order_id ?? "")));
 }
 
 /** Record one SumUp transaction, or leave it for staff if the ticket is missing. A file upload of the same ticket and amount on the same day is left alone. */

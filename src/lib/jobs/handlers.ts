@@ -2,7 +2,7 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow, ItemRow } from "@/lib/channels/types";
 import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
-import { renderLabelPdf } from "@/lib/labels/render";
+import { renderLabelBatch, renderLabelPdf } from "@/lib/labels/render";
 import { logoForDealer } from "@/lib/labels/load";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
@@ -64,7 +64,7 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       centreName = c?.name ?? null;
     }
     const dealer = pj.dealers as { code: string; name?: string | null };
-    const pdf = await renderLabelPdf({
+    const sheet = {
       sku: item.sku,
       dealerCode: dealer.code,
       dealerName: dealer.name ?? null,
@@ -74,7 +74,9 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       widthMm: pj.printers?.label_width_mm ?? 62,
       heightMm: pj.printers?.label_height_mm ?? 29,
       logo: await logoForDealer(db, item.dealer_id),
-    });
+    };
+    const copies = Math.min(100, Math.max(1, Number(pj.copies) || 1));
+    const pdf = copies === 1 ? await renderLabelPdf(sheet) : await renderLabelBatch(Array.from({ length: copies }, () => sheet));
     const path = `labels/${item.dealer_id}/${item.sku}.pdf`;
     await db.storage.from("files").upload(path, pdf, { contentType: "application/pdf", upsert: true });
 

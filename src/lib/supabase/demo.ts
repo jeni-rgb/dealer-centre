@@ -155,6 +155,13 @@ const T: Record<string, Record<string, unknown>[]> = {
   jobs: [{ id: "j1", type: "sync_item_to_channel", status: "failed", attempts: 2, last_error: "shopify gql: 429 throttled", updated_at: d(0, 9, 0) }],
   files: [],
 };
+T.items.push(
+  { id: "i20", dealer_id: IDS.dealer, centre_id: IDS.centre, sku: "B140380", alt_skus: [], title: "Key box, blue", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 8, qty_start: 10, invoice_id: "inv1" },
+  { id: "i21", dealer_id: IDS.dealer, centre_id: IDS.centre, sku: "B140381", alt_skus: [], title: "Key box, pink", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 1, qty_start: 10, invoice_id: "inv1" },
+);
+T.invoices = [
+  { id: "inv1", dealer_id: IDS.dealer, supplier: "Box Co", file_path: null, file_name: "box-co.pdf", created_at: d(1) },
+];
 T.channels_public = T.channels;
 T.items_centre_view = T.items.map(({ cost_pence: _c, ...rest }) => rest);
 void monthDay;

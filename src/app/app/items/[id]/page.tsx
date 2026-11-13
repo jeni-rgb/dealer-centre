@@ -24,6 +24,7 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
   const label = (item.print_jobs as unknown as { status: string }[])[0];
 
   const { data: mine } = await sb.from("dealers").select("card_machine").eq("id", me.dealer_id).maybeSingle();
+  const invoice = item.invoice_id ? (await sb.from("invoices").select("supplier, file_path").eq("id", item.invoice_id).maybeSingle()).data : null;
   const machine = mine?.card_machine === "sumup" || mine?.card_machine === "square" || mine?.card_machine === "zettle" ? mine.card_machine : null;
 
   return (
@@ -35,7 +36,9 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         <h2 className="text-[20px] font-semibold leading-6">{item.title}</h2>
         <div className="mt-2 flex items-center gap-2 text-[12px] text-ink-muted">
           <Sku sku={item.sku} tag />
-          {item.status === "sold" ? <Pill kind="success">Sold</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
+          {item.status === "sold" ? <Pill kind="success">{(item.qty_start ?? 1) > 1 ? "Sold out" : "Sold"}</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
+          {(item.qty_start ?? 1) > 1 && item.status !== "sold" && <span>{item.qty ?? 1} left</span>}
+          {(item.qty_start ?? 1) > 2 && (item.qty ?? 1) > 0 && (item.qty ?? 1) <= 2 && item.status !== "sold" && <Pill kind="warning">Low</Pill>}
           {centre && <span>{centre.name}</span>}
         </div>
       </div>
@@ -74,6 +77,12 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         </div>
       )}
       <div className="card flex items-center justify-between p-4 text-[14px]"><span>Listed</span><span className="text-ink-muted">{new Date(item.listed_at).toLocaleDateString("en-GB")}</span></div>
+      {invoice && (
+        <div className="card flex items-center justify-between p-4 text-[14px]">
+          <span>Invoice kept{invoice.supplier ? `, ${invoice.supplier}` : ""}</span>
+          {invoice.file_path ? <a className="font-medium text-accent" href={`/api/items/invoice/file?id=${item.invoice_id}`}>Open</a> : null}
+        </div>
+      )}
 
       <ItemActions id={item.id} status={item.status} title={item.title} price={item.price_pence} cost={item.cost_pence ?? null} atCentre={!!item.centre_id} machine={machine} sale={sale ? { id: sale.id, amount_pence: sale.amount_pence, payment_type: sale.payment_type, sold_at: sale.sold_at } : null} />
       <Link href="/app/stock" className="btn-ghost">Back to stock</Link>

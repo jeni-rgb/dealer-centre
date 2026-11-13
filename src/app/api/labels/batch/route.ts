@@ -15,7 +15,10 @@ export async function GET(req: Request) {
   if (!ids.length) return new NextResponse("no ids", { status: 400 });
 
   const sb = await supabaseServer();
-  const { data: items } = await sb.from("items").select("sku, title, price_pence, dealer_id, centres(name), dealers(code, name)").in("id", ids);
+  const { data: items } = await sb.from("items").select("id, sku, title, price_pence, dealer_id, centres(name), dealers(code, name)").in("id", ids);
+  const jobs = await sb.from("print_jobs").select("item_id, copies, created_at").in("item_id", ids).order("created_at", { ascending: false });
+  const copies = new Map<string, number>();
+  if (!jobs.error) for (const j of jobs.data ?? []) if (!copies.has(j.item_id)) copies.set(j.item_id, Math.min(100, Math.max(1, Number(j.copies) || 1)));
   if (!items?.length) return new NextResponse("not found", { status: 404 });
   const logos = new Map<string, Awaited<ReturnType<typeof logoForDealer>>>();
   for (const i of items) {
@@ -23,8 +26,11 @@ export async function GET(req: Request) {
     if (!logos.has(dealerId)) logos.set(dealerId, await logoForDealer(sb, dealerId));
   }
 
-  const pdf = await renderLabelBatch(
-    items.map((i) => ({
+  const byId = new Map(items.map((i) => [i.id as string, i]));
+  const sheets = ids.flatMap((id) => {
+    const i = byId.get(id);
+    if (!i) return [];
+    const input = {
       sku: i.sku,
       title: i.title,
       pricePence: i.price_pence,
@@ -34,8 +40,10 @@ export async function GET(req: Request) {
       widthMm,
       heightMm,
       logo: logos.get(i.dealer_id as string),
-    })),
-  );
+    };
+    return Array.from({ length: copies.get(id) ?? 1 }, () => input);
+  });
+  const pdf = await renderLabelBatch(sheets);
   return new NextResponse(Buffer.from(pdf), {
     headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="labels.pdf"` },
   });

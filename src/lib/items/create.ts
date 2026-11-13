@@ -15,7 +15,9 @@ export const CreateItemInput = z.object({
   on_centre_shopify: z.boolean().default(false),
   print_now: z.boolean().default(true),
   printer_id: z.string().uuid().nullable().optional(),
-  source: z.enum(["app", "till"]).default("app"),
+  source: z.enum(["app", "till", "invoice"]).default("app"),
+  qty: z.number().int().min(1).max(200).optional(),
+  invoice_id: z.string().nullable().optional(),
 });
 export type CreateItemInput = z.infer<typeof CreateItemInput>;
 
@@ -69,6 +71,7 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
       price_source: input.source,
       on_own_shopify: input.on_own_shopify,
       on_centre_shopify: input.on_centre_shopify,
+      ...(input.source === "invoice" ? { qty: input.qty ?? 1, qty_start: input.qty ?? 1, invoice_id: input.invoice_id ?? null } : {}),
     })
     .select("*")
     .single();
