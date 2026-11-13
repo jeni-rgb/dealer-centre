@@ -1,30 +1,38 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEALER_TRIAL_DAYS,
-  TIER_NAME,
   alreadyHeld,
   canStartDealerTrial,
   dealerPlanSentence,
   heldTrialEnd,
   shouldHoldStripeTrial,
-  stripeDueTodayMessage,
-  tierBlurb,
 } from "@/lib/billing/plan-copy";
+import { labelPriceLabel, namedSales, tasterEndedLetter, tasterInviteLetter } from "@/lib/billing/pricing";
 
 const DAY = 86400;
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—]/);
 
-describe("dealer trial", () => {
-  it("is 5 days at £0.00 and Pro is unlimited", () => {
-    expect(DEALER_TRIAL_DAYS).toBe(5);
-    expect(TIER_NAME["150"]).toBe("Unlimited sales");
-    noDash(TIER_NAME["25"]);
-    noDash(TIER_NAME["100"]);
-    noDash(TIER_NAME["150"]);
-    noDash(tierBlurb("150"));
-    noDash(stripeDueTodayMessage("25"));
-    expect(stripeDueTodayMessage("100")).toContain("£0.00");
-    expect(stripeDueTodayMessage("100")).toContain("£100");
+describe("dealer pricing", () => {
+  it("uses Basic, a 2 week taster and Full at £25", () => {
+    const basic = dealerPlanSentence({ plan: "trial", trial_ends_at: null, monthly_sold_limit: 25, billing_model: "basic" });
+    expect(basic).toContain("Basic");
+    expect(basic).toContain("Item names stay off");
+    noDash(basic);
+    const full = dealerPlanSentence({ plan: "pro", trial_ends_at: null, monthly_sold_limit: 100000, billing_model: "full" });
+    expect(full).toContain("£25");
+    expect(full).toContain("Direct Debit");
+    noDash(full);
+    expect(labelPriceLabel(1)).toBe("£0.75 plus VAT");
+    expect(labelPriceLabel(25)).toBe("£18.75 plus VAT");
+    noDash(labelPriceLabel(4));
+    const invite = tasterInviteLetter("Bloom Antiques", "https://example.com/taster?t=abc");
+    const ended = tasterEndedLetter("Bloom Antiques", "https://example.com/signup");
+    noDash(invite.subject); noDash(invite.text); noDash(ended.subject); noDash(ended.text);
+    expect(invite.text).toContain("25");
+    expect(ended.text).toContain("£25");
+    expect(namedSales({ plan: "trial", billing_model: "basic" })).toBe(false);
+    expect(namedSales({ plan: "pro", billing_model: "full" })).toBe(true);
+    expect(namedSales({ plan: "trial", billing_model: "taster", taster_accepted_at: new Date().toISOString(), taster_ends_at: new Date(Date.now() + 86400000).toISOString() })).toBe(true);
+    expect(namedSales({ plan: "pro", monthly_sold_limit: 50 })).toBe(true);
   });
 
   it("holds a trialing subscription staff have not started", () => {
@@ -55,11 +63,10 @@ describe("dealer trial", () => {
     expect(canStartDealerTrial({ ...base, plan: "pro" })).toBe(false);
   });
 
-  it("tells the dealer the first days are £0.00", () => {
-    const line = dealerPlanSentence({ plan: "trial", trial_ends_at: null, monthly_sold_limit: 100000, listing_mode: "staff" });
-    expect(line).toContain("£0.00");
-    expect(line).toContain("Unlimited sales");
+  it("keeps a legacy paying dealer's current price", () => {
+    const line = dealerPlanSentence({ plan: "pro", trial_ends_at: null, monthly_sold_limit: 50 });
+    expect(line).toContain("£100");
+    expect(line).toContain("current plan");
     noDash(line);
-    noDash(dealerPlanSentence({ plan: "trial", trial_ends_at: "2026-11-12T00:00:00.000Z", monthly_sold_limit: 25, listing_mode: "self" }));
   });
 });

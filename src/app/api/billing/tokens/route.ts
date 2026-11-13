@@ -4,8 +4,9 @@ import { env } from "@/lib/env";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/billing/tokens";
+import { LABEL_PENCE, labelPriceLabel } from "@/lib/billing/pricing";
 
-/** One off payment for listing tokens. £1 plus VAT each. Not a subscription and not £0.00. */
+/** One off payment for labelling. 75p plus VAT each. Not the monthly plan and not £0.00. */
 export async function GET(req: Request) {
   const me = await getMe();
   if (!me) return NextResponse.redirect(new URL("/signin", env.appUrl()));
@@ -35,8 +36,8 @@ export async function GET(req: Request) {
       quantity: qty,
       price_data: {
         currency: "gbp",
-        unit_amount: 100,
-        product_data: { name: "Listing token", description: "£1 plus VAT. We photograph, write and label one item." },
+        unit_amount: LABEL_PENCE,
+        product_data: { name: "Label for one item", description: `${labelPriceLabel(1)}. We photograph, write and label one item.` },
       },
       ...(vat ? { tax_rates: [vat] } : {}),
     }],

@@ -5,7 +5,8 @@ const money = (p: number) => `${p < 0 ? "-" : ""}£${(Math.abs(p) / 100).toLocal
 const INK = rgb(0.1, 0.1, 0.09), MUTED = rgb(0.42, 0.42, 0.38), LINE = rgb(0.85, 0.84, 0.78), OLIVE = rgb(0.42, 0.45, 0.25);
 
 /** A4 monthly statement: the same numbers as the dealer's and the centre's screens, line by line. */
-export async function renderStatementPdf(st: Statement): Promise<Uint8Array> {
+export async function renderStatementPdf(st: Statement, opts: { names?: boolean } = {}): Promise<Uint8Array> {
+  const names = opts.names !== false;
   const pdf = await PDFDocument.create();
   const sans = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -49,15 +50,20 @@ export async function renderStatementPdf(st: Statement): Promise<Uint8Array> {
     text("Price", cols.price, 8.5, bold, MUTED, true); text("Commn", cols.comm, 8.5, bold, MUTED, true); text("Net", cols.net, 8.5, bold, MUTED, true);
     y -= 6; rule(); y -= 12;
   };
+  if (!names) {
+    y -= 8;
+    text("Sales sheet. Totals only. Item names are not shown on Basic. The centre pays you on their usual day.", M, 10, sans, MUTED);
+  } else {
   head();
   if (st.lines.length === 0) { text("No sales this month.", M, 10, sans, MUTED); y -= 14; }
-  for (const l of st.lines) {
+  for (const l of names ? st.lines : []) {
     if (y < M + 40) { newPage(); head(); }
     const title = l.title.length > 34 ? l.title.slice(0, 33) + "…" : l.title;
     text(new Date(l.sold_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), cols.date, 9.5);
     text(title, cols.item, 9.5); text(l.ticket ?? "", cols.ticket, 9.5); text(l.channel === "online" ? "Online" : "Floor", cols.channel, 9.5, sans, MUTED);
     text(money(l.price_pence), cols.price, 9.5, sans, INK, true); text(money(-l.commission_pence), cols.comm, 9.5, sans, MUTED, true); text(money(l.net_pence), cols.net, 9.5, bold, INK, true);
     y -= 15;
+  }
   }
 
   // Footer

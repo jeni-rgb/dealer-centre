@@ -11,6 +11,8 @@ export const env = {
   },
   stripe: {
     price: (tier: "25" | "100" | "150") => pick(`STRIPE_PRICE_${tier}`, tier === "25" ? "STRIPE_PRICE_50" : tier === "100" ? "STRIPE_PRICE_100" : "STRIPE_PRICE_250", "STRIPE_PRICE_ID")!,
+    /** Full plan, £25 a month ex VAT. Do not fall back to the old Starter, Trade or Pro prices. */
+    fullPrice: () => pick("STRIPE_PRICE_FULL") ?? "",
     /** Kit plan: £299 a month + VAT, 12 months, Square Register kit included. */
     centrePrice: () => pick("STRIPE_PRICE_CENTRE", "STRIPE_PRICE_299") ?? "",
     /** Own till plan: £249 a month + VAT, monthly, 14 days free. Falls back to the kit price until it is set. */

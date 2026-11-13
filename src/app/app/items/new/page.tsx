@@ -30,7 +30,7 @@ export default async function NewItem() {
         return { id: c.centre_id, name: (c.centres as unknown as { name: string })?.name ?? "Centre", hasShop: ch.some((x) => x.type === "shopify") };
       })}
       hasOwnShopify={(ownChannels ?? []).some((c) => c.type === "shopify")}
-      defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false }} starter={(dealer?.monthly_sold_limit ?? 25) <= 25}
+      defaults={{ own: dealer?.default_own_shopify ?? true, shop: dealer?.default_centre_shopify ?? false }} starter={false}
       aiEnabled={!!process.env.GEMINI_API_KEY}
       printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${p.name} (till)` : p.name, browser: p.provider !== "printnode", w: p.label_width_mm ?? null, h: p.label_height_mm ?? null }))}
     />

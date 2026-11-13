@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { claimJobs, completeJob, failJob } from "@/lib/jobs/queue";
 import { handlers } from "@/lib/jobs/handlers";
 import { holdUnstartedDealerTrials } from "@/lib/billing/dealer-trial";
+import { notifyEndedTasters } from "@/lib/billing/taster";
 
 
 /** Worker. Called every minute by Vercel cron or Supabase cron with the JOBS_SECRET. */
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
   if (!process.env.JOBS_SECRET || (auth !== `Bearer ${process.env.JOBS_SECRET}` && auth !== `Bearer ${process.env.CRON_SECRET}`)) return new NextResponse("no", { status: 401 });
   const db = supabaseAdmin();
   const held = await holdUnstartedDealerTrials().catch((e) => { console.error("[dealer trial]", e); return { held: 0 }; });
+  const tasters = await notifyEndedTasters(db).catch((e) => { console.error("[taster]", e); return { notified: 0 }; });
   const jobs = await claimJobs(db);
   const results: Record<string, number> = { done: 0, failed: 0 };
   for (const j of jobs) {
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
       results.failed++;
     }
   }
-  return NextResponse.json({ ...results, held });
+  return NextResponse.json({ ...results, held, tasters });
 }
 
 export async function GET(req: Request) {

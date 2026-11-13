@@ -42,8 +42,8 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   }
   if (opts?.staffListing) {
     const gate = await staffListingGate(db, dealerId);
-    if (gate === "need_purchase") throw new PlanLimitError("Listing tokens have not been paid for this dealer yet. Buy them before we photograph the stock. They are £1 plus VAT each.", "tokens");
-    if (gate === "none_left") throw new PlanLimitError("No listing tokens left. Buy more before we photograph another item.", "tokens");
+    if (gate === "need_purchase") throw new PlanLimitError("Labels have not been paid for this dealer yet. They are 75p plus VAT each.", "tokens");
+    if (gate === "none_left") throw new PlanLimitError("No labels left. Buy more before we photograph another item. They are 75p plus VAT.", "tokens");
   }
   // Retry guard: a resubmit of the same item within 10 minutes returns the first one, never a duplicate.
   const { data: dup } = await db.from("items").select("*").eq("dealer_id", dealerId).eq("title", input.title).eq("price_pence", input.price_pence)
@@ -78,7 +78,7 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
       await consumeStaffToken(db, dealerId, item.id);
     } catch {
       await db.from("items").delete().eq("id", item.id);
-      throw new PlanLimitError("No listing tokens left. Buy more before we photograph another item.", "tokens");
+      throw new PlanLimitError("No labels left. Buy more before we photograph another item. They are 75p plus VAT.", "tokens");
     }
   }
 

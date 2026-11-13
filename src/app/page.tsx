@@ -6,7 +6,7 @@ import { Phone, Browser } from "@/components/devices";
 
 export const metadata: Metadata = {
   title: "Dealer Centre: stock, labels and sales for antique dealers and centres",
-  description: "List an item once, print its label, and the ticket number runs the centre's till, your Shopify and the centre's online shop. A buzz on your phone when it sells. Statements that add themselves up. From £25 a month + VAT for dealers, from £249 a month + VAT for centres.",
+  description: "Basic is free for every dealer at a signed centre. Full is £25 a month plus VAT, with every sale named. Centres from £249 a month plus VAT.",
   alternates: { canonical: "https://thedealercentre.co.uk" },
   openGraph: { title: "Dealer Centre", description: "List it once. Label it once. Sell it on the floor or online. Never sell it twice.", url: "https://thedealercentre.co.uk", siteName: "Dealer Centre", images: ["/screens/dealer-today.jpg"], locale: "en_GB", type: "website" },
 };
@@ -16,23 +16,8 @@ const PROOF: { liveAt: string; founder: string } | null = null;
 // const PROOF = { liveAt: "Live at [centre name], [town]", founder: "Built with my dad, a dealer for [N] years" };
 
 const dealerPlans = [
-  { name: "Starter", price: "£25", who: "Up to 25 items sold a month", forWho: "A pitch you top up at weekends", bits: ["Unlimited stock listed", "Ticket numbers and labels", "Centre till, End of day, notifications", "Your own Shopify", "Margin on every item", "Monthly statement with PDF"], not: ["Centre online shop", "More than one centre"] },
-  { name: "Trade", price: "£100", who: "26 to 50 items sold a month", forWho: "Full time at one centre", bits: ["Everything in Starter", "Centre online shop", "Priority support"], not: ["More than one centre"], featured: true },
-  { name: "Pro", price: "£150", who: "Unlimited sales", forWho: "Several pitches, several centres", bits: ["Everything in Trade", "Any number of centres on one account", "Export for your accountant", "Phone support"], not: [] },
-];
-
-const compare: [string, string, string, string][] = [
-  ["Items sold a month", "Up to 25", "26 to 50", "Unlimited"],
-  ["Stock you can list", "Unlimited", "Unlimited", "Unlimited"],
-  ["Centres you sell at", "One", "One", "Any number"],
-  ["Ticket numbers and labels", "✓", "✓", "✓"],
-  ["Centre till, End of day, notifications", "✓", "✓", "✓"],
-  ["Your own Shopify", "✓", "✓", "✓"],
-  ["Margin and haggle guide on every item", "✓", "✓", "✓"],
-  ["Monthly statement with PDF", "✓", "✓", "✓"],
-  ["Centre online shop", "–", "✓", "✓"],
-  ["Export for your accountant", "–", "–", "✓"],
-  ["Support", "Email", "Priority email", "Priority email and phone"],
+  { name: "Basic", price: "Free", who: "Every dealer at a signed centre", forWho: "No sign up. Your account comes from the till.", bits: ["Sales totals on a printed sales sheet", "Paid with the centre payout", "No item names"], featured: false },
+  { name: "Full", price: "£25", who: "Unlimited sales, every centre", forWho: "One account and one bill", bits: ["Every sale named: item, price, date, centre", "Live in the app", "Direct Debit"], featured: true },
 ];
 
 const faqs = [
@@ -42,7 +27,7 @@ const faqs = [
   ["Who posts what sells online?", "We do, all of it. A Dealer Centre runner collects from every centre every other day, packs the item at our unit and posts it, and our online shop manager handles the buyer from first question to delivery. The centre does nothing and the dealer does nothing: leave the item where it is. The buyer pays postage at checkout and that covers the delivery, so the dealer's share is worked out on the item price."],
   ["Can I sell the same item on the floor and online?", "That is the point. One ticket number runs the till, your Shopify and the centre shop. The moment it sells anywhere, it comes off everywhere else."],
   ["What does the centre pay?", "Two plans. Kit plan, £299 a month + VAT: for centres with no POS, a 12 month subscription with the Square Register Retail Kit included, set up on site and yours to keep after 12 months, no free trial. Own till plan, £249 a month + VAT: you already have a POS, keep it; Square connects directly and any other till works beside our till screen. Monthly, 14 days free, cancel any time. Both include unlimited dealers, statements and payouts worked out, and the centre's own online shop run for you at 20% commission (15% to Dealer Centre, 5% to the centre)."],
-  ["Is there a contract?", "Dealers: monthly, cancel from Settings. List your own stock and the first 5 days are £0.00, then your plan price. Starter is up to 25 sold a month, Trade is 26 to 50, Pro is unlimited. Ask Dealer Centre to list the stock and you pay £1 plus VAT per item. The monthly plan is £0.00 while we do that, then £0.00 for 5 days, then the plan price. Kit plan centres: 12 months, then monthly, and the kit is yours. Own till plan centres: monthly, 14 days free, no commitment."],
+  ["Is there a contract?", "Basic is free and needs no sign up. Full is £25 a month plus VAT by Direct Debit, cancel any month from Account. We label stock at 75p an item plus VAT, or you load your own for free. A taster is 2 weeks of named sales and 25 free labels, then you go back to Basic unless you join Full. Kit plan centres: 12 months, then monthly, and the kit is yours. Own till plan centres: monthly, 14 days free, no commitment. £2.50 off the centre fee for each dealer on Full."],
   ["We have a till that is not Square. Does it work?", "Yes. Card payments carry on through your machine. Sales are recorded on the Dealer Centre till screen beside it (an iPad with a PIN) or at End of day, and the item comes off the online shop the moment it is recorded. Square is the only till that connects directly, which is why the kit plan uses it."],
   ["Can I get my data out?", "Yes. Your stock list exports as a spreadsheet from Stock, every statement downloads as a PDF, and centres can export dealers and sales as CSV. If you leave, email hello@thedealercentre.co.uk and we send you everything."],
   ["Who can see what I paid?", "Only you. Cost prices are never shown to the centre, to other dealers, or on any shop. The centre sees your stock, your sales and your statement, nothing more."],
@@ -58,7 +43,7 @@ const kit = [
 
 const faqJsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
 const offer = (name: string, price: string) => ({ "@type": "Offer", name, price, priceCurrency: "GBP", priceSpecification: { "@type": "UnitPriceSpecification", price, priceCurrency: "GBP", valueAddedTaxIncluded: false, billingIncrement: 1, unitCode: "MON", referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" } } });
-const productJsonLd = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Dealer Centre", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android", description: "Stock, labels and sales for antique dealers and antiques centres.", provider: { "@type": "Organization", name: "Dealer Centre Ltd", address: { "@type": "PostalAddress", streetAddress: "Hardwick House, Agricultural Hall Plain", addressLocality: "Norwich", postalCode: "NR1 3FS", addressCountry: "GB" } }, offers: [offer("Starter", "25"), offer("Trade", "100"), offer("Pro", "150"), offer("Centre, kit plan", "299"), offer("Centre, own till plan", "249")] };
+const productJsonLd = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "Dealer Centre", applicationCategory: "BusinessApplication", operatingSystem: "Web, iOS, Android", description: "Stock, labels and sales for antique dealers and antiques centres.", provider: { "@type": "Organization", name: "Dealer Centre Ltd", address: { "@type": "PostalAddress", streetAddress: "Hardwick House, Agricultural Hall Plain", addressLocality: "Norwich", postalCode: "NR1 3FS", addressCountry: "GB" } }, offers: [offer("Full", "25"), offer("Centre, kit plan", "299"), offer("Centre, own till plan", "249")] };
 
 export default function Landing() {
   return (
@@ -151,7 +136,7 @@ export default function Landing() {
             <h2 className="mt-3 text-[36px] leading-[1.05] md:text-[52px]">We will come and list the stock with you.</h2>
             <p className="mt-6 text-[18px] leading-8 text-ink-muted">You should be out on the stall, talking to people, not at the kitchen table typing titles into a phone. Say the word and Dealer Centre lists the stock for you.</p>
             <p className="mt-4 text-[18px] leading-8">We photograph each piece, write the ticket, print the label and put it on the item, there on the pitch. You still keep the app in your pocket. You see what sold on the floor. If you take the cash yourself, you mark it sold. The statement still adds itself up at the end of the month.</p>
-            <p className="hand mt-6 text-[32px] leading-none text-forest">£1 per item plus VAT.</p>
+            <p className="hand mt-6 text-[32px] leading-none text-forest">75p an item plus VAT.</p>
             <Link href="/signup?as=dealer" className="btn mt-8 !w-auto !px-7">Help me list the stock</Link>
           </div>
           <div className="flex justify-center">
@@ -258,33 +243,22 @@ export default function Landing() {
       {/* Pricing */}
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-center text-[36px] leading-[1.08] md:text-[44px]">Dealers pay by what they sell. Centres pay one price, till included.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">List your own stock: £0.00 for 5 days, then the plan price. We list it for you: £1 plus VAT an item, and the monthly plan is £0.00 until the stock is ready, then 5 days at £0.00. Centres with their own till: 14 days free. Kit plan: no free trial. All prices plus VAT.</p>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
+          <h2 className="text-center text-[36px] leading-[1.08] md:text-[44px]">Basic is free. Full is £25 a month.</h2>
+          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">Every dealer at a signed centre gets Basic from the till, with no sign up. Full is £25 a month plus VAT by Direct Debit, with every sale named. We label at 75p an item plus VAT, or you load your own stock free. All prices plus VAT.</p>
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
             {dealerPlans.map((p) => (
               <div key={p.name} className={`card relative flex flex-col p-7 ${p.featured ? "border-accent ring-1 ring-accent" : ""}`}>
-                {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Most dealers</span>}
+                {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Named sales</span>}
                 <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
-                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span><span className="text-[14px] text-ink-muted">a month plus VAT</span></div>
-                <div className="mt-1 text-[13px] font-semibold text-forest">£0.00 for 5 days, then {p.price} a month plus VAT</div>
+                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span>{p.price !== "Free" && <span className="text-[14px] text-ink-muted">a month plus VAT</span>}</div>
                 <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
                 <div className="text-[13px] text-ink-muted">{p.forWho}</div>
                 <ul className="mt-5 flex flex-col gap-2 text-[14px] font-medium">{p.bits.map((b) => <li key={b} className="border-b border-border pb-2 last:border-0">{b}</li>)}</ul>
-                {p.not.length > 0 && <ul className="mt-2 flex flex-col gap-2 text-[14px] text-ink-muted line-through decoration-[#C9B38A]">{p.not.map((b) => <li key={b}>{b}</li>)}</ul>}
-                <Link href={`/signup?as=dealer&plan=${p.name.toLowerCase()}`} className={`mt-7 ${p.featured ? "btn" : "btn-outline"}`}>Choose {p.name}</Link>
+                {p.name === "Full" ? <Link href="/signup?as=dealer" className="btn mt-7">Join Full</Link> : <p className="mt-7 text-[14px] text-ink-muted">Your centre adds you. We email an invite for 2 weeks of named sales and 25 free labels.</p>}
               </div>
             ))}
           </div>
-          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Want us to list the stock? That is £1 per item plus VAT, paid when you buy the tokens. The monthly price on these cards is still £0.00 until the stock is ready, then 5 days at £0.00.</p>
-          <div className="card mt-8 overflow-hidden">
-            <div className="border-b border-border px-6 py-4"><h4 className="text-[16px] font-semibold">What is in each plan</h4><p className="text-[13px] text-ink-muted">The only things that change between plans are how much you sell, where, and whether you use the centre&rsquo;s online shop.</p></div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-[14px]">
-                <thead><tr className="border-b border-border text-left text-[13px] font-bold text-ink-muted"><th className="px-6 py-3 font-semibold">&nbsp;</th><th className="py-3 font-semibold">Starter £25 + VAT</th><th className="py-3 font-semibold text-accent">Trade £100 + VAT</th><th className="py-3 font-semibold">Pro £150 + VAT</th></tr></thead>
-                <tbody>{compare.map(([k, a, b, c]) => <tr key={k} className="border-b border-border last:border-0"><td className="px-6 py-3 font-semibold">{k}</td>{[a, b, c].map((v, i) => <td key={i} className={`py-3 ${v === "✓" ? "font-bold text-forest" : v === "–" ? "text-ink-muted" : "font-medium"}`}>{v === "✓" ? "Included" : v === "–" ? "Not included" : v}</td>)}</tr>)}</tbody>
-              </table>
-            </div>
-          </div>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Say yes to the invite and you get 2 weeks of named sales, and we label your first 25 items free. Then you go back to Basic unless you join Full. Centres get £2.50 off their monthly fee for each dealer on Full.</p>
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>
@@ -300,7 +274,7 @@ export default function Landing() {
                   <div className="mt-2 text-[13px] text-[#DCE8DD]">Already have a POS. Square connects directly; any other till works beside our till screen. Monthly, 14 days free, cancel any time.</div>
                 </div>
               </div>
-              <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both plans: unlimited dealers, statements and payouts worked out, and your own online shop built and run for you, no set up fee, 20% commission on what sells (15% Dealer Centre, 5% to your centre).</p>
+              <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both plans: unlimited dealers, statements and payouts worked out, and your own online shop built and run for you, no set up fee, 20% commission on what sells (15% Dealer Centre, 5% to your centre). £2.50 plus VAT off the monthly fee for each dealer on Full.</p>
             </div>
             <Link href="/signup?as=centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
           </div>

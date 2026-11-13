@@ -72,7 +72,7 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
         <div className="card divide-y divide-border">
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{dealer.name}</span><span className="text-[12px] text-ink-muted">{email}</span></span><span className="ticket text-[16px]">{dealer.code}</span></div>
           <Link href="/api/billing/portal" className="flex items-center justify-between gap-3 px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealerPlanSentence(dealer)}</span></span><span className="shrink-0 text-[13px] font-medium text-accent">Manage plan</span></Link>
-          {dealer.listing_mode === "staff" && <div className="px-4 py-3.5"><span className="block text-[15px] font-medium">Listing tokens</span><span className="text-[12px] text-ink-muted">{dealer.listing_tokens_bought > 0 ? `${dealer.listing_tokens} left. £1 plus VAT each. We photograph the stock from these.` : "None paid yet. We photograph the stock after you pay, £1 plus VAT each."}</span><BuyTokens next="/app/settings" /></div>}
+          {dealer.listing_mode === "staff" && <div className="px-4 py-3.5"><span className="block text-[15px] font-medium">Labels</span><span className="text-[12px] text-ink-muted">{dealer.listing_tokens_bought > 0 ? `${dealer.listing_tokens} left. Further labels are 75p plus VAT. We photograph the stock from these.` : "None yet. We photograph the stock after labels are paid, 75p plus VAT each, unless your 25 free taster labels are still to come."}</span><BuyTokens next="/app/settings" /></div>}
         </div>
       </Section>
 

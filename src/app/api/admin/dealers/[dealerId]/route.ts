@@ -4,7 +4,8 @@ import Stripe from "stripe";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
-import { pushStripeTrialEnd, startDealerTrial } from "@/lib/billing/dealer-trial";
+import { pushStripeTrialEnd } from "@/lib/billing/dealer-trial";
+import { startTaster } from "@/lib/billing/taster";
 
 const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("resend_link"), email: z.string().email() }),
@@ -12,6 +13,7 @@ const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("set_plan"), plan: z.enum(["trial", "pro", "comp", "cancelled", "lapsed"]) }),
   z.object({ action: z.literal("extend_trial"), days: z.number().int().min(1).max(365) }),
   z.object({ action: z.literal("start_trial") }),
+  z.object({ action: z.literal("start_taster") }),
   z.object({ action: z.literal("cancel_subscription"), at_period_end: z.boolean().default(true) }),
   z.object({ action: z.literal("move_centre"), from_centre_id: z.string().uuid().nullable(), to_centre_id: z.string().uuid(), move_items: z.boolean().default(true) }),
   z.object({ action: z.literal("note"), note: z.string().max(2000) }),
@@ -25,7 +27,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "bad input" }, { status: 400 });
   const db = supabaseAdmin();
-  const { data: dealer } = await db.from("dealers").select("id, plan, trial_ends_at, stripe_subscription_id").eq("id", dealerId).single();
+  const { data: dealer } = await db.from("dealers").select("id, plan, trial_ends_at, taster_ends_at, billing_model, stripe_subscription_id").eq("id", dealerId).single();
   if (!dealer) return NextResponse.json({ error: "not found" }, { status: 404 });
   const a = p.data;
   let result: Record<string, unknown> = {};
@@ -34,17 +36,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
     if (a.action === "set_limit") await db.from("dealers").update({ monthly_sold_limit: a.monthly_sold_limit }).eq("id", dealerId);
     if (a.action === "set_plan") await db.from("dealers").update({ plan: a.plan }).eq("id", dealerId);
     if (a.action === "extend_trial") {
-      const base = dealer.trial_ends_at && new Date(dealer.trial_ends_at) > new Date() ? new Date(dealer.trial_ends_at) : new Date();
+      const current = dealer.taster_ends_at ?? dealer.trial_ends_at;
+      const base = current && new Date(current) > new Date() ? new Date(current) : new Date();
       const until = new Date(base.getTime() + a.days * 86400000);
-      if (dealer.stripe_subscription_id && process.env.STRIPE_SECRET_KEY && process.env.DEMO_MODE !== "1") await pushStripeTrialEnd(dealer.stripe_subscription_id, until);
-      await db.from("dealers").update({ plan: dealer.plan === "pro" ? "pro" : "trial", trial_ends_at: until.toISOString() }).eq("id", dealerId);
+      const legacyTrial = dealer.billing_model !== "taster" && dealer.billing_model !== "basic" && dealer.billing_model !== "full";
+      if (legacyTrial && dealer.stripe_subscription_id && process.env.STRIPE_SECRET_KEY && process.env.DEMO_MODE !== "1") await pushStripeTrialEnd(dealer.stripe_subscription_id, until);
+      await db.from("dealers").update({ plan: dealer.plan === "pro" ? "pro" : "trial", trial_ends_at: until.toISOString(), ...(dealer.taster_ends_at ? { taster_ends_at: until.toISOString() } : {}) }).eq("id", dealerId);
       result = { until: until.toISOString() };
     }
-    if (a.action === "start_trial") {
-      if (process.env.DEMO_MODE === "1") {
-        const until = new Date(Date.now() + 5 * 86400000).toISOString();
-        result = { until, emailed: false, note: "Demo only. Nothing was charged." };
-      } else result = await startDealerTrial(db, dealerId);
+    if (a.action === "start_trial" || a.action === "start_taster") {
+      const started = await startTaster(db, dealerId);
+      result = { until: started.until, already: started.already, charged: false };
     }
     if (a.action === "cancel_subscription") {
       if (!dealer.stripe_subscription_id || !process.env.STRIPE_SECRET_KEY) throw new Error("no Stripe subscription on this dealer");

@@ -1,4 +1,5 @@
 /** Dealer plan words and trial rules. Safe to import from the browser. No Stripe here. */
+import { dealerPlanSentence as pricingSentence } from "@/lib/billing/pricing";
 
 export const DEALER_TRIAL_DAYS = 5;
 const DAY = 86400;
@@ -51,15 +52,9 @@ export function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" });
 }
 
-/** What the dealer reads next to Plan. No hyphens. */
-export function dealerPlanSentence(d: { plan: string; trial_ends_at: string | null; monthly_sold_limit: number; listing_mode?: string | null }): string {
-  const price = poundsForLimit(d.monthly_sold_limit);
-  const band = d.monthly_sold_limit >= UNLIMITED ? "Unlimited sales" : d.monthly_sold_limit > 25 ? "26 to 50 sold a month" : "Up to 25 sold a month";
-  if (d.plan === "trial" && d.trial_ends_at) return `£0.00 until ${formatShortDate(d.trial_ends_at)}, then £${price} a month plus VAT. ${band}.`;
-  if (d.plan === "trial" && d.listing_mode === "self") return `£0.00 for 5 days from the day you add your card, then £${price} a month plus VAT. ${band}.`;
-  if (d.plan === "trial") return `£0.00 while your stock is being listed. Then 5 days at £0.00, then £${price} a month plus VAT. ${band}.`;
-  if (d.plan === "pro") return `£${price} a month plus VAT. ${band}.`;
-  return `${d.plan}. ${band}.`;
+/** What the dealer reads next to Plan. No hyphens. Legacy rows keep their old price. New plans use Basic, Taster and Full. */
+export function dealerPlanSentence(d: { plan: string; trial_ends_at: string | null; monthly_sold_limit: number; listing_mode?: string | null; billing_model?: string | null; taster_accepted_at?: string | null; taster_ends_at?: string | null }): string {
+  return pricingSentence(d);
 }
 
 export type TrialSub = {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
+import { inviteBasicDealer } from "@/lib/billing/taster";
 
 const Input = z.object({ name: z.string().min(2).max(80), code: z.string().regex(/^[A-Z][A-Z0-9]{1,3}$/), email: z.string().email().optional().or(z.literal("")), pitch_numbers: z.array(z.string()).optional() });
 
@@ -19,12 +20,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ centreI
   const p = Input.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "Name, and a code of 2 to 4 letters or numbers starting with a letter" }, { status: 400 });
   const db = supabaseAdmin();
-  const { data: dealer, error } = await db.from("dealers").insert({ name: p.data.name.trim(), code: p.data.code, plan: "trial", placeholder: true, created_by_centre_id: centreId, contact_email: p.data.email || null }).select("id").single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  const email = p.data.email || null;
+  let created = await db.from("dealers").insert({ name: p.data.name.trim(), code: p.data.code, plan: "trial", placeholder: true, created_by_centre_id: centreId, contact_email: email, billing_model: "basic" }).select("id").single();
+  if (created.error && /billing_model/.test(created.error.message)) {
+    created = await db.from("dealers").insert({ name: p.data.name.trim(), code: p.data.code, plan: "trial", placeholder: true, created_by_centre_id: centreId, contact_email: email }).select("id").single();
+  }
+  const dealer = created.data;
+  const error = created.error;
+  if (error || !dealer) return NextResponse.json({ error: error?.message ?? "Could not add that dealer" }, { status: 400 });
   const { error: linkErr } = await db.from("dealer_centres").insert({ dealer_id: dealer.id, centre_id: centreId, status: "active", rent_mode: "rent", rent_pence: 0, rent_set_by: "centre", pitch_numbers: p.data.pitch_numbers ?? [], joined_at: new Date().toISOString() });
   if (linkErr) {
     await db.from("dealers").delete().eq("id", dealer.id);
     return NextResponse.json({ error: linkErr.code === "23505" ? `Code ${p.data.code} is already used at this centre` : linkErr.message }, { status: 400 });
   }
-  return NextResponse.json({ dealer_id: dealer.id });
+  const invite = await inviteBasicDealer(db, dealer.id, p.data.name.trim(), email).catch(() => null);
+  return NextResponse.json({ dealer_id: dealer.id, invite_link: invite?.link ?? null, emailed: invite?.emailed ?? "skipped" });
 }
