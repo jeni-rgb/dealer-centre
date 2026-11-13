@@ -98,7 +98,7 @@ async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout
     y += titleSize + 1;
   }
   const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
-  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(", ")] : [];
+  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(" · ")] : [];
   for (const line of smallLines) {
     ops.push({ kind: "text", text: fit(line, smallSize), x: pad, y, size: smallSize, font: "sans", grey: true });
     y += smallSize + 1;
