@@ -1,13 +1,6 @@
-import { requireDealer } from "@/lib/auth";
-import { DealerNav, Screen } from "@/components/ui";
-import { InvoiceForm } from "./form";
+import { redirect } from "next/navigation";
 
-export default async function InvoicePage() {
-  await requireDealer();
-  return (
-    <Screen title="Invoice" back={{ href: "/app/stock" }}>
-      <InvoiceForm />
-      <DealerNav active="stock" />
-    </Screen>
-  );
+/** Bulk buy now starts inside List an item. */
+export default function InvoiceMoved() {
+  redirect("/app/items/new");
 }

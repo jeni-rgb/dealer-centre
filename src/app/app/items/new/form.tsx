@@ -57,7 +57,82 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [err, setErr] = useState<string | null>(null);
   const [limit, setLimit] = useState(false);
   const [done, setDone] = useState<{ sku: string; id: string } | null>(null);
+  const [mode, setMode] = useState<"single" | "bulk" | null>(null);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  const [bulkName, setBulkName] = useState("");
+  const [bulkQty, setBulkQty] = useState("");
+  const [bulkCost, setBulkCost] = useState("");
+  const [bulkSell, setBulkSell] = useState("");
+  const [colours, setColours] = useState<{ name: string; qty: string; sell: string }[]>([]);
+  const [bulkNote, setBulkNote] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkDone, setBulkDone] = useState<{ id: string; sku: string; title: string; qty: number }[] | null>(null);
+  const [invoiceLines, setInvoiceLines] = useState<{ title: string; qty: number; costPence: number }[]>([]);
   const c = centres.find((x) => x.id === centre);
+
+  async function readInvoice(file: File) {
+    setBulkNote(null); setBulkBusy(true);
+    const body = new FormData();
+    body.set("file", file);
+    const r = await fetch("/api/items/invoice/read", { method: "POST", body });
+    const j = await r.json().catch(() => ({}));
+    setBulkBusy(false);
+    if (!r.ok) return setBulkNote(j.error ?? "Could not read that file. Type it in.");
+    setInvoiceId(j.invoiceId ?? null);
+    const next = (j.lines ?? []) as { title: string; qty: number; costPence: number }[];
+    setInvoiceLines(next);
+    const line = next[0];
+    if (line) {
+      setBulkName(line.title);
+      setBulkQty(String(line.qty));
+      setBulkCost((line.costPence / 100).toFixed(2));
+    }
+    if (!j.read) setBulkNote(j.ai ? "Could not read that file. Type it in." : "AI reading is off. Type it in.");
+    else if (next.length > 1) setBulkNote("More than one line. Pick the one to list.");
+  }
+
+  function useLine(line: { title: string; qty: number; costPence: number }) {
+    setBulkName(line.title);
+    setBulkQty(String(line.qty));
+    setBulkCost((line.costPence / 100).toFixed(2));
+    setColours([]);
+    setBulkNote(null);
+  }
+
+  async function listBulk(e: React.FormEvent) {
+    e.preventDefault();
+    setBulkNote(null);
+    const qty = Math.round(Number(bulkQty));
+    const costPence = Math.round(Number(bulkCost) * 100);
+    if (bulkName.trim().length < 2) return setBulkNote("Give it a name.");
+    if (!(qty > 0)) return setBulkNote("Enter how many.");
+    const rows = colours.length
+      ? colours
+      : [{ name: "", qty: String(qty), sell: bulkSell }];
+    if (colours.length) {
+      const sum = colours.reduce((a, row) => a + (Number(row.qty) || 0), 0);
+      if (sum !== qty) return setBulkNote("Numbers must add up to the buy.");
+    }
+    if (rows.some((row) => (colours.length > 0 && row.name.trim().length < 1) || !(Number(row.qty) > 0) || !(Number(row.sell) > 0))) {
+      return setBulkNote(colours.length ? "Each colour needs a name, a number and a sell price." : "Enter a sell price.");
+    }
+    setBulkBusy(true);
+    const variants = rows.map((row) => ({
+      title: row.name.trim() ? `${bulkName.trim()}, ${row.name.trim()}` : bulkName.trim(),
+      qty: Math.round(Number(row.qty)),
+      sellPence: Math.round(Number(row.sell) * 100),
+      costPence: Number.isFinite(costPence) && costPence > 0 ? costPence : 0,
+    }));
+    const r = await fetch("/api/items/invoice", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ invoiceId, labels: "box", variants }),
+    });
+    const j = await r.json().catch(() => ({}));
+    setBulkBusy(false);
+    if (!r.ok) return setBulkNote(j.error ?? "Could not list");
+    setBulkDone(j.items ?? []);
+  }
 
   async function describe() {
     const f = files[0] ?? shopFiles[0];
@@ -123,6 +198,98 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
 
   const reset = () => { setDone(null); setTitle(""); setDescription(""); setPrice(""); setCost(""); setFiles([]); };
   const status = (on: boolean, text = "Syncing") => on ? <Pill kind="accent">{text}</Pill> : <Pill kind="neutral">Not listed</Pill>;
+
+  if (!mode && !done) {
+    return (
+      <Phone>
+        <div className="flex items-center justify-between px-5 pb-3 pt-14">
+          <Link href="/app" className="text-[15px] font-medium text-ink-muted">Cancel</Link>
+          <h1 className="text-[17px] font-semibold">List item</h1>
+          <span className="w-12" />
+        </div>
+        <div className="flex flex-col gap-3 px-5 pt-6">
+          <button type="button" className="btn" onClick={() => setMode("single")}>Single</button>
+          <button type="button" className="btn-secondary" onClick={() => setMode("bulk")}>Bulk buy</button>
+        </div>
+      </Phone>
+    );
+  }
+
+  if (mode === "bulk") {
+    if (bulkDone) {
+      return (
+        <Phone>
+          <div className="flex min-h-screen flex-col gap-4 px-5 pb-8 pt-14">
+            <h1 className="text-[22px] font-semibold">Listed</h1>
+            <p className="text-[14px] text-ink-muted">{invoiceId ? "One label for each box. Invoice kept." : "One label for each box."}</p>
+            {bulkDone.map((m) => (
+              <Link key={m.id} href={`/app/items/${m.id}`} className="card flex items-center justify-between px-4 py-3 text-[14px]">
+                <span className="truncate font-medium">{m.title}</span>
+                <span className="text-ink-muted">{displaySku(m.sku)}, {m.qty} left</span>
+              </Link>
+            ))}
+            <a className="btn" href={`/api/labels/batch?ids=${bulkDone.map((m) => m.id).join(",")}`}>Print labels</a>
+            <button className="btn-secondary" onClick={() => { setBulkDone(null); setMode(null); setColours([]); setBulkName(""); setBulkQty(""); setBulkCost(""); setBulkSell(""); setInvoiceId(null); }}>List another</button>
+            <Link href="/app" className="btn-ghost">Back to Today</Link>
+          </div>
+        </Phone>
+      );
+    }
+    return (
+      <Phone>
+        <form onSubmit={listBulk} className="flex min-h-screen flex-col">
+          <div className="flex items-center justify-between px-5 pb-3 pt-14">
+            <button type="button" className="text-[15px] font-medium text-ink-muted" onClick={() => setMode(null)}>Back</button>
+            <h1 className="text-[17px] font-semibold">Bulk buy</h1>
+            <span className="w-12" />
+          </div>
+          <div className="flex flex-1 flex-col gap-4 px-5 pb-4">
+            <p className="text-[14px] text-ink-muted">Snap or upload the invoice, or type it in.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="btn-secondary !flex cursor-pointer items-center justify-center">
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) readInvoice(f); }} />
+                Snap
+              </label>
+              <label className="btn-secondary !flex cursor-pointer items-center justify-center">
+                <input type="file" accept=".pdf,.csv,.png,.jpg,.jpeg,.webp,image/*,application/pdf,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) readInvoice(f); }} />
+                Upload
+              </label>
+            </div>
+            {invoiceLines.length > 1 && (
+              <div className="flex flex-col gap-2">
+                {invoiceLines.map((line, i) => (
+                  <button type="button" key={i} className="card px-4 py-3 text-left text-[14px]" onClick={() => useLine(line)}>
+                    <span className="font-medium">{line.title}</span>
+                    <span className="text-ink-muted"> {line.qty}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div><label className="field-label" htmlFor="bulk-name">Name</label><input id="bulk-name" className="field" placeholder="What you bought" value={bulkName} onChange={(e) => setBulkName(e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><label className="field-label" htmlFor="bulk-qty">How many</label><input id="bulk-qty" className="field" inputMode="numeric" value={bulkQty} onChange={(e) => setBulkQty(e.target.value)} /></div>
+              <div><label className="field-label" htmlFor="bulk-cost">Cost each</label><input id="bulk-cost" className="field" inputMode="decimal" placeholder="0" value={bulkCost} onChange={(e) => setBulkCost(e.target.value)} /></div>
+            </div>
+            {colours.length === 0 && (
+              <div><label className="field-label" htmlFor="bulk-sell">Sell price</label><input id="bulk-sell" className="field" inputMode="decimal" placeholder="0" value={bulkSell} onChange={(e) => setBulkSell(e.target.value)} /></div>
+            )}
+            {colours.map((row, i) => (
+              <div key={i} className="grid grid-cols-[1fr_4rem_5rem] gap-2">
+                <input className="field" aria-label="Colour" placeholder="Blue" value={row.name} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, name: e.target.value } : r))} />
+                <input className="field" aria-label="Number" inputMode="numeric" value={row.qty} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, qty: e.target.value } : r))} />
+                <input className="field" aria-label="Sell price" placeholder="Sell" inputMode="decimal" value={row.sell} onChange={(e) => setColours((rows) => rows.map((r, j) => j === i ? { ...r, sell: e.target.value } : r))} />
+              </div>
+            ))}
+            <button type="button" className="btn-secondary" onClick={() => setColours((rows) => [...rows, { name: "", qty: rows.length === 0 ? bulkQty : "", sell: bulkSell }])}>Add colours</button>
+            {bulkNote && <p className="text-[14px]">{bulkNote}</p>}
+          </div>
+          <div className="sticky bottom-0 border-t border-border bg-white px-5 pb-7 pt-3">
+            <button className="btn" disabled={bulkBusy}>{bulkBusy ? "Listing" : "List"}</button>
+          </div>
+        </form>
+      </Phone>
+    );
+  }
 
   if (done) {
     return (

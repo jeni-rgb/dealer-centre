@@ -12,9 +12,9 @@ const Variant = z.object({
   costPence: z.number().int().min(0).max(100000000),
 });
 const Input = z.object({
-  invoiceId: z.string().min(2).max(80),
+  invoiceId: z.string().min(2).max(80).nullable().optional(),
   supplier: z.string().max(80).optional(),
-  labels: z.enum(["box", "kind"]),
+  labels: z.enum(["box", "kind"]).optional(),
   variants: z.array(Variant).min(1).max(40),
 });
 
@@ -23,11 +23,14 @@ export async function POST(req: Request) {
   const me = await getMe();
   if (!me?.dealer_id) return NextResponse.json({ error: "Sign in" }, { status: 401 });
   const p = Input.safeParse(await req.json().catch(() => null));
-  if (!p.success) return NextResponse.json({ error: "Check each kind, the numbers and the sell price" }, { status: 400 });
+  if (!p.success) return NextResponse.json({ error: "Check each colour, the number and the sell price" }, { status: 400 });
   const db = supabaseAdmin();
-  const { data: invoice } = await db.from("invoices").select("id, dealer_id").eq("id", p.data.invoiceId).maybeSingle();
-  if (!isDemo() && (!invoice || invoice.dealer_id !== me.dealer_id)) return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
-  if (p.data.supplier) await db.from("invoices").update({ supplier: p.data.supplier }).eq("id", p.data.invoiceId);
+  const labels = p.data.labels ?? "box";
+  if (p.data.invoiceId) {
+    const { data: invoice } = await db.from("invoices").select("id, dealer_id").eq("id", p.data.invoiceId).maybeSingle();
+    if (!isDemo() && (!invoice || invoice.dealer_id !== me.dealer_id)) return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    if (p.data.supplier) await db.from("invoices").update({ supplier: p.data.supplier }).eq("id", p.data.invoiceId);
+  }
   const { data: link } = await db.from("dealer_centres").select("centre_id").eq("dealer_id", me.dealer_id).eq("status", "active").is("left_at", null).limit(1).maybeSingle();
   if (isDemo()) {
     return NextResponse.json({
@@ -49,9 +52,9 @@ export async function POST(req: Request) {
         print_now: false,
         source: "invoice",
         qty: v.qty,
-        invoice_id: p.data.invoiceId,
+        invoice_id: p.data.invoiceId ?? null,
       });
-      const copies = p.data.labels === "box" ? v.qty : 1;
+      const copies = labels === "box" ? v.qty : 1;
       await db.from("print_jobs").update({ copies }).eq("item_id", item.id);
       made.push({ id: item.id, sku: item.sku, title: item.title, qty: v.qty });
     }
