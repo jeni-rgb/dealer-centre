@@ -46,63 +46,47 @@ async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout
   const tall = h >= 40 * MM;
   if (tall) return layoutTall(input, barAspect, w, h, sans, bold);
 
-  // Dealer code, top right. Measured first so the barcode always leaves a clear gap.
+  // Item name across the top. Same sizes as the 62 × 29 label. A logo, when there is one, sits in the top right and does not move these lines when it is absent.
+  const titleSize = 7 * k;
+  const smallSize = 5.5 * k;
+  const skuSize = 9 * k;
+  const priceSize = 16 * k;
+  const price = `£${(input.pricePence / 100).toFixed(input.pricePence % 100 === 0 ? 0 : 2)}`;
+  const priceW = bold.widthOfTextAtSize(price, priceSize);
+  let titleRight = w - pad;
+  if (input.logo && input.logo.width > 0 && input.logo.height > 0) {
+    const box = fitBox(Math.min(11 * MM * k, w * 0.2), titleSize + smallSize, input.logo.width / input.logo.height);
+    ops.push({ kind: "image", x: w - pad - box.width, y: h - pad - box.height, width: box.width, height: box.height });
+    titleRight = w - pad - box.width - 1.5 * MM * k;
+  }
+  const maxTitleW = titleRight - pad;
+  const fit = (t: string, size: number, width: number) => {
+    let out = t;
+    while (sans.widthOfTextAtSize(out, size) > width && out.length > 3) out = out.slice(0, -2) + "…";
+    return out;
+  };
+  const titleY = h - pad - titleSize;
+  ops.push({ kind: "text", text: fit(input.title, titleSize, maxTitleW), x: pad, y: titleY, size: titleSize, font: "sans" });
+  const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
+  const smallY = titleY - smallSize - 1;
+  if (smallParts.length) ops.push({ kind: "text", text: fit(smallParts.join(" · "), smallSize, titleRight - pad), x: pad, y: smallY, size: smallSize, font: "sans", grey: true });
+
+  // Barcode under the name, dealer code to its right, ticket under the bars, price at the bottom right.
   const bcH = 9 * MM * k;
   let codeSize = Math.min(20 * k, bcH * 1.2);
   let codeW = bold.widthOfTextAtSize(input.dealerCode, codeSize);
   const maxCodeW = w * 0.38;
   if (codeW > maxCodeW) { codeSize *= maxCodeW / codeW; codeW = maxCodeW; }
   const bcW = Math.max(10 * MM * k, Math.min(bcH * barAspect, w - pad * 3 - codeW));
-  ops.push({ kind: "barcode", x: pad, y: h - pad - bcH, width: bcW, height: bcH });
-  // Cap height of Helvetica Bold ≈ 0.72em; centre the code vertically in the barcode band.
+  const textFloor = (smallParts.length ? smallY : titleY) - 1.2 * MM * k;
+  let bcY = textFloor - bcH;
+  const skuY = pad + skuSize * 0.15;
+  if (bcY < skuY + skuSize + MM * k) bcY = skuY + skuSize + MM * k;
+  ops.push({ kind: "barcode", x: pad, y: bcY, width: bcW, height: bcH });
   const capH = codeSize * 0.72;
-  ops.push({ kind: "text", text: input.dealerCode, x: w - pad - codeW, y: h - pad - bcH / 2 - capH / 2, size: codeSize, font: "bold" });
-
-  const skuSize = (tall ? 10 : 9) * k;
-  ops.push({ kind: "text", text: displaySku(input.sku), x: pad, y: h - pad - bcH - skuSize - 1.5 * MM * k, size: skuSize, font: "mono" });
-
-  const price = `£${(input.pricePence / 100).toFixed(input.pricePence % 100 === 0 ? 0 : 2)}`;
-  const priceSize = (tall ? 22 : 16) * k;
-  const priceW = bold.widthOfTextAtSize(price, priceSize);
-  let logoW = 0;
-  if (input.logo && input.logo.width > 0 && input.logo.height > 0) {
-    const above = h - pad - bcH - (pad + priceSize) - 3 * MM * k;
-    const box = fitBox(Math.min(14 * MM * k, w * 0.26), Math.max(4 * MM * k, above), input.logo.width / input.logo.height);
-    logoW = box.width;
-    const x = w - pad - box.width;
-    const y = pad + priceSize + 1.2 * MM * k;
-    if (y + box.height < h - pad - bcH - MM * k) ops.push({ kind: "image", x, y, width: box.width, height: box.height });
-    else logoW = 0;
-  }
+  ops.push({ kind: "text", text: input.dealerCode, x: w - pad - codeW, y: bcY + bcH / 2 - capH / 2, size: codeSize, font: "bold" });
+  ops.push({ kind: "text", text: displaySku(input.sku), x: pad, y: skuY, size: skuSize, font: "mono" });
   ops.push({ kind: "text", text: price, x: w - pad - priceW, y: pad, size: priceSize, font: "bold" });
-
-  const titleSize = (tall ? 9.5 : 7) * k;
-  const smallSize = (tall ? 7 : 5.5) * k;
-  const maxTitleW = w - pad * 2 - Math.max(priceW, logoW) - 2 * MM * k;
-  const fit = (t: string, size: number) => {
-    let out = t;
-    while (sans.widthOfTextAtSize(out, size) > maxTitleW && out.length > 3) out = out.slice(0, -2) + "…";
-    return out;
-  };
-  let titleLines: string[];
-  if (tall && sans.widthOfTextAtSize(input.title, titleSize) > maxTitleW) {
-    const words = input.title.split(/\s+/);
-    let first = "";
-    while (words.length && sans.widthOfTextAtSize((first + " " + words[0]).trim(), titleSize) <= maxTitleW) first = (first + " " + words.shift()).trim();
-    if (!first) first = fit(words.shift() ?? "", titleSize);
-    titleLines = words.length ? [first, fit(words.join(" "), titleSize)] : [first];
-  } else titleLines = [fit(input.title, titleSize)];
-  let y = pad + 1;
-  for (const line of [...titleLines].reverse()) {
-    ops.push({ kind: "text", text: line, x: pad, y, size: titleSize, font: "sans" });
-    y += titleSize + 1;
-  }
-  const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
-  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(" · ")] : [];
-  for (const line of smallLines) {
-    ops.push({ kind: "text", text: fit(line, smallSize), x: pad, y, size: smallSize, font: "sans", grey: true });
-    y += smallSize + 1;
-  }
   return { w, h, ops };
 }
 
