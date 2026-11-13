@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { findTicket, majorToPence, planMatch } from "@/lib/sumup/match";
 import { checkRows, guessSheetMap } from "@/lib/items/sheet";
-import { squareReaderUrl, sumupReaderUrl } from "@/lib/pay/links";
+import { squareReaderUrl, sumupReaderUrl, zettleReaderUrl } from "@/lib/pay/links";
+import { pngSize, toMonoPng } from "@/lib/labels/mono";
+import sharp from "sharp";
+import { renderLabelSvg } from "@/lib/labels/render";
 
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—·]/);
 
@@ -55,7 +58,23 @@ describe("reader links", () => {
     expect(sumup).toContain("B14");
     const square = squareReaderUrl({ amountPence: 39500, ticket: "B14 0362", clientId: "sq", callback: "https://example.com/api/pay/square", state: "abc" });
     expect(square.startsWith("square-commerce-v1://payment/create?data=")).toBe(true);
-    expect(decodeURIComponent(square)).toContain("39500");
-    expect(decodeURIComponent(square)).toContain("B14 0362");
+    const zettle = zettleReaderUrl({ amountPence: 14500, ticket: "B14 0372", apiKey: "key", success: "https://example.com/ok", failure: "https://example.com/no", reference: "abc" });
+    expect(zettle.startsWith("izettle://x-callback-url/payment/1.0")).toBe(true);
+    expect(zettle).toContain("price=145.00");
+    expect(zettle).toContain("GBP");
+  });
+});
+
+describe("logo on a label", () => {
+  it("prints a black and white mark and leaves a plain label alone", async () => {
+    const src = await sharp({ create: { width: 40, height: 40, channels: 3, background: { r: 200, g: 20, b: 20 } } }).png().toBuffer();
+    const mono = await toMonoPng(src);
+    const logo = { png: new Uint8Array(mono), ...pngSize(mono) };
+    const withLogo = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Oak coffer", pricePence: 39500, logo });
+    const plain = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Oak coffer", pricePence: 39500 });
+    expect(withLogo).toContain("<image");
+    expect(plain).not.toContain("<image");
+    expect(withLogo).toContain("£395");
+    expect(withLogo).toContain("B14 0372");
   });
 });

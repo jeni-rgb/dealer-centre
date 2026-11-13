@@ -6,20 +6,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Phone, Pill } from "@/components/ui";
 import { isValidDealerCode, suggestDealerCode } from "@/lib/sku";
+import { LogoField } from "@/components/logo-field";
 
 type ListMode = "self" | "staff";
 type Dealer = { name: string; code: string; plan: string; stripe_customer_id: string | null; listing_mode: ListMode | null; listing_tokens: number; listing_tokens_bought: number; card_added_at: string | null } | null;
-type Step = "business" | "who" | "card" | "tokens" | "centre" | "printers" | "shopify" | "summary";
+type Step = "business" | "who" | "card" | "tokens" | "centre" | "printers" | "shopify" | "logo" | "summary";
 type HP = { idx: number; total: number; step: Step; steps: Step[]; next: () => void };
 function stepsFor(mode: ListMode | null): Step[] {
-  const tail: Step[] = ["centre", "printers", "shopify", "summary"];
+  const tail: Step[] = ["centre", "printers", "shopify", "logo", "summary"];
   return mode === "staff" ? ["business", "who", "card", "tokens", ...tail] : ["business", "who", "card", ...tail];
 }
 
 export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, listHint }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string; listHint?: ListMode | null }) {
   const router = useRouter();
   const [mode, setMode] = useState<ListMode | null>(dealer?.listing_mode ?? listHint ?? null);
-  const [step, setStep] = useState<Step>((["business", "who", "card", "tokens", "centre", "printers", "shopify", "summary"] as Step[]).includes(initial as Step) ? (initial as Step) : "business");
+  const [step, setStep] = useState<Step>((["business", "who", "card", "tokens", "centre", "printers", "shopify", "logo", "summary"] as Step[]).includes(initial as Step) ? (initial as Step) : "business");
   const steps = stepsFor(mode === "staff" || step === "tokens" ? "staff" : mode);
   const go = (s: Step) => { setStep(s); router.replace(`/signup/dealer?step=${s}`); };
   const next = () => { const i = steps.indexOf(step); go(steps[Math.min(Math.max(i, 0) + 1, steps.length - 1)]); };
@@ -36,6 +37,7 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
       {step === "centre" && <Centre hp={hp} centres={centres} onDone={next} />}
       {step === "printers" && <Printers hp={hp} ownPrinters={ownPrinters} centres={centres} onDone={next} />}
       {step === "shopify" && <Shopify hp={hp} hasShopify={hasShopify} onDone={next} />}
+      {step === "logo" && <LogoStep hp={hp} onDone={next} />}
       {step === "summary" && (
         <>
           <StepHeader {...hp} title="You are set" sub="Anything skipped stays in Settings until it is done." />
@@ -304,8 +306,20 @@ function Shopify({ hp, hasShopify, onDone }: { hp: HP; hasShopify: boolean; onDo
   );
 }
 
+function LogoStep({ hp, onDone }: { hp: HP; onDone: () => void }) {
+  return (
+    <>
+      <StepHeader {...hp} title="Your logo" sub="Optional. It prints in black on your labels." />
+      <div className="flex flex-col gap-4 px-5 pt-6">
+        <LogoField saved={false} />
+        <button className="btn" onClick={onDone}>Continue</button>
+      </div>
+    </>
+  );
+}
+
 function StepHeader({ title, sub, idx, total, step, steps, next }: HP & { title: string; sub?: string }) {
-  const skip = step === "centre" || step === "printers" || step === "shopify";
+  const skip = step === "centre" || step === "printers" || step === "shopify" || step === "logo";
   return (
     <div className="flex flex-col gap-2 px-5 pt-14">
       <div className="flex items-center justify-between text-[12px] text-ink-muted"><span>{idx + 1} of {total}</span>{skip && <button className="font-medium text-accent" onClick={next}>Skip</button>}</div>

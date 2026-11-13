@@ -7,6 +7,7 @@ const Patch = z.object({
   default_own_shopify: z.boolean().optional(),
   default_centre_shopify: z.boolean().optional(),
   name: z.string().min(2).max(80).optional(),
+  card_machine: z.enum(["sumup", "square", "zettle"]).nullable().optional(),
 });
 
 export async function PATCH(req: Request) {

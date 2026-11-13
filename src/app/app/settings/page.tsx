@@ -15,6 +15,8 @@ export default async function Settings() {
     sb.from("printers").select("id, name, owner_type, provider, status, label_width_mm, label_height_mm, centres:centre_id(name)").neq("status", "removed"),
     supabaseAdmin().from("users").select("id, email").eq("dealer_id", me.dealer_id).order("email"),
   ]);
+  const extra = await sb.from("dealers").select("logo_path, card_machine").eq("id", me.dealer_id).maybeSingle();
+  const machine = extra.data?.card_machine === "sumup" || extra.data?.card_machine === "square" || extra.data?.card_machine === "zettle" ? extra.data.card_machine : null;
   return (
     <Screen title="Account" back={{ href: "/app" }}>
       <SettingsView
@@ -27,6 +29,8 @@ export default async function Settings() {
         centres={(links ?? []).map((l) => ({ id: l.centre_id, name: (l.centres as unknown as { name: string })?.name ?? "", status: l.status, rent_pence: l.rent_pence, rent_mode: l.rent_mode }))}
         printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${(p.centres as unknown as { name: string })?.name ?? p.name} till` : p.name, own: p.owner_type === "dealer", cloud: p.provider === "printnode", w: p.label_width_mm, h: p.label_height_mm }))}
         sumupOn={env.sumup.configured()}
+        hasLogo={!!extra.data?.logo_path}
+        machine={machine}
       />
       <DealerNav active="settings" />
     </Screen>

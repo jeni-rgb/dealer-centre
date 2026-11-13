@@ -1,6 +1,7 @@
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { renderLabelSvg } from "@/lib/labels/render";
+import { logoForDealer } from "@/lib/labels/load";
 import { PrintView } from "./view";
 
 export const dynamic = "force-dynamic";
@@ -13,22 +14,28 @@ export default async function PrintLabels({ searchParams }: { searchParams: Prom
   const ids = (sp.ids ?? "").split(",").filter(Boolean).slice(0, 200);
   const sb = await supabaseServer();
   const { data: items } = ids.length
-    ? await sb.from("items").select("sku, title, price_pence, centres(name), dealers(code, name)").in("id", ids)
+    ? await sb.from("items").select("sku, title, price_pence, dealer_id, centres(name), dealers(code, name)").in("id", ids)
     : { data: [] };
+  const logos = new Map<string, Awaited<ReturnType<typeof logoForDealer>>>();
   const labels = await Promise.all(
-    (items ?? []).map(async (i) => ({
-      sku: i.sku as string,
-      svg: await renderLabelSvg({
-        sku: i.sku,
-        title: i.title,
-        pricePence: i.price_pence,
-        dealerCode: (i.dealers as unknown as { code: string }).code,
-        dealerName: (i.dealers as unknown as { name?: string | null }).name ?? null,
-        centreName: (i.centres as unknown as { name: string } | null)?.name ?? null,
-        widthMm,
-        heightMm,
-      }),
-    })),
+    (items ?? []).map(async (i) => {
+      const dealerId = i.dealer_id as string;
+      if (!logos.has(dealerId)) logos.set(dealerId, await logoForDealer(sb, dealerId));
+      return {
+        sku: i.sku as string,
+        svg: await renderLabelSvg({
+          sku: i.sku,
+          title: i.title,
+          pricePence: i.price_pence,
+          dealerCode: (i.dealers as unknown as { code: string }).code,
+          dealerName: (i.dealers as unknown as { name?: string | null }).name ?? null,
+          centreName: (i.centres as unknown as { name: string } | null)?.name ?? null,
+          widthMm,
+          heightMm,
+          logo: logos.get(dealerId),
+        }),
+      };
+    }),
   );
   const pdfUrl = `/api/labels/batch?ids=${ids.join(",")}&w=${widthMm}&h=${heightMm}`;
   return <PrintView labels={labels} w={widthMm} h={heightMm} pdfUrl={pdfUrl} itemIds={ids} listed={!!(sp as Record<string, string | undefined>).listed} />;

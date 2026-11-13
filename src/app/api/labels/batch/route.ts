@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getMe } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { renderLabelBatch } from "@/lib/labels/render";
+import { logoForDealer } from "@/lib/labels/load";
 
 /** GET /api/labels/batch?ids=a,b,c  returns a multi page PDF for browser printing. */
 export async function GET(req: Request) {
@@ -14,8 +15,13 @@ export async function GET(req: Request) {
   if (!ids.length) return new NextResponse("no ids", { status: 400 });
 
   const sb = await supabaseServer();
-  const { data: items } = await sb.from("items").select("sku, title, price_pence, centres(name), dealers(code, name)").in("id", ids);
+  const { data: items } = await sb.from("items").select("sku, title, price_pence, dealer_id, centres(name), dealers(code, name)").in("id", ids);
   if (!items?.length) return new NextResponse("not found", { status: 404 });
+  const logos = new Map<string, Awaited<ReturnType<typeof logoForDealer>>>();
+  for (const i of items) {
+    const dealerId = i.dealer_id as string;
+    if (!logos.has(dealerId)) logos.set(dealerId, await logoForDealer(sb, dealerId));
+  }
 
   const pdf = await renderLabelBatch(
     items.map((i) => ({
@@ -27,6 +33,7 @@ export async function GET(req: Request) {
       centreName: (i.centres as unknown as { name: string } | null)?.name ?? null,
       widthMm,
       heightMm,
+      logo: logos.get(i.dealer_id as string),
     })),
   );
   return new NextResponse(Buffer.from(pdf), {

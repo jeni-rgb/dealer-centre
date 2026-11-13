@@ -3,6 +3,7 @@ import type { ChannelRow, ItemRow } from "@/lib/channels/types";
 import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
 import { renderLabelPdf } from "@/lib/labels/render";
+import { logoForDealer } from "@/lib/labels/load";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
@@ -62,15 +63,17 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       const { data: c } = await db.from("centres").select("name").eq("id", item.centre_id).single();
       centreName = c?.name ?? null;
     }
+    const dealer = pj.dealers as { code: string; name?: string | null };
     const pdf = await renderLabelPdf({
       sku: item.sku,
-      dealerCode: (pj.dealers as { code: string }).code,
-      dealerName: (pj.dealers as { name?: string | null }).name ?? null,
+      dealerCode: dealer.code,
+      dealerName: dealer.name ?? null,
       title: item.title,
       pricePence: item.price_pence,
       centreName,
       widthMm: pj.printers?.label_width_mm ?? 62,
       heightMm: pj.printers?.label_height_mm ?? 29,
+      logo: await logoForDealer(db, item.dealer_id),
     });
     const path = `labels/${item.dealer_id}/${item.sku}.pdf`;
     await db.storage.from("files").upload(path, pdf, { contentType: "application/pdf", upsert: true });

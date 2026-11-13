@@ -12,6 +12,8 @@ export type LabelInput = {
   qrUrl?: string | null;
   widthMm?: number;
   heightMm?: number;
+  /** Already thresholded black and white PNG. Omitted means the label is unchanged. */
+  logo?: { png: Uint8Array; width: number; height: number } | null;
 };
 
 const MM = 72 / 25.4;
@@ -19,7 +21,15 @@ const MM = 72 / 25.4;
 type TextOp = { kind: "text"; text: string; x: number; y: number; size: number; font: "sans" | "bold" | "mono"; grey?: boolean };
 type BarOp = { kind: "barcode"; x: number; y: number; width: number; height: number };
 type RectOp = { kind: "rect"; x: number; y: number; width: number; height: number; line: number };
-type Layout = { w: number; h: number; ops: (TextOp | BarOp | RectOp)[] };
+type ImageOp = { kind: "image"; x: number; y: number; width: number; height: number };
+type Layout = { w: number; h: number; ops: (TextOp | BarOp | RectOp | ImageOp)[] };
+
+function fitBox(maxW: number, maxH: number, aspect: number): { width: number; height: number } {
+  let width = maxW;
+  let height = width / Math.max(aspect, 0.2);
+  if (height > maxH) { height = maxH; width = height * aspect; }
+  return { width, height };
+}
 
 /** Lays out one label in PDF points (origin bottom left). Shared by the PDF and SVG/PNG outputs. */
 async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout> {
@@ -54,11 +64,21 @@ async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout
   const price = `£${(input.pricePence / 100).toFixed(input.pricePence % 100 === 0 ? 0 : 2)}`;
   const priceSize = (tall ? 22 : 16) * k;
   const priceW = bold.widthOfTextAtSize(price, priceSize);
+  let logoW = 0;
+  if (input.logo && input.logo.width > 0 && input.logo.height > 0) {
+    const above = h - pad - bcH - (pad + priceSize) - 3 * MM * k;
+    const box = fitBox(Math.min(14 * MM * k, w * 0.26), Math.max(4 * MM * k, above), input.logo.width / input.logo.height);
+    logoW = box.width;
+    const x = w - pad - box.width;
+    const y = pad + priceSize + 1.2 * MM * k;
+    if (y + box.height < h - pad - bcH - MM * k) ops.push({ kind: "image", x, y, width: box.width, height: box.height });
+    else logoW = 0;
+  }
   ops.push({ kind: "text", text: price, x: w - pad - priceW, y: pad, size: priceSize, font: "bold" });
 
   const titleSize = (tall ? 9.5 : 7) * k;
   const smallSize = (tall ? 7 : 5.5) * k;
-  const maxTitleW = w - pad * 2 - priceW - 2 * MM * k;
+  const maxTitleW = w - pad * 2 - Math.max(priceW, logoW) - 2 * MM * k;
   const fit = (t: string, size: number) => {
     let out = t;
     while (sans.widthOfTextAtSize(out, size) > maxTitleW && out.length > 3) out = out.slice(0, -2) + "…";
@@ -78,7 +98,7 @@ async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout
     y += titleSize + 1;
   }
   const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
-  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(" · ")] : [];
+  const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(", ")] : [];
   for (const line of smallLines) {
     ops.push({ kind: "text", text: fit(line, smallSize), x: pad, y, size: smallSize, font: "sans", grey: true });
     y += smallSize + 1;
@@ -152,8 +172,14 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
 
   // Top: dealer trading name, bold uppercase, centred, up to 2 lines, auto-shrunk.
   let top = h - pad;
+  let nameW = innerW;
+  if (input.logo && input.logo.width > 0 && input.logo.height > 0) {
+    const box = fitBox(16 * MM * s, 12 * MM * s, input.logo.width / input.logo.height);
+    ops.push({ kind: "image", x: w - pad - box.width, y: h - pad - box.height, width: box.width, height: box.height });
+    nameW = innerW - box.width - 2 * MM * s;
+  }
   const name = (input.dealerName?.trim() || input.dealerCode).toUpperCase();
-  const nm = fitWrap(bold, name, 15 * s, 7 * s, innerW, 2, h * 0.24);
+  const nm = fitWrap(bold, name, 15 * s, 7 * s, nameW, 2, h * 0.24);
   for (const line of nm.lines) {
     top -= nm.size * 0.85;
     ops.push({ kind: "text", text: line, x: centre(line, nm.size, bold), y: top, size: nm.size, font: "bold" });
@@ -189,12 +215,14 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
     mono: await pdf.embedFont(StandardFonts.Courier),
   };
   const img = await pdf.embedPng(await bwipjs.toBuffer(barOpts(input.sku)));
+  const logo = input.logo ? await pdf.embedPng(input.logo.png) : null;
   const { w, h, ops } = await layoutLabel(input, img.width / img.height);
   const page = pdf.addPage([w, h]);
   for (const o of ops) {
     if (o.kind === "barcode") page.drawImage(img, o);
+    else if (o.kind === "image" && logo) page.drawImage(logo, o);
     else if (o.kind === "rect") page.drawRectangle({ x: o.x, y: o.y, width: o.width, height: o.height, borderWidth: o.line, borderColor: rgb(0, 0, 0) });
-    else page.drawText(o.text, { x: o.x, y: o.y, size: o.size, font: fonts[o.font], color: o.grey ? rgb(0.3, 0.3, 0.3) : rgb(0, 0, 0) });
+    else if (o.kind === "text") page.drawText(o.text, { x: o.x, y: o.y, size: o.size, font: fonts[o.font], color: o.grey ? rgb(0.3, 0.3, 0.3) : rgb(0, 0, 0) });
   }
   return pdf.save();
 }
@@ -208,11 +236,16 @@ export async function renderLabelSvg(input: LabelInput): Promise<string> {
   const { w, h, ops } = await layoutLabel(input, Number(vb[1]) / Number(vb[2]));
   const family = { sans: "Helvetica, Arial, sans-serif", bold: "Helvetica, Arial, sans-serif", mono: "Courier, 'Courier New', monospace" };
   const parts = ops.map((o) => {
+    if (o.kind === "image" && input.logo) {
+      const b64 = Buffer.from(input.logo.png).toString("base64");
+      return `<image x="${o.x}" y="${h - o.y - o.height}" width="${o.width}" height="${o.height}" href="data:image/png;base64,${b64}"/>`;
+    }
     if (o.kind === "barcode") {
       const inner = bar.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
       return `<svg x="${o.x}" y="${h - o.y - o.height}" width="${o.width}" height="${o.height}" viewBox="0 0 ${vb[1]} ${vb[2]}" preserveAspectRatio="none" shape-rendering="crispEdges">${inner}</svg>`;
     }
     if (o.kind === "rect") return `<rect x="${o.x + o.line / 2}" y="${h - o.y - o.height + o.line / 2}" width="${o.width - o.line}" height="${o.height - o.line}" fill="none" stroke="#000" stroke-width="${o.line}"/>`;
+    if (o.kind !== "text") return "";
     return `<text x="${o.x}" y="${h - o.y}" font-size="${o.size}" font-family="${family[o.font]}"${o.font === "bold" ? ' font-weight="700"' : ""} fill="${o.grey ? "#4d4d4d" : "#000"}">${esc(o.text)}</text>`;
   });
   const wm = input.widthMm ?? 62, hm = input.heightMm ?? 29;

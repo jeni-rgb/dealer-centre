@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { requireDealer } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ChannelLabel, DaysBand, DealerNav, Pill, Screen, Sku, money, when } from "@/components/ui";
-import { env } from "@/lib/env";
 import { ItemActions } from "./actions";
 import { MarginCard } from "./margin";
 
@@ -23,6 +22,9 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
   const sale = (item.sales as unknown as { id: string; amount_pence: number; listed_price_pence: number | null; payment_type: string | null; sold_at: string; corrected_at: string | null; original_amount_pence: number | null; channels: { type: string; owner_type: string } | null }[])[0];
   const photos = item.photos as { url?: string }[];
   const label = (item.print_jobs as unknown as { status: string }[])[0];
+
+  const { data: mine } = await sb.from("dealers").select("card_machine").eq("id", me.dealer_id).maybeSingle();
+  const machine = mine?.card_machine === "sumup" || mine?.card_machine === "square" || mine?.card_machine === "zettle" ? mine.card_machine : null;
 
   return (
     <Screen title="Item" back={{ href: "/app/stock" }}>
@@ -73,7 +75,7 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
       )}
       <div className="card flex items-center justify-between p-4 text-[14px]"><span>Listed</span><span className="text-ink-muted">{new Date(item.listed_at).toLocaleDateString("en-GB")}</span></div>
 
-      <ItemActions id={item.id} status={item.status} title={item.title} price={item.price_pence} cost={item.cost_pence ?? null} atCentre={!!item.centre_id} sumupPay={env.sumup.payReady()} squarePay={!!env.square.appId()} sale={sale ? { id: sale.id, amount_pence: sale.amount_pence, payment_type: sale.payment_type, sold_at: sale.sold_at } : null} />
+      <ItemActions id={item.id} status={item.status} title={item.title} price={item.price_pence} cost={item.cost_pence ?? null} atCentre={!!item.centre_id} machine={machine} sale={sale ? { id: sale.id, amount_pence: sale.amount_pence, payment_type: sale.payment_type, sold_at: sale.sold_at } : null} />
       <Link href="/app/stock" className="btn-ghost">Back to stock</Link>
       <DealerNav active="stock" />
     </Screen>

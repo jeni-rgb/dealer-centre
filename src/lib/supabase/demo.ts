@@ -261,6 +261,30 @@ const rpc = async (fn: string, args: Record<string, unknown>) => {
   return { data: null, error: null };
 };
 
+const demoFiles = () => {
+  const g = globalThis as unknown as { __dcFiles?: Map<string, Uint8Array> };
+  if (!g.__dcFiles) g.__dcFiles = new Map();
+  return g.__dcFiles;
+};
+
+function demoStorage() {
+  return {
+    from: () => ({
+      upload: async (path: string, body: Blob | Buffer | Uint8Array) => {
+        const bytes = body instanceof Uint8Array ? body : new Uint8Array(await (body as Blob).arrayBuffer());
+        demoFiles().set(path, bytes);
+        return { error: null };
+      },
+      download: async (path: string) => {
+        const bytes = demoFiles().get(path);
+        return { data: bytes ? new Blob([Buffer.from(bytes)]) : null, error: bytes ? null : { message: "missing" } };
+      },
+      getPublicUrl: (path: string) => ({ data: { publicUrl: demoFiles().has(path) ? `/api/dealers/logo?path=${encodeURIComponent(path)}` : "" } }),
+      createSignedUrl: async () => ({ data: null }),
+    }),
+  };
+}
+
 export async function demoRole(): Promise<"dealer" | "centre" | "admin"> {
   const c = (await cookies()).get("demo_role")?.value;
   return c === "centre" || c === "admin" ? c : "dealer";
@@ -273,7 +297,7 @@ export async function demoClient() {
     from: (table: string) => new Q(table),
     rpc,
     auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
-    storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
+    storage: demoStorage(),
   };
 }
 
@@ -284,7 +308,7 @@ export function demoSyncClient() {
     from: (table: string) => new Q(table),
     rpc,
     auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
-    storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
+    storage: demoStorage(),
   };
 }
 

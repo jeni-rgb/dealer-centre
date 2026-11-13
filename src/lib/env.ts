@@ -30,4 +30,6 @@ export const env = {
     configured: () => !!(pick("SUMUP_CLIENT_ID") && pick("SUMUP_CLIENT_SECRET")),
     payReady: () => !!pick("SUMUP_AFFILIATE_KEY"),
   },
+  /** Old iZettle app link. Optional. Without it, Own POS opens Zettle and the dealer confirms. */
+  zettleKey: () => pick("ZETTLE_API_KEY") ?? "",
 };

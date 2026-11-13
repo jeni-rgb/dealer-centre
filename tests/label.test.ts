@@ -21,6 +21,7 @@ describe("labels", () => {
     const svg = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Victorian walnut writing slope", pricePence: 14500 });
     expect(svg).toContain("Victorian walnut writing slope");
     expect(svg).toContain("B14 0372");
+    expect(svg).not.toContain("<image");
     expect(nextLabelTitle("Oak coffer", "Oak coffer")).toEqual({ title: null, error: null });
     expect(nextLabelTitle("Oak coffer", "  Oak chest  ")).toEqual({ title: "Oak chest", error: null });
     expect(nextLabelTitle("Oak coffer", " ")).toEqual({ title: null, error: "Enter the name of the piece." });

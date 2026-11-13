@@ -25,3 +25,18 @@ export function squareReaderUrl(p: { amountPence: number; ticket: string; client
   };
   return `square-commerce-v1://payment/create?data=${encodeURIComponent(JSON.stringify(data))}`;
 }
+
+/** Legacy iZettle app link. The current Zettle SDK is for a native app, not a website, so this only works when Zettle still honours the old scheme and the key matches. */
+export function zettleReaderUrl(p: { amountPence: number; ticket: string; apiKey: string; success: string; failure: string; reference: string }): string {
+  const q = new URLSearchParams({
+    "x-source": "Dealer Centre",
+    "x-success": p.success,
+    "x-failure": p.failure,
+    "api-key": p.apiKey,
+    price: (p.amountPence / 100).toFixed(2),
+    currency: "GBP",
+    title: p.ticket,
+    reference: p.reference,
+  });
+  return `izettle://x-callback-url/payment/1.0?${q.toString()}`;
+}
