@@ -276,7 +276,7 @@ export default function Landing() {
               </div>
               <p className="mt-3 max-w-xl text-[14px] text-[#DCE8DD]">Both plans: unlimited dealers, statements and payouts worked out, and your own online shop built and run for you, no set up fee, 20% commission on what sells (15% Dealer Centre, 5% to your centre). £2.50 plus VAT off the monthly fee for each dealer on Full.</p>
             </div>
-            <Link href="/signup?as=centre" className="btn-secondary !w-auto !px-7">Set up my centre</Link>
+            <Link href="/signup?as=centre" className="btn-secondary !h-auto min-h-12 !w-auto shrink-0 whitespace-nowrap !px-7">Set up my centre</Link>
           </div>
         </div>
       </section>
