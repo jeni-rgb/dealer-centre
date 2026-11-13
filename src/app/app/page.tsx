@@ -6,9 +6,12 @@ import { namedSales } from "@/lib/billing/pricing";
 import { PlanCompare } from "@/components/plan-compare";
 import { sumBetween, weekRange } from "@/lib/full/weeks";
 import { requireDealer } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
 import { displaySku } from "@/lib/sku";
+import { env } from "@/lib/env";
+import { sumupMarker } from "@/lib/sumup/sync";
+import { SumupLive } from "@/components/sumup-live";
 
 export default async function Today() {
   const me = await requireDealer();
@@ -38,6 +41,12 @@ export default async function Today() {
   const thisWeek = sumBetween(weekSales ?? [], weeks.thisStart, weeks.nextStart);
   const lastWeek = sumBetween(weekSales ?? [], weeks.lastStart, weeks.thisStart);
   const goalPence = goalRow.data?.weekly_goal_pence ?? 0;
+  let sumupSeen: string | null = null;
+  if (env.sumup.configured()) {
+    const db = supabaseAdmin();
+    const { data: sumup } = await db.from("sumup_connections").select("id").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).maybeSingle();
+    if (sumup) sumupSeen = await sumupMarker(db, sumup.id);
+  }
 
   return (
     <Phone>
@@ -69,6 +78,7 @@ export default async function Today() {
       </header>
 
       <div className="flex flex-col gap-4 px-5 pt-5">
+        {sumupSeen !== null && <SumupLive owner="dealer" seen={sumupSeen} />}
         <div className="grid grid-cols-2 gap-3">
           <Link href="/app/items/new" className="btn !h-12 !text-[14px]">{Icon.plus} List item</Link>
           <Link href="/app/labels" className="btn-secondary !h-12 !gap-1.5 !px-2 !text-[14px]">{Icon.printer} Labels{printCount > 0 && <span className="pill pill-warning !h-5 !rounded-full whitespace-nowrap !px-1.5 !text-[11px]">{printCount} to print</span>}</Link>

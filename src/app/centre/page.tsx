@@ -2,8 +2,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AddDealer } from "./add-dealer";
 import { currentCentre } from "@/lib/centre";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { Kpi, Pill, money } from "@/components/ui";
+import { env } from "@/lib/env";
+import { sumupMarker } from "@/lib/sumup/sync";
+import { SumupLive } from "@/components/sumup-live";
 
 type Row = { dealer_id: string; name: string; code: string; pitch_numbers: string[]; rent_pence: number; sales_month_pence: number; items_live: number; last_sale_at: string | null; placeholder?: boolean };
 
@@ -26,9 +29,16 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
   const unmatched = (sales ?? []).filter((s) => !s.dealer_id).length;
   const stale = (r: Row) => !r.last_sale_at || Date.now() - new Date(r.last_sale_at).getTime() > 30 * 86400000;
   const maxSales = Math.max(1, ...list.map((r) => Number(r.sales_month_pence)));
+  let sumupSeen: string | null = null;
+  if (env.sumup.configured()) {
+    const db = supabaseAdmin();
+    const { data: sumup } = await db.from("sumup_connections").select("id").eq("owner_type", "centre").eq("owner_id", centre.id).maybeSingle();
+    if (sumup) sumupSeen = await sumupMarker(db, sumup.id);
+  }
 
   return (
     <>
+      {sumupSeen !== null && <SumupLive owner="centre" centreId={centre.id} seen={sumupSeen} />}
       <div className="mb-6 flex items-baseline justify-between">
         <div><h1 className="text-[28px] font-semibold">{centre.name}</h1><p className="flex items-center gap-2 text-[13px] text-ink-muted">Centre code <span className="tag !h-6 !text-[11px]">{centre.invite_code}</span> · {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p></div>
         <div className="flex items-center gap-2">

@@ -12,7 +12,7 @@ export function sumupAuthorizeUrl(state: string, origin: string): string {
     response_type: "code",
     client_id: env.sumup.clientId(),
     redirect_uri: sumupRedirect(origin),
-    scope: "transactions.history",
+    scope: "transactions.history payments",
     state,
   });
   return `${AUTH}?${q.toString()}`;

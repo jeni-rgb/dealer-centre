@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findTicket, majorToPence, planMatch } from "@/lib/sumup/match";
+import { readSumupNotice, transactionsFromCheckout } from "@/lib/sumup/events";
 import { checkRows, guessSheetMap } from "@/lib/items/sheet";
 import { squareReaderUrl, sumupReaderUrl, zettleReaderUrl } from "@/lib/pay/links";
 import { pngSize, toMonoPng } from "@/lib/labels/mono";
@@ -29,6 +30,29 @@ describe("sumup match", () => {
     });
     expect(fresh).toEqual({ kind: "matched", sku: "B140372" });
     expect(planMatch({ description: "no ticket here", amountPence: 100, day: "2026-11-02", live: [], taken: [] }).kind).toBe("unmatched");
+  });
+});
+
+describe("sumup events", () => {
+  it("reads a checkout, a reader result, and a paid description", () => {
+    expect(readSumupNotice({ event_type: "CHECKOUT_STATUS_CHANGED", id: "chk_1" })).toEqual({ type: "checkout", id: "chk_1" });
+    expect(readSumupNotice({
+      event_type: "solo.transaction.updated",
+      payload: { client_transaction_id: "ct_1", merchant_code: "M1", status: "successful" },
+    })).toEqual({ type: "solo", clientTransactionId: "ct_1", merchantCode: "M1", status: "successful" });
+    expect(readSumupNotice({ event_type: "something.new" }).type).toBe("ignore");
+    const txs = transactionsFromCheckout({
+      id: "chk_1",
+      status: "PAID",
+      description: "B14 0372 writing slope",
+      transactions: [{ id: "tx_1", amount: 45, status: "SUCCESSFUL", currency: "GBP" }],
+    });
+    expect(txs).toHaveLength(1);
+    expect(findTicket(txs[0].product_summary ?? "")).toBe("B140372");
+    expect(transactionsFromCheckout({ status: "PENDING", transactions: [{ id: "tx_2", amount: 10, status: "SUCCESSFUL" }] })).toEqual([]);
+    const bare = transactionsFromCheckout({ id: "chk_2", status: "PAID", amount: 12.5, currency: "GBP", description: "B14 0362" });
+    expect(bare[0].id).toBe("chk_2");
+    expect(bare[0].amount).toBe(12.5);
   });
 });
 

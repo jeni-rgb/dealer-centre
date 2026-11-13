@@ -3,7 +3,9 @@ import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { DealerNav, Screen, money } from "@/components/ui";
 import { ukDate } from "@/lib/dates";
+import { SumupLive } from "@/components/sumup-live";
 import { SumupQueue } from "@/components/sumup-queue";
+import { sumupMarker } from "@/lib/sumup/sync";
 
 export default async function DealerSumup() {
   const me = await requireDealer();
@@ -15,9 +17,11 @@ export default async function DealerSumup() {
   const { data: rows } = conn
     ? await db.from("sumup_transactions").select("id, amount_pence, paid_at, description").eq("connection_id", conn.id).eq("match_status", "unmatched").order("paid_at", { ascending: false }).limit(50)
     : { data: [] };
+  const seen = conn ? await sumupMarker(db, conn.id) : "0";
   return (
     <Screen title="SumUp" back={{ href: "/app/settings" }}>
-      {conn ? <p className="text-[14px]">Connected. New card sales arrive each morning.</p> : <a className="btn" href="/api/oauth/sumup?owner=dealer">Connect SumUp</a>}
+      {conn ? <SumupLive owner="dealer" seen={seen} /> : null}
+      {conn ? <p className="text-[14px]">Connected. Card sales show as they come in.</p> : <a className="btn" href="/api/oauth/sumup?owner=dealer">Connect SumUp</a>}
       <SumupQueue rows={(rows ?? []).map((r) => ({ id: r.id, amount: money(r.amount_pence), when: r.paid_at ? ukDate(r.paid_at) : "", description: r.description ?? "" }))} />
       <DealerNav active="settings" />
     </Screen>

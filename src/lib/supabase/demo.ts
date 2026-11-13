@@ -140,6 +140,13 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
   sku_counters: [{ dealer_id: IDS.dealer, next_number: 373 }],
+  sumup_connections: [
+    { id: "su1", owner_type: "dealer", owner_id: IDS.dealer, merchant_code: "MDEMO", access_token: "demo", refresh_token: null, expires_at: null, synced_at: d(0), connected_at: d(2) },
+    { id: "su2", owner_type: "centre", owner_id: IDS.centre, merchant_code: "MCENTRE", access_token: "demo", refresh_token: null, expires_at: null, synced_at: d(0), connected_at: d(2) },
+  ],
+  sumup_transactions: [
+    { id: "sut1", connection_id: "su1", sumup_id: "txdemo", transaction_code: "TDEMO", amount_pence: 4500, currency: "GBP", paid_at: d(0, 11, 5), description: "B14 0372 writing slope", ticket: "B140372", match_status: "unmatched", sale_id: null, raw: {} },
+  ],
   webhook_log: [
     { source: "shopify", event_type: "orders/create", status: "processed", received_at: d(1, 16, 40), error: null },
     { source: "stripe", event_type: "customer.subscription.updated", status: "processed", received_at: d(2, 8, 0), error: null },

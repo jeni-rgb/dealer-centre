@@ -3,6 +3,7 @@ import type { ChannelRow } from "@/lib/channels/types";
 import { recordSale } from "@/lib/sales/record";
 import { refreshSumup } from "./oauth";
 import { findTicket, majorToPence } from "./match";
+import { transactionsFromCheckout, type SumupNotice } from "./events";
 
 type Conn = {
   id: string;
@@ -15,7 +16,7 @@ type Conn = {
   synced_at: string | null;
 };
 
-type Tx = {
+export type Tx = {
   id?: string;
   transaction_id?: string;
   transaction_code?: string;
@@ -140,4 +141,92 @@ export async function pullAll(db: Admin): Promise<number> {
   let n = 0;
   for (const conn of (data ?? []) as Conn[]) n += await pullConnection(db, conn).catch(() => 0);
   return n;
+}
+
+const CONN = "id, owner_type, owner_id, merchant_code, access_token, refresh_token, expires_at, synced_at";
+
+async function connections(db: Admin): Promise<Conn[]> {
+  const { data } = await db.from("sumup_connections").select(CONN);
+  return (data ?? []) as Conn[];
+}
+
+export async function sumupMarker(db: Admin, connectionId: string): Promise<string> {
+  const { count } = await db.from("sumup_transactions").select("id", { count: "exact", head: true }).eq("connection_id", connectionId);
+  return String(count ?? 0);
+}
+
+async function sumupJson(token: string, url: string): Promise<Record<string, unknown> | null> {
+  const r = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
+  if (!r.ok) return null;
+  const body = await r.json().catch(() => null);
+  return body && typeof body === "object" ? body as Record<string, unknown> : null;
+}
+
+function asTx(body: Record<string, unknown> | null): Tx | null {
+  if (!body) return null;
+  const item = Array.isArray(body.items) ? body.items[0] as Record<string, unknown> | undefined : body;
+  if (!item) return null;
+  const id = String(item.id ?? item.transaction_id ?? item.transaction_code ?? "");
+  if (!id) return null;
+  return {
+    id,
+    transaction_code: typeof item.transaction_code === "string" ? item.transaction_code : undefined,
+    amount: typeof item.amount === "number" ? item.amount : undefined,
+    currency: typeof item.currency === "string" ? item.currency : undefined,
+    timestamp: typeof item.timestamp === "string" ? item.timestamp : undefined,
+    status: typeof item.status === "string" ? item.status : undefined,
+    product_summary: typeof item.product_summary === "string" ? item.product_summary : typeof item.description === "string" ? item.description : undefined,
+  };
+}
+
+/** Record the one sale SumUp just posted. The morning job is only for what this missed. */
+export async function applySumupNotice(db: Admin, notice: SumupNotice): Promise<number> {
+  if (notice.type === "ignore") return 0;
+  if (notice.type === "checkout") return applyCheckout(db, notice.id);
+  if (notice.type === "solo") return applySolo(db, notice);
+  return applyDirect(db, notice.merchantCode, notice.tx);
+}
+
+async function applyCheckout(db: Admin, id: string): Promise<number> {
+  for (const conn of await connections(db)) {
+    const token = await tokenFor(db, conn);
+    if (!token) continue;
+    const checkout = await sumupJson(token, `https://api.sumup.com/v0.1/checkouts/${encodeURIComponent(id)}`);
+    if (!checkout) continue;
+    const merchant = typeof checkout.merchant_code === "string" ? checkout.merchant_code : null;
+    if (conn.merchant_code && merchant && conn.merchant_code !== merchant) continue;
+    const txs = transactionsFromCheckout(checkout as Parameters<typeof transactionsFromCheckout>[0]);
+    for (const tx of txs) await applySumupTransaction(db, conn, tx);
+    return txs.length;
+  }
+  return 0;
+}
+
+async function applySolo(db: Admin, notice: Extract<SumupNotice, { type: "solo" }>): Promise<number> {
+  if (notice.status.toLowerCase() !== "successful") return 0;
+  const { data } = await db.from("sumup_connections").select(CONN).eq("merchant_code", notice.merchantCode).maybeSingle();
+  if (!data) return 0;
+  const conn = data as Conn;
+  const token = await tokenFor(db, conn);
+  const url = `https://api.sumup.com/v2.1/merchants/${encodeURIComponent(notice.merchantCode)}/transactions?client_transaction_id=${encodeURIComponent(notice.clientTransactionId)}`;
+  const tx = asTx(await sumupJson(token, url));
+  if (!tx?.amount) throw new Error("SumUp has not confirmed the reader sale yet");
+  await applySumupTransaction(db, conn, { ...tx, status: "SUCCESSFUL" });
+  return 1;
+}
+
+async function applyDirect(db: Admin, merchantCode: string | null, tx: Tx): Promise<number> {
+  const all = await connections(db);
+  const conn = merchantCode ? all.find((c) => c.merchant_code === merchantCode) : all.length === 1 ? all[0] : undefined;
+  if (!conn) return 0;
+  let next = tx;
+  const id = txId(tx);
+  if (conn.merchant_code && id) {
+    const token = await tokenFor(db, conn);
+    const fetched = asTx(await sumupJson(token, `https://api.sumup.com/v2.1/merchants/${encodeURIComponent(conn.merchant_code)}/transactions?id=${encodeURIComponent(id)}`));
+    if (fetched) next = { ...tx, ...fetched, product_summary: fetched.product_summary || tx.product_summary };
+  }
+  if (!next.amount) return 0;
+  await applySumupTransaction(db, conn, { ...next, status: "SUCCESSFUL" });
+  return 1;
 }
