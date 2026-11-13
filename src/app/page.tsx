@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Logo, Mark } from "@/components/logo";
 import { Phone, Browser } from "@/components/devices";
+import { PlanCompare } from "@/components/plan-compare";
 
 export const metadata: Metadata = {
   title: "Dealer Centre: stock, labels and sales for antique dealers and centres",
@@ -15,10 +16,6 @@ export const metadata: Metadata = {
 const PROOF: { liveAt: string; founder: string } | null = null;
 // const PROOF = { liveAt: "Live at [centre name], [town]", founder: "Built with my dad, a dealer for [N] years" };
 
-const dealerPlans = [
-  { name: "Basic", price: "Free", who: "Every dealer at a signed centre", forWho: "No sign up. Your account comes from the till.", bits: ["Sales totals on a printed sales sheet", "Paid with the centre payout", "No item names"], featured: false },
-  { name: "Full", price: "£25", who: "Unlimited sales, every centre", forWho: "One account and one bill", bits: ["Every sale named: item, price, date, centre", "Live in the app", "Direct Debit"], featured: true },
-];
 
 const faqs = [
   ["Does my centre need to be on Dealer Centre?", "No. If they are not, you add the centre yourself at sign up and your items carry its name. You mark things sold from your phone. When the centre joins, nothing changes for you."],
@@ -243,22 +240,8 @@ export default function Landing() {
       {/* Pricing */}
       <section id="pricing" className="bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
-          <h2 className="text-center text-[36px] leading-[1.08] md:text-[44px]">Basic is free. Full is £25 a month.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[16px] text-ink-muted">Every dealer at a signed centre gets Basic from the till, with no sign up. Full is £25 a month plus VAT by Direct Debit, with every sale named. We label at 75p an item plus VAT, or you load your own stock free. All prices plus VAT.</p>
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            {dealerPlans.map((p) => (
-              <div key={p.name} className={`card relative flex flex-col p-7 ${p.featured ? "border-accent ring-1 ring-accent" : ""}`}>
-                {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gold px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-ink">Named sales</span>}
-                <div className="text-[14px] font-semibold text-ink-muted">{p.name}</div>
-                <div className="mt-2 flex items-baseline gap-1"><span className="figure text-[44px]">{p.price}</span>{p.price !== "Free" && <span className="text-[14px] text-ink-muted">a month plus VAT</span>}</div>
-                <div className="mt-1 text-[15px] font-semibold">{p.who}</div>
-                <div className="text-[13px] text-ink-muted">{p.forWho}</div>
-                <ul className="mt-5 flex flex-col gap-2 text-[14px] font-medium">{p.bits.map((b) => <li key={b} className="border-b border-border pb-2 last:border-0">{b}</li>)}</ul>
-                {p.name === "Full" ? <Link href="/signup?as=dealer" className="btn mt-7">Join Full</Link> : <p className="mt-7 text-[14px] text-ink-muted">Your centre adds you. We email an invite for 2 weeks of named sales and 25 free labels.</p>}
-              </div>
-            ))}
-          </div>
-          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Say yes to the invite and you get 2 weeks of named sales, and we label your first 25 items free. Then you go back to Basic unless you join Full. Centres get £2.50 off their monthly fee for each dealer on Full.</p>
+          <PlanCompare join center />
+          <p className="mx-auto mt-8 max-w-2xl text-center text-[16px] leading-7 text-ink-muted">Basic needs no sign up: your centre adds you. Say yes to the invite for 2 weeks of named sales and 25 free labels, then you go back to Basic unless you join Full. We label at 75p an item plus VAT, or you load your own stock free. Centres get £2.50 off their monthly fee for each dealer on Full. All prices plus VAT.</p>
           <div className="mt-6 flex flex-col items-start justify-between gap-5 rounded-[20px] bg-forest p-7 text-white md:flex-row md:items-center">
             <div>
               <div className="text-[14px] font-semibold text-[#C9DCCF]">For centres</div>

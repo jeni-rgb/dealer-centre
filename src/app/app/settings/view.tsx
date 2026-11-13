@@ -6,9 +6,10 @@ import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
 import { BuyTokens } from "@/components/buy-tokens";
 import { dealerPlanSentence } from "@/lib/billing/plan-copy";
+import { PlanCompare } from "@/components/plan-compare";
 
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
-type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; listing_mode: string | null; listing_tokens: number; listing_tokens_bought: number; default_own_shopify: boolean; default_centre_shopify: boolean };
+type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; listing_mode: string | null; listing_tokens: number; listing_tokens_bought: number; billing_model?: string | null; default_own_shopify: boolean; default_centre_shopify: boolean };
 
 export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
   email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
@@ -72,6 +73,7 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
         <div className="card divide-y divide-border">
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">{dealer.name}</span><span className="text-[12px] text-ink-muted">{email}</span></span><span className="ticket text-[16px]">{dealer.code}</span></div>
           <Link href="/api/billing/portal" className="flex items-center justify-between gap-3 px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Plan</span><span className="text-[12px] text-ink-muted">{dealerPlanSentence(dealer)}</span></span><span className="shrink-0 text-[13px] font-medium text-accent">Manage plan</span></Link>
+          {dealer.billing_model !== "full" && dealer.plan !== "pro" && <div className="px-4 py-4"><PlanCompare join /></div>}
           {dealer.listing_mode === "staff" && <div className="px-4 py-3.5"><span className="block text-[15px] font-medium">Labels</span><span className="text-[12px] text-ink-muted">{dealer.listing_tokens_bought > 0 ? `${dealer.listing_tokens} left. Further labels are 75p plus VAT. We photograph the stock from these.` : "None yet. We photograph the stock after labels are paid, 75p plus VAT each, unless your 25 free taster labels are still to come."}</span><BuyTokens next="/app/settings" /></div>}
         </div>
       </Section>

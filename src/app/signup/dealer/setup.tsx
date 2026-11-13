@@ -1,6 +1,7 @@
 "use client";
 import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER } from "@/lib/labels/models";
 import { labelPriceLabel } from "@/lib/billing/pricing";
+import { PlanCompare } from "@/components/plan-compare";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -101,6 +102,7 @@ function CardPlan({ hp, staff }: { hp: HP; staff: boolean }) {
           <p className="mt-2 text-ink-muted">You see every sale: the name, the price, the date and the centre. Unlimited sales. Cancel any month from Account.</p>
           {staff && <p className="mt-2 text-ink-muted">Labelling is separate, 75p an item plus VAT, on the next step.</p>}
         </div>
+        <PlanCompare showHeadline={false} />
         <p className="text-[12px] text-ink-muted">Taken by Direct Debit where your bank allows it, otherwise by card. Stripe runs the payment. There is no free trial on Full.</p>
         <a className="btn" href="/api/billing/checkout">Start Full</a>
       </div>

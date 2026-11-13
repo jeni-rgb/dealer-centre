@@ -40,6 +40,30 @@ export function namedSales(d: BillingDealer, now = Date.now()): boolean {
   return false;
 }
 
+export const COMPARE_HEADLINE = "Basic tells you what you earned. Full runs your business.";
+export const BASIC_LINE = "One printed total from each centre, when that centre pays you. No item names, no stock, nothing in between.";
+export const FULL_POINTS = [
+  "Every centre in one place. Paper book, SumUp or our till, every sale lands in one app.",
+  "Live sales. What sold, for how much, at which centre, the minute it goes through the till.",
+  "Know your money. What each centre owes you before payout day, so nothing gets missed.",
+  "Stock that tells you when to restock. What's on the floor, what's sold, and when your pitch needs filling.",
+  "Never lose a sale when you're away. Staff scan your label and see the price, so the customer buys today.",
+  "Weekly targets. This week against last week and against your goal.",
+  "Best sellers and slow stock. See what moves and what to reprice.",
+  "Works with your own tools. Export your sales and stock to a spreadsheet or ChatGPT.",
+  "One login, one bill. Every centre you trade in.",
+];
+
+export function fullComparisonText(): string {
+  const points = FULL_POINTS.map((line, i) => `${i + 1}. ${line}`).join("\n");
+  return `${COMPARE_HEADLINE}
+
+Basic, free. ${BASIC_LINE}
+
+Full, £${FULL_POUNDS} a month plus VAT.
+${points}`;
+}
+
 export function labelPriceLabel(qty: number): string {
   const pence = LABEL_PENCE * qty;
   const pounds = pence / 100;
@@ -77,13 +101,11 @@ export function tasterInviteLetter(name: string, link: string): { subject: strin
     subject: "Your sales at the centre, and 2 free weeks",
     text: `Hello ${name},
 
-Your centre uses Dealer Centre, so you already have a free Basic account. Basic sends a sales sheet with the totals when the centre pays you. It does not show item names.
-
-If you would like it, you can have 2 weeks of named sales in the app, and we will label your first 25 items for free. After that you go back to Basic, unless you join Full at £25 a month plus VAT by Direct Debit.
-
-Nothing is charged for the 2 weeks or the 25 labels. Say yes here:
+Your centre uses Dealer Centre, so you already have a free Basic account. Say yes and you get 2 weeks of named sales, and we label your first 25 items for free. Nothing is charged. After that you go back to Basic unless you join Full.
 
 ${link}
+
+${fullComparisonText()}
 
 Dealer Centre`,
   };
@@ -94,13 +116,13 @@ export function tasterEndedLetter(name: string, joinUrl: string): { subject: str
     subject: "Your 2 weeks of named sales have ended",
     text: `Hello ${name},
 
-Your 2 weeks of named sales have ended. You are back on Basic. Your sales sheet still shows the totals, and the centre still pays you on their usual day. Item names are off the app.
+Your 2 weeks of named sales have ended. You are back on Basic. If you do nothing, you stay there and nothing is charged.
 
-Join Full for £25 a month plus VAT by Direct Debit and you see every sale: the name, the price, the date and the centre. One account and one bill, however many centres you sell at.
+Join Full by Direct Debit:
 
 ${joinUrl}
 
-If you do nothing, you stay on Basic. Nothing is charged.
+${fullComparisonText()}
 
 Dealer Centre`,
   };

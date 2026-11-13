@@ -3,6 +3,7 @@ import { Mark } from "@/components/logo";
 import { NotificationsCard } from "@/components/notifications";
 import { dealerWithListing } from "@/lib/billing/tokens";
 import { namedSales } from "@/lib/billing/pricing";
+import { PlanCompare } from "@/components/plan-compare";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
@@ -65,9 +66,7 @@ export default async function Today() {
         </div>
 
         <NotificationsCard vapidPublicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
-        {dealer && dealer.billing_model === "basic" && (
-          <div className="card p-4 text-[14px]"><span className="block font-medium">Basic</span><span className="text-[12px] text-ink-muted">Your sales sheet shows the totals. Item names stay off the app. Join Full for £25 a month plus VAT by Direct Debit to see every sale.</span><Link href="/signup?as=dealer" className="mt-2 inline-block text-[13px] font-medium text-accent">Join Full</Link></div>
-        )}
+        {dealer && dealer.billing_model === "basic" && <PlanCompare join />}
         {pending.map((c) => (
           <div key={c.centre_id} className="rounded-[14px] border border-[#FDE68A] bg-warning-soft px-3.5 py-3 text-[13px] text-warning">
             Waiting for {(c.centres as unknown as { name: string })?.name} to approve you. Floor sales appear once they do.

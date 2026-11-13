@@ -6,7 +6,7 @@ import {
   heldTrialEnd,
   shouldHoldStripeTrial,
 } from "@/lib/billing/plan-copy";
-import { labelPriceLabel, namedSales, tasterEndedLetter, tasterInviteLetter } from "@/lib/billing/pricing";
+import { BASIC_LINE, COMPARE_HEADLINE, FULL_POINTS, fullComparisonText, labelPriceLabel, namedSales, tasterEndedLetter, tasterInviteLetter } from "@/lib/billing/pricing";
 
 const DAY = 86400;
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—]/);
@@ -27,6 +27,10 @@ describe("dealer pricing", () => {
     const invite = tasterInviteLetter("Bloom Antiques", "https://example.com/taster?t=abc");
     const ended = tasterEndedLetter("Bloom Antiques", "https://example.com/signup");
     noDash(invite.subject); noDash(invite.text); noDash(ended.subject); noDash(ended.text);
+    noDash(COMPARE_HEADLINE); noDash(BASIC_LINE); noDash(fullComparisonText());
+    for (const line of FULL_POINTS) noDash(line);
+    expect(invite.text).toContain(COMPARE_HEADLINE);
+    expect(ended.text).toContain("Weekly targets");
     expect(invite.text).toContain("25");
     expect(ended.text).toContain("£25");
     expect(namedSales({ plan: "trial", billing_model: "basic" })).toBe(false);

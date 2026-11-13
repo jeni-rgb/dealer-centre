@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { formatShortDate } from "@/lib/billing/pricing";
 import { AcceptTaster } from "./accept";
+import { PlanCompare } from "@/components/plan-compare";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,9 @@ export default async function TasterPage({ searchParams }: { searchParams: Promi
         <p className="mt-4 text-[16px] leading-7">You said yes. Named sales run until {formatShortDate(data.taster_ends_at!)}. We will label your first 25 items. After that you go back to Basic unless you join Full at £25 a month plus VAT by Direct Debit.</p>
       ) : (
         <>
-          <p className="mt-4 text-[16px] leading-7">Basic is free. It sends a sales sheet with the totals when your centre pays you. It does not show item names.</p>
-          <p className="mt-3 text-[16px] leading-7">Say yes and you get 2 weeks of named sales in the app, and we label your first 25 items for free. Nothing is charged. When the 2 weeks end you go back to Basic, unless you join Full.</p>
+          <p className="mt-4 text-[16px] leading-7">Say yes and you get 2 weeks of Full, and we label your first 25 items for free. Nothing is charged. When the 2 weeks end you go back to Basic, unless you join Full.</p>
           <AcceptTaster token={t} />
+          <div className="mt-10"><PlanCompare showHeadline /></div>
         </>
       )}
     </Shell>
@@ -29,5 +30,5 @@ export default async function TasterPage({ searchParams }: { searchParams: Promi
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">{children}</main>;
+  return <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">{children}</main>;
 }
