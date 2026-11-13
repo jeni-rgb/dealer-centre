@@ -11,10 +11,11 @@ import { PlanCompare } from "@/components/plan-compare";
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
 type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; listing_mode: string | null; listing_tokens: number; listing_tokens_bought: number; billing_model?: string | null; default_own_shopify: boolean; default_centre_shopify: boolean };
 
-export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
+export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers, sumupOn = false }: {
   email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
   centres: { id: string; name: string; status: string; rent_pence: number; rent_mode: string }[];
   printers: { id: string; name: string; own: boolean; cloud: boolean; w: number; h: number }[];
+  sumupOn?: boolean;
 }) {
   const router = useRouter();
   const [shop, setShop] = useState("");
@@ -99,6 +100,7 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
             )}
           </div>
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Your own till</span><span className="text-[12px] text-ink-muted">Only if you run your own shop on Square</span></span>{square ? <Pill kind="success">Connected</Pill> : <a className="btn-sm-secondary" href="/api/oauth/square?owner=dealer">Connect</a>}</div>
+          {sumupOn && <div className="flex items-center justify-between px-4 py-3.5"><span className="text-[15px] font-medium">SumUp</span><a className="btn-sm" href="/app/sumup">Connect SumUp</a></div>}
         </div>
       </Section>
 

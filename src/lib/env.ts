@@ -21,4 +21,13 @@ export const env = {
     vatRate: () => pick("STRIPE_TAX_RATE_VAT"),
   },
   emailFrom: () => pick("EMAIL_FROM") ?? "Dealer Centre <onboarding@resend.dev>",
+  sumup: {
+    clientId: () => pick("SUMUP_CLIENT_ID") ?? "",
+    clientSecret: () => pick("SUMUP_CLIENT_SECRET") ?? "",
+    affiliateKey: () => pick("SUMUP_AFFILIATE_KEY") ?? "",
+    webhookSecret: () => pick("SUMUP_WEBHOOK_SECRET") ?? "",
+    /** OAuth is offered only when both keys exist. The card reader link needs the affiliate key as well. */
+    configured: () => !!(pick("SUMUP_CLIENT_ID") && pick("SUMUP_CLIENT_SECRET")),
+    payReady: () => !!pick("SUMUP_AFFILIATE_KEY"),
+  },
 };

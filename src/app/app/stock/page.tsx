@@ -57,7 +57,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
   });
 
   return (
-    <Screen title="Stock" right={<Link href="/app/stock-check" className="text-[13px] font-medium text-accent">Check</Link>}>
+    <Screen title="Stock" right={<span className="flex gap-3"><Link href="/app/items/import" className="text-[13px] font-medium text-accent">Upload</Link><Link href="/app/stock-check" className="text-[13px] font-medium text-accent">Check</Link></span>}>
       <StockSearch initial={search} />
       <StockList rows={rows} mode={mode} filter={f ?? ""} />
       {rows.length === 0 && search.trim() ? <Empty text="No items match your search." /> : rows.length === 0 && (mode === "live" ? <Empty text="No stock listed yet." href="/app/items/new" cta="List your first item" /> : <Empty text="Nothing sold yet." />)}

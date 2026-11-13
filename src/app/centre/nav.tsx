@@ -2,7 +2,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { Sidebar } from "@/components/ui";
 
-export function CentreNav({ centreName }: { centreName: string }) {
+export function CentreNav({ centreName, showSumup = false }: { centreName: string; showSumup?: boolean }) {
   const path = usePathname();
   const sp = useSearchParams();
   const q = sp.get("centre") ? `?centre=${sp.get("centre")}` : "";
@@ -14,6 +14,7 @@ export function CentreNav({ centreName }: { centreName: string }) {
     ["Stock check", `/centre/stock-check${q}`, path.startsWith("/centre/stock-check")],
     ["Statements", `/centre/statements${q}`, path.startsWith("/centre/statements")],
     ["Settings", `/centre/settings${q}`, path.startsWith("/centre/settings")],
+    ...(showSumup ? [["SumUp", `/centre/sumup${q}`, path.startsWith("/centre/sumup")] as [string, string, boolean]] : []),
     ["Till screen", `/till${q}`, false],
   ];
   return <Sidebar items={items} title={centreName} />;

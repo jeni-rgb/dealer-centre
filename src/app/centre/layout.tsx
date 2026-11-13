@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { env } from "@/lib/env";
 import { getMe } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CentreNav } from "./nav";
@@ -14,7 +15,7 @@ export default async function CentreLayout({ children }: { children: React.React
     : c && (c.plan === "lapsed" || c.plan === "cancelled") ? { text: "Your centre subscription has lapsed. Update your card to keep End of day and statements running.", cta: "Update card", href: "/api/billing/portal?centre=1" } : null;
   return (
     <div className="min-h-screen bg-surface">
-      <CentreNav centreName={c?.name ?? "Centre"} />
+      <CentreNav centreName={c?.name ?? "Centre"} showSumup={env.sumup.configured()} />
       <main className="p-4 md:ml-[220px] md:p-8">
         {banner && <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-warning-soft px-4 py-3 text-[14px] text-warning"><span>{banner.text}</span><a href={banner.href} className="font-semibold underline">{banner.cta}</a></div>}
         {children}

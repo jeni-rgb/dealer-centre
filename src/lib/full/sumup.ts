@@ -2,7 +2,7 @@
 
 export type BringRow = { ticket: string; amountPence: number; soldAt: string; payment: "CASH" | "CARD" };
 
-const TICKET = /\b([A-Za-z][A-Za-z0-9]{0,3}\s?\d{1,4})\b/;
+export const TICKET = /\b([A-Za-z][A-Za-z0-9]{0,3}\s?\d{1,4})\b/;
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];

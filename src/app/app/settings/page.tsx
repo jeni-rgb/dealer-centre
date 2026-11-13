@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { dealerWithListing } from "@/lib/billing/tokens";
 import { requireDealer } from "@/lib/auth";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
@@ -25,6 +26,7 @@ export default async function Settings() {
         square={(channels ?? []).find((c) => c.type === "square") ?? null}
         centres={(links ?? []).map((l) => ({ id: l.centre_id, name: (l.centres as unknown as { name: string })?.name ?? "", status: l.status, rent_pence: l.rent_pence, rent_mode: l.rent_mode }))}
         printers={(printers ?? []).map((p) => ({ id: p.id, name: p.owner_type === "centre" ? `${(p.centres as unknown as { name: string })?.name ?? p.name} till` : p.name, own: p.owner_type === "dealer", cloud: p.provider === "printnode", w: p.label_width_mm, h: p.label_height_mm }))}
+        sumupOn={env.sumup.configured()}
       />
       <DealerNav active="settings" />
     </Screen>

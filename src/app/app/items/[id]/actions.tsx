@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { nextLabelTitle } from "@/lib/labels/title";
+import { UkDate } from "@/components/uk-date";
 
 type Sale = { id: string; amount_pence: number; payment_type: string | null; sold_at: string } | null;
 
-export function ItemActions({ id, status, price, title, sale, atCentre, cost = null }: { id: string; status: string; price: number; title: string; sale: Sale; atCentre: boolean; cost?: number | null }) {
+export function ItemActions({ id, status, price, title, sale, atCentre, cost = null, sumupPay = false, squarePay = false }: { id: string; status: string; price: number; title: string; sale: Sale; atCentre: boolean; cost?: number | null; sumupPay?: boolean; squarePay?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"none" | "price" | "sold" | "correct" | "cost" | "label">("none");
@@ -27,6 +28,14 @@ export function ItemActions({ id, status, price, title, sale, atCentre, cost = n
     setMode("none"); router.refresh();
   }
   const pence = (v: string) => Math.round(parseFloat(v || "0") * 100);
+  async function take(reader: "sumup" | "square") {
+    setBusy(true); setErr(null);
+    const r = await fetch("/api/pay/start", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ item_id: id, amount_pence: pence(paid), reader }) });
+    const j = await r.json().catch(() => ({}));
+    setBusy(false);
+    if (!r.ok || !j.url) return setErr(j.error ?? "Could not open the reader");
+    window.location.href = j.url;
+  }
 
   async function reprint() {
     const next = nextLabelTitle(title, name);
@@ -82,14 +91,24 @@ export function ItemActions({ id, status, price, title, sale, atCentre, cost = n
         <div className="card flex flex-col gap-3 p-4">
           <span className="text-[13px] font-medium">What did it sell for?</span>
           <Money v={paid} set={setPaid} />
-          <PayToggle pay={pay} setPay={setPay} />
+          {where === "centre" && <PayToggle pay={pay} setPay={setPay} />}
           {atCentre && (
-            <div className="flex rounded-[10px] bg-surface-2 p-0.5">{(["centre", "elsewhere"] as const).map((w) => <button key={w} type="button" onClick={() => setWhere(w)} className={`h-10 flex-1 rounded-[8px] text-[13px] font-semibold ${where === w ? "bg-white shadow-sm" : "text-ink-muted"}`}>{w === "centre" ? "At the centre" : "Elsewhere"}</button>)}</div>
+            <div className="flex rounded-[10px] bg-surface-2 p-0.5">{(["centre", "elsewhere"] as const).map((w) => <button key={w} type="button" onClick={() => setWhere(w)} className={`h-10 flex-1 rounded-[8px] text-[13px] font-semibold ${where === w ? "bg-white shadow-sm" : "text-ink-muted"}`}>{w === "centre" ? "At the centre" : "Away"}</button>)}</div>
           )}
-          <label className="flex items-center justify-between text-[13px] text-ink-muted">Sold on<input type="date" className="field !h-10 !w-40 !text-[13px]" value={date} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setDate(e.target.value)} /></label>
-          <p className="text-[12px] text-ink-muted">{where === "centre" ? "Goes on your centre statement with commission, same as if the till had recorded it." : "No centre commission. Use this for fairs, home sales or anywhere the app does not watch."}</p>
+          <UkDate value={date} max={new Date().toISOString().slice(0, 10)} onChange={setDate} />
+          <p className="text-[12px] text-ink-muted">{where === "centre" ? "On the centre statement." : "Not on a centre payout. Fairs and home sales."}</p>
           {err && <p className="text-[13px] text-danger">{err}</p>}
-          <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Mark sold</button></div>
+          {where === "elsewhere" ? (
+            <div className="grid grid-cols-2 gap-2">
+              {sumupPay && <button className="btn" disabled={busy || !(pence(paid) > 0)} onClick={() => take("sumup")}>SumUp</button>}
+              {squarePay && <button className="btn" disabled={busy || !(pence(paid) > 0)} onClick={() => take("square")}>Square</button>}
+              <button className="btn-secondary" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: "CASH", where: "elsewhere", sold_at: `${date}T12:00:00Z` })}>Cash</button>
+              <button className="btn-outline" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: "other", where: "elsewhere", sold_at: `${date}T12:00:00Z` })}>Already paid</button>
+              <button className="btn-ghost col-span-2" onClick={() => setMode("none")}>Cancel</button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2"><button className="btn-outline" onClick={() => setMode("none")}>Cancel</button><button className="btn-dark" disabled={busy || !(pence(paid) > 0)} onClick={() => call(`/api/items/${id}/sold`, "POST", { amount_pence: pence(paid), payment_type: pay, where, sold_at: `${date}T12:00:00Z` })}>Mark sold</button></div>
+          )}
         </div>
       )}
 
