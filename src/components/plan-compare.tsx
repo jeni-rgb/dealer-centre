@@ -20,6 +20,11 @@ function Mark({ ok }: { ok: boolean }) {
 /** Public pricing page: a slim Basic card, a rich Full card, grouped tiles, and a check table. */
 export function PlanCompare({ join = false, showHeadline = true, center = false, variant = "lite" }: { join?: boolean; showHeadline?: boolean; center?: boolean; variant?: "marketing" | "lite" }) {
   const tiles = FULL_POINTS.map(split);
+  let tileNumber = 0;
+  const groups = GROUPS.map((group) => ({
+    name: group.name,
+    tiles: group.indexes.map((i) => ({ ...tiles[i], n: ++tileNumber })),
+  }));
   if (variant === "lite") {
     return (
       <div className="flex flex-col gap-4 text-left">
@@ -71,16 +76,16 @@ export function PlanCompare({ join = false, showHeadline = true, center = false,
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <section key={group.name} className="rounded-[22px] border border-border bg-white p-5 md:p-6">
             <h3 className="text-[13px] font-semibold uppercase tracking-wide text-accent">{group.name}</h3>
             <div className="mt-4 flex flex-col gap-4">
-              {group.indexes.map((i) => (
-                <div key={tiles[i].title} className="flex gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold-soft text-[13px] font-bold text-accent">{i + 1}</span>
+              {group.tiles.map((tile) => (
+                <div key={tile.title} className="flex gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold-soft text-[13px] font-bold text-accent">{tile.n}</span>
                   <div>
-                    <div className="text-[16px] font-semibold leading-5">{tiles[i].title}</div>
-                    <p className="mt-1 text-[14px] leading-6 text-ink-muted">{tiles[i].body}</p>
+                    <div className="text-[16px] font-semibold leading-5">{tile.title}</div>
+                    <p className="mt-1 text-[14px] leading-6 text-ink-muted">{tile.body}</p>
                   </div>
                 </div>
               ))}
