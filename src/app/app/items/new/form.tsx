@@ -216,7 +216,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             <span className="field-label">Also list on</span>
             <ToggleGroup>
               <Toggle on={own} onChange={setOwn} label="Your Shopify" hint={hasOwnShopify ? "Photo and price go to your own shop" : "Connect Shopify in Settings first"} disabled={!hasOwnShopify} />
-              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={starter ? "Trade plan and above. Upgrade in Settings" : c.hasShop ? "The centre's Shopify store, we pack and post it. 20% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop || starter} />}
+              {c && <Toggle on={shop} onChange={setShop} label={`${c.name} online shop`} hint={c.hasShop ? "The centre's Shopify store, we pack and post it. 20% commission" : "Centre has not connected a shop yet"} disabled={!c.hasShop} />}
             </ToggleGroup>
             {/* Opens the moment an online toggle goes on: how it ships sets the buyer's delivery charge */}
             <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${own || shop ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>

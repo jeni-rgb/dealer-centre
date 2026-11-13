@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { Resend } from "resend";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
+import { welcomeLetter } from "@/lib/email/letters";
+import { sendBranded } from "@/lib/email/send";
 
 const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("add"), email: z.string().email() }),
@@ -52,14 +53,9 @@ export async function POST(req: Request) {
   const url = link?.properties?.action_link;
   const { data: dealer } = await db.from("dealers").select("name").eq("id", me.dealer_id).single();
   let emailed = false;
-  if (url && process.env.RESEND_API_KEY) {
-    const r = await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from: env.emailFrom(),
-      to: email,
-      subject: `You've been added to ${dealer?.name ?? "a dealer account"} on Dealer Centre`,
-      text: `${me.email} added you to ${dealer?.name ?? "their dealer account"} on Dealer Centre.\n\nSign in here (the link works once):\n${url}\n\nAfter that, sign in any time at ${env.appUrl()}/signin with this email.`,
-    }).catch(() => null);
-    emailed = !!r && !r.error;
+  if (url) {
+    const sent = await sendBranded([email], welcomeLetter({ dealerName: dealer?.name ?? "the account", addedBy: me.email, href: url }));
+    emailed = sent === "sent";
   }
   await db.from("admin_actions").insert({ actor_id: me.id, target_type: "dealer", target_id: me.dealer_id, action: "add_person", detail: { email } }).then(() => null, () => null);
   return NextResponse.json({ ok: true, emailed });

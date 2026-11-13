@@ -1,6 +1,7 @@
 import Stripe from "stripe";
-import { Resend } from "resend";
 import { env } from "@/lib/env";
+import { trialLetter } from "@/lib/email/letters";
+import { sendBranded } from "@/lib/email/send";
 import type { Admin } from "@/lib/supabase/server";
 import {
   DEALER_TRIAL_DAYS,
@@ -46,30 +47,12 @@ async function dealerEmails(db: Admin, dealerId: string): Promise<string[]> {
   return (data ?? []).map((u) => u.email).filter(Boolean);
 }
 
-async function sendMail(to: string[], subject: string, text: string): Promise<"sent" | "skipped" | "failed"> {
-  if (!process.env.RESEND_API_KEY || to.length === 0) {
-    console.log("[dealer trial]", subject, to);
-    return "skipped";
-  }
-  try {
-    await new Resend(process.env.RESEND_API_KEY).emails.send({ from: env.emailFrom(), to, subject, text });
-    return "sent";
-  } catch (e) {
-    console.error("[dealer trial] email", e);
-    return "failed";
-  }
-}
-
 export async function emailTrialStarted(db: Admin, dealerId: string, when: Date, pounds: number): Promise<"sent" | "skipped" | "failed"> {
-  const whenText = formatLongDate(when);
-  const text = `Your 5 day Dealer Centre trial has started.\n\nDue today: £0.00. Your first payment is £${pounds} plus VAT on ${whenText}. We will email you again three days before that payment. Cancel from Settings before then and you pay nothing for the subscription.\n\nDealer Centre`;
-  return sendMail(await dealerEmails(db, dealerId), "Your 5 day Dealer Centre trial has started", text);
+  return sendBranded(await dealerEmails(db, dealerId), trialLetter("started", formatLongDate(when), pounds));
 }
 
 export async function emailTrialEnding(db: Admin, dealerId: string, when: Date, pounds: number): Promise<"sent" | "skipped" | "failed"> {
-  const whenText = formatLongDate(when);
-  const text = `Your Dealer Centre trial is £0.00 until ${whenText}. That day the card you added is charged £${pounds} plus VAT, then the same each month. Cancel from Settings before then and you pay nothing for the subscription.\n\nDealer Centre`;
-  return sendMail(await dealerEmails(db, dealerId), `Your first Dealer Centre payment is on ${whenText}`, text);
+  return sendBranded(await dealerEmails(db, dealerId), trialLetter("ending", formatLongDate(when), pounds));
 }
 
 async function defaultCard(stripe: Stripe, customerId: string): Promise<string | null> {

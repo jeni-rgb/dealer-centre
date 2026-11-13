@@ -1,7 +1,11 @@
 import Stripe from "stripe";
 import { env } from "@/lib/env";
 import type { Admin } from "@/lib/supabase/server";
-import { computeStatement, issueStatement, periodKey, periodBounds, periodLabel } from "./compute";
+import { computeStatement, issueStatement, periodKey, periodBounds, periodLabel, type Statement } from "./compute";
+import { CENTRE_FULL_CREDIT_PENCE } from "@/lib/billing/pricing";
+import { pounds } from "@/lib/email/layout";
+import { statementLetter } from "@/lib/email/letters";
+import { sendBranded } from "@/lib/email/send";
 
 const PLATFORM_BPS = 1500, CENTRE_BPS = 500, VAT_BPS = 2000;
 
@@ -14,7 +18,7 @@ const PLATFORM_BPS = 1500, CENTRE_BPS = 500, VAT_BPS = 2000;
  */
 export async function runMonthEnd(db: Admin, period = lastClosedPeriod()) {
   const { start, end } = periodBounds(period);
-  const out = { period, statements: 0, commissions: 0, charged: 0, errors: [] as string[] };
+  const out = { period, statements: 0, commissions: 0, charged: 0, credits: 0, errors: [] as string[] };
 
   const { data: centres } = await db.from("centres").select("id, name, stripe_customer_id, status").neq("status", "unclaimed");
   for (const c of centres ?? []) {
@@ -23,7 +27,7 @@ export async function runMonthEnd(db: Admin, period = lastClosedPeriod()) {
     for (const l of links ?? []) {
       try {
         const st = await computeStatement(db, l.dealer_id, c.id, period);
-        if (st) { await issueStatement(db, st); out.statements++; }
+        if (st) { await issueStatement(db, st); out.statements++; await emailStatement(db, st); }
       } catch (e) { out.errors.push(`statement ${c.id}/${l.dealer_id}: ${(e as Error).message}`); }
     }
 
@@ -57,9 +61,54 @@ export async function runMonthEnd(db: Admin, period = lastClosedPeriod()) {
         await db.from("centre_commissions").update({ stripe_invoice_item_id: item.id, charged_at: new Date().toISOString() }).eq("id", row.id);
         out.charged++;
       }
+      await creditFullDealers(db, c, period).then((n) => { out.credits += n; }).catch((e) => out.errors.push(`full credit ${c.id}: ${(e as Error).message}`));
     } catch (e) { out.errors.push(`commission ${c.id}: ${(e as Error).message}`); }
   }
   return out;
+}
+
+/** £2.50 ex VAT off the centre fee for each dealer on the new Full plan. Legacy plans are not counted. Idempotent in Stripe. */
+async function creditFullDealers(db: Admin, c: { id: string; stripe_customer_id: string | null }, period: string): Promise<number> {
+  if (!c.stripe_customer_id || !process.env.STRIPE_SECRET_KEY) return 0;
+  const { data: links, error } = await db.from("dealer_centres").select("dealer_id, dealers(billing_model, plan)").eq("centre_id", c.id).is("left_at", null);
+  if (error) return 0;
+  const count = (links ?? []).filter((l) => (l.dealers as unknown as { billing_model?: string; plan?: string } | null)?.billing_model === "full").length;
+  if (!count) return 0;
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const taxRate = env.stripe.vatRate();
+  await stripe.invoiceItems.create({
+    customer: c.stripe_customer_id,
+    currency: "gbp",
+    amount: -CENTRE_FULL_CREDIT_PENCE * count,
+    description: `Full dealers at your centre: £2.50 off for each of ${count}`,
+    tax_rates: taxRate ? [taxRate] : undefined,
+    metadata: { centre_id: c.id, period, full_dealers: String(count) },
+  }, { idempotencyKey: `full-credit-${c.id}-${period}` });
+  return count;
+}
+
+/** One statement email per dealer, centre and month. A second month end run does not send it again. */
+async function emailStatement(db: Admin, st: Statement) {
+  try {
+    const key = `${st.dealer.id}:${st.centre.id}:${st.period}`;
+    const { data } = await db.from("admin_actions").select("detail").eq("action", "statement_email").eq("target_id", st.dealer.id);
+    if ((data ?? []).some((r) => (r.detail as { key?: string } | null)?.key === key)) return;
+    const { data: users } = await db.from("users").select("email").eq("dealer_id", st.dealer.id);
+    const to = (users ?? []).map((u) => u.email).filter((e): e is string => !!e);
+    const sent = await sendBranded(to, statementLetter({
+      dealerName: st.dealer.name,
+      centreName: st.centre.name,
+      period: st.label,
+      net: pounds(st.net_pence),
+      sales: st.sales_count,
+      href: `${env.appUrl()}/app/statements`,
+    }));
+    if (sent === "sent") {
+      await db.from("admin_actions").insert({ actor_id: null, target_type: "dealer", target_id: st.dealer.id, action: "statement_email", detail: { key } });
+    }
+  } catch (e) {
+    console.error("[statement email]", e);
+  }
 }
 
 /** The month before the current one, as YYYY-MM-01. */

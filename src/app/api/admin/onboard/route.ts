@@ -4,6 +4,7 @@ import { setTillPin, newPin } from "@/lib/till/pin";
 import { getMe } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { inviteBasicDealer } from "@/lib/billing/taster";
 
 const Input = z.object({
   name: z.string().min(2).max(80),
@@ -14,7 +15,7 @@ const Input = z.object({
   charges_rent: z.boolean().default(true),
   rent_frequency: z.enum(["weekly", "monthly", "quarterly"]).default("monthly"),
   free_months: z.number().int().min(0).max(12).default(0),
-  dealers: z.array(z.object({ name: z.string().min(2), code: z.string().regex(/^[A-Z][A-Z0-9]{1,3}$/) })).max(200).default([]),
+  dealers: z.array(z.object({ name: z.string().min(2), code: z.string().regex(/^[A-Z][A-Z0-9]{1,3}$/), email: z.string().email().optional().or(z.literal("")) })).max(200).default([]),
 });
 
 /**
@@ -57,15 +58,23 @@ export async function POST(req: Request) {
   await db.from("centre_owners").upsert({ user_id: userId, centre_id: centre.id }, { onConflict: "user_id,centre_id", ignoreDuplicates: true });
 
   // Dealers with their existing ticket codes
-  const added: string[] = []; const skipped: string[] = [];
+  const added: string[] = []; const skipped: string[] = []; const invites: { code: string; link: string; emailed: string }[] = [];
   for (const dl of d.dealers) {
-    const { data: row, error } = await db.from("dealers").insert({ name: dl.name.trim(), code: dl.code, plan: "trial", placeholder: true, created_by_centre_id: centre.id }).select("id").single();
-    if (error || !row) { skipped.push(`${dl.code} (${error?.message ?? "failed"})`); continue; }
+    const email = dl.email || null;
+    let created = await db.from("dealers").insert({ name: dl.name.trim(), code: dl.code, plan: "trial", placeholder: true, created_by_centre_id: centre.id, contact_email: email, billing_model: "basic" }).select("id").single();
+    if (created.error && /billing_model|contact_email/.test(created.error.message)) {
+      created = await db.from("dealers").insert({ name: dl.name.trim(), code: dl.code, plan: "trial", placeholder: true, created_by_centre_id: centre.id }).select("id").single();
+    }
+    const row = created.data;
+    if (created.error || !row) { skipped.push(`${dl.code} (${created.error?.message ?? "failed"})`); continue; }
     const { error: lErr } = await db.from("dealer_centres").insert({ dealer_id: row.id, centre_id: centre.id, status: "active", rent_mode: "rent", rent_pence: 0, rent_set_by: "centre", joined_at: new Date().toISOString() });
-    if (lErr) { await db.from("dealers").delete().eq("id", row.id); skipped.push(`${dl.code} (code already used here)`); } else added.push(dl.code);
+    if (lErr) { await db.from("dealers").delete().eq("id", row.id); skipped.push(`${dl.code} (code already used here)`); continue; }
+    added.push(dl.code);
+    const invite = await inviteBasicDealer(db, row.id, dl.name.trim(), email).catch(() => null);
+    if (invite) invites.push({ code: dl.code, link: invite.link, emailed: invite.emailed });
   }
 
   // Sign in link for the owner, straight to their dashboard
   const { data: link } = await db.auth.admin.generateLink({ type: "magiclink", email: d.owner_email.toLowerCase(), options: { redirectTo: `${env.appUrl()}/api/auth/callback?next=/centre/welcome` } });
-  return NextResponse.json({ centre_id: centre.id, invite_code: centre.invite_code, pin, sign_in_link: link?.properties?.action_link ?? null, added, skipped });
+  return NextResponse.json({ centre_id: centre.id, invite_code: centre.invite_code, pin, sign_in_link: link?.properties?.action_link ?? null, added, skipped, invites });
 }

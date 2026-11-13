@@ -30,7 +30,16 @@ export async function POST(req: Request) {
     const s = evt.data.object;
     if (s.metadata?.purpose === "listing_tokens") await recordTokenPayment(db, stripe, s);
     else if (s.mode === "setup" && s.metadata?.dealer_id) await saveDealerCard(db, stripe, s);
-    else if (s.metadata?.dealer_id && s.subscription) {
+    else if (s.metadata?.dealer_id && s.subscription && s.metadata.purpose === "full") {
+      await db.from("dealers").update({
+        stripe_customer_id: String(s.customer),
+        stripe_subscription_id: String(s.subscription),
+        billing_model: "full",
+        plan: "pro",
+        monthly_sold_limit: 100000,
+        card_added_at: new Date().toISOString(),
+      }).eq("id", s.metadata.dealer_id);
+    } else if (s.metadata?.dealer_id && s.subscription) {
       const limit = limitForTier(s.metadata.tier);
       await db.from("dealers").update({
         stripe_customer_id: String(s.customer),

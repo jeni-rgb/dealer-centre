@@ -3,6 +3,8 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { computeStatement, periodKey } from "@/lib/statements/compute";
 import { renderStatementPdf } from "@/lib/statements/pdf";
+import { dealerWithListing } from "@/lib/billing/tokens";
+import { namedSales } from "@/lib/billing/pricing";
 
 /** Statement PDF, rendered from the live calculation so it always matches the screen. Dealers get their own; centre owners get any dealer at their centre. */
 export async function GET(req: Request) {
@@ -21,6 +23,7 @@ export async function GET(req: Request) {
   if (!dealerId) return new NextResponse("no dealer", { status: 400 });
   const st = await computeStatement(supabaseAdmin(), dealerId, centreId, period);
   if (!st) return new NextResponse("not found", { status: 404 });
-  const bytes = await renderStatementPdf(st);
+  const billing = dealerId === me.dealer_id ? await dealerWithListing(supabaseAdmin(), dealerId, "plan") : null;
+  const bytes = await renderStatementPdf(st, { names: billing ? namedSales(billing) : true });
   return new NextResponse(Buffer.from(bytes), { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="statement-${st.dealer.code}-${period.slice(0, 7)}.pdf"` } });
 }

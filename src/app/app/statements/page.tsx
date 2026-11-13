@@ -4,6 +4,9 @@ import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { DealerNav, Phone, money } from "@/components/ui";
 import { computeStatement, periodKey, periodLabel, type Statement } from "@/lib/statements/compute";
 import { displaySku } from "@/lib/sku";
+import { dealerWithListing } from "@/lib/billing/tokens";
+import { namedSales } from "@/lib/billing/pricing";
+import { ukDate } from "@/lib/dates";
 
 /**
  * Dealer earnings: this month and every past month, per centre, sale by sale, with what the centre has paid.
@@ -21,7 +24,8 @@ export default async function Earnings({ searchParams }: { searchParams: Promise
   const db = supabaseAdmin();
 
   const { data: links } = await sb.from("dealer_centres").select("centre_id, joined_at, left_at, centres(name)").eq("dealer_id", me.dealer_id).neq("status", "pending");
-  const { data: dealer } = await sb.from("dealers").select("created_at").eq("id", me.dealer_id).single();
+  const dealer = await dealerWithListing(sb, me.dealer_id, "created_at, plan");
+  const names = dealer ? namedSales(dealer) : true;
   const statements = (await Promise.all((links ?? []).map((l) => computeStatement(db, me.dealer_id, l.centre_id, period)))).filter(Boolean) as Statement[];
 
   // Sales that are not centre sales: own Shopify, "sold elsewhere". No commission, nothing owed by a centre.
@@ -60,14 +64,14 @@ export default async function Earnings({ searchParams }: { searchParams: Promise
           <section key={st.centre.id} className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between">
               <h2 className="text-[16px] font-semibold">{st.centre.name}</h2>
-              <span className={`pill ${st.status === "paid" ? "pill-success" : st.status === "issued" ? "pill-warning" : "pill-neutral"}`}>{st.status === "paid" ? `Paid ${new Date(st.paid_at!).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : st.status === "issued" ? "Awaiting payment" : "Running"}</span>
+              <span className={`pill ${st.status === "paid" ? "pill-success" : st.status === "issued" ? "pill-warning" : "pill-neutral"}`}>{st.status === "paid" ? `Paid ${ukDate(st.paid_at!)}` : st.status === "issued" ? "Awaiting payment" : "Running"}</span>
             </div>
             <div className="card divide-y divide-border">
               {st.lines.length === 0 && <p className="px-4 py-4 text-[13px] text-ink-muted">No sales at this centre.</p>}
               {st.lines.map((l) => (
                 <div key={l.sale_id} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                  <span className="w-[42px] shrink-0 text-ink-muted">{new Date(l.sold_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-                  <span className="flex min-w-0 flex-1 flex-col"><span className="truncate font-medium">{l.title}</span><span className="text-[11px] text-ink-muted">{l.ticket ? <span className="ticket">{l.ticket}</span> : null}{l.ticket ? " · " : ""}{l.channel === "online" ? "Online" : "Floor"}{l.commission_pence ? ` · −${money(l.commission_pence)}` : ""}</span></span>
+                  <span className="w-[88px] shrink-0 text-[12px] text-ink-muted">{ukDate(l.sold_at)}</span>
+                  <span className="flex min-w-0 flex-1 flex-col"><span className="truncate font-medium">{names ? l.title : "Sale"}</span><span className="text-[11px] text-ink-muted">{names && l.ticket ? <span className="ticket">{l.ticket}</span> : null}{names && l.ticket ? ", " : ""}{l.channel === "online" ? "Online" : "Floor"}{l.commission_pence ? `, commission ${money(l.commission_pence)}` : ""}</span></span>
                   <span className="flex shrink-0 flex-col items-end"><span className="num font-semibold">{money(l.net_pence)}</span><span className="num text-[11px] text-ink-muted">{money(l.price_pence)}</span></span>
                 </div>
               ))}
@@ -76,13 +80,13 @@ export default async function Earnings({ searchParams }: { searchParams: Promise
               {([
                 ["Floor sales", st.floor_gross_pence], ["Online sales", st.online_gross_pence],
                 [`Floor commission ${st.centre.commission_bps / 100}%`, -st.floor_commission_pence], [`Online commission ${st.centre.online_commission_bps / 100}% and postage`, -st.online_commission_pence],
-                [`Rent · ${st.rent_note}`, -st.rent_pence],
+                [`Rent, ${st.rent_note}`, -st.rent_pence],
               ] as [string, number][]).map(([k, v]) => (
                 <div key={k} className="flex h-[40px] items-center justify-between px-4"><span className="text-ink-muted">{k}</span><span className={`num ${v < 0 ? "text-ink-muted" : "font-medium"}`}>{v < 0 ? `−${money(-v)}` : money(v)}</span></div>
               ))}
               <div className="flex h-[48px] items-center justify-between px-4 text-[15px] font-semibold"><span>Net owed to you</span><span className="num">{money(st.net_pence)}</span></div>
             </div>
-            <a href={`/api/statements/pdf?centre=${st.centre.id}&period=${st.period}`} target="_blank" rel="noreferrer" className="btn-outline">Download statement PDF</a>
+            <a href={`/api/statements/pdf?centre=${st.centre.id}&period=${st.period}`} target="_blank" rel="noreferrer" className="btn-outline">{names ? "Download statement PDF" : "Download sales sheet"}</a>
           </section>
         ))}
 
@@ -94,8 +98,8 @@ export default async function Earnings({ searchParams }: { searchParams: Promise
                 const ch = s.channels as unknown as { type: string } | null;
                 return (
                   <div key={s.id} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                    <span className="w-[42px] shrink-0 text-ink-muted">{new Date(s.sold_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-                    <span className="flex min-w-0 flex-1 flex-col"><span className="truncate font-medium">{(s.items as unknown as { title: string } | null)?.title ?? "Item"}</span><span className="text-[11px] text-ink-muted">{s.ticket_no ? <span className="ticket">{displaySku(s.ticket_no)}</span> : null}{s.ticket_no ? " · " : ""}{ch?.type === "shopify" ? "Your Shopify" : "Sold elsewhere"}</span></span>
+                    <span className="w-[88px] shrink-0 text-[12px] text-ink-muted">{ukDate(s.sold_at)}</span>
+                    <span className="flex min-w-0 flex-1 flex-col"><span className="truncate font-medium">{names ? ((s.items as unknown as { title: string } | null)?.title ?? "Item") : "Sale"}</span><span className="text-[11px] text-ink-muted">{names && s.ticket_no ? <span className="ticket">{displaySku(s.ticket_no)}</span> : null}{names && s.ticket_no ? ", " : ""}{ch?.type === "shopify" ? "Your Shopify" : "Sold elsewhere"}</span></span>
                     <span className="num shrink-0 font-semibold">{money(s.amount_pence)}</span>
                   </div>
                 );
@@ -105,7 +109,7 @@ export default async function Earnings({ searchParams }: { searchParams: Promise
           </section>
         )}
 
-        <p className="pb-2 text-[12px] text-ink-muted">Statements are issued on the 1st for the month before. The centre pays you and marks it paid; it shows here the moment they do.</p>
+        <p className="pb-2 text-[12px] text-ink-muted">Issued on the 1st for the month before. The centre marks it paid.</p>
       </div>
       <DealerNav active="statement" />
     </Phone>

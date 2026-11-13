@@ -34,9 +34,9 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Dealer plans",
     "body": [
-      "Dealers choose a plan based on how many items they sell each month. Listing is never limited.",
-      "Starter costs £25 a month for up to 25 items sold a month. Trade costs £100 a month for 26 to 50 items sold a month and adds the centre online shop. Pro costs £150 a month for unlimited sales and adds any number of centres, accountant export and phone support. All prices in these terms are plus VAT.",
-      "If you sell more than your plan allows, we will ask you to move up. You can change or cancel your plan at any time from Settings, which opens a secure page run by Stripe."
+      "Basic is free for every dealer at a centre that uses Dealer Centre. You do not need to sign up. Basic shows sales totals only, on a sales sheet sent with the centre payout. It does not show item names.",
+      "Full costs £25 a month plus VAT, by Direct Debit. It shows every sale with the item name, price, date and centre, live in the app. Unlimited sales. One account and one bill however many centres you sell at. You can cancel any month from Account, which opens a secure page run by Stripe.",
+      "If we label your stock, that is 75p an item plus VAT. Loading your own stock is free. If you agree to a taster, your first 25 items are labelled free and you get 2 weeks of named sales, then you return to Basic unless you start Full. All prices in these terms are plus VAT."
     ]
   },
   {
@@ -50,13 +50,13 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Free trials",
     "body": [
-      "If you list your own stock, you add a card when you sign up and the first 5 days are £0.00, then your plan price. We email you three days before the first payment. If you ask Dealer Centre to list your stock, you pay £1 plus VAT for each item we list, and you add a card for the monthly plan. That plan is £0.00 while we list the stock. When we say the stock is ready, you get 5 days at £0.00, then the plan price. We email you the date of the first payment when that trial starts, and again three days before the payment. If you cancel before the first payment, you pay nothing for the subscription. Centres on the own till plan get 14 days free from the day they add a card. There is no trial on the kit plan."
+      "Full has no free trial. A taster, if you say yes, is 2 weeks of named sales and 25 items labelled free, then you return to Basic unless you start Full at £25 a month plus VAT. Nothing is charged for the taster. Centres on the own till plan get 14 days free from the day they add a card. There is no trial on the kit plan. A centre's monthly fee is reduced by £2.50 plus VAT for each dealer on Full."
     ]
   },
   {
     "title": "Billing and renewal",
     "body": [
-      "Payments are taken by card through Stripe, monthly in advance, on the same date each month. Subscriptions renew automatically until cancelled. If you change plan, Stripe adjusts the charge for the part of the month left.",
+      "Full is taken by Direct Debit where your bank allows it, otherwise by card, through Stripe, monthly in advance. Subscriptions renew automatically until cancelled. Centre plans are taken by card through Stripe.",
       "If a payment fails, we will ask you to update your card. If it is still unpaid, we may limit your account until it is paid, as set out under Suspension. We may change our prices with at least 30 days notice by email; the new price applies from your next renewal after that. The price for a centre on the kit plan does not go up during its first 12 months."
     ]
   },

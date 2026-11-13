@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { Admin } from "@/lib/supabase/server";
 
-export const TOKEN_PENCE = 100;
+export { LABEL_PENCE as TOKEN_PENCE } from "@/lib/billing/pricing";
 
 export function safeNext(raw: string | null, fallback: string): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("://")) return fallback;
@@ -54,14 +54,20 @@ export async function recordTokenPayment(db: Admin, stripe: Stripe, session: Str
 
 /** Reads the new listing columns, and falls back if the migration is not applied yet so the app keeps opening. */
 export async function dealerWithListing(sb: { from: (t: string) => any }, id: string, extra: string) {
-  const full = `${extra}, listing_mode, listing_tokens, listing_tokens_bought, card_added_at`;
+  const billing = "billing_model, taster_accepted_at, taster_ends_at";
+  const full = `${extra}, listing_mode, listing_tokens, listing_tokens_bought, card_added_at, ${billing}`;
   const first = await sb.from("dealers").select(full).eq("id", id).single();
   if (!first.error && first.data) return first.data;
   const msg = String(first.error?.message ?? "");
-  if (!/listing_mode|listing_tokens|card_added_at/.test(msg)) return first.data;
+  const blankBilling = { billing_model: null, taster_accepted_at: null, taster_ends_at: null };
+  if (/billing_model|taster_/.test(msg)) {
+    const mid = await sb.from("dealers").select(`${extra}, listing_mode, listing_tokens, listing_tokens_bought, card_added_at`).eq("id", id).single();
+    if (!mid.error && mid.data) return { ...mid.data, ...blankBilling };
+  }
+  if (!/listing_mode|listing_tokens|card_added_at|billing_model|taster_/.test(msg)) return first.data;
   const second = await sb.from("dealers").select(extra).eq("id", id).single();
   if (!second.data) return null;
-  return { ...second.data, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null };
+  return { ...second.data, listing_mode: null, listing_tokens: 0, listing_tokens_bought: 0, card_added_at: null, ...blankBilling };
 }
 
 export async function confirmTokenPurchase(db: Admin, stripe: Stripe, sessionId: string, dealerId: string): Promise<void> {

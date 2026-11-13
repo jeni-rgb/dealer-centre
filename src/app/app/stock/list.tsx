@@ -7,7 +7,7 @@ import { DaysBand, Pill, Sku, money, when } from "@/components/ui";
 type Row = {
   id: string; sku: string; title: string; price_pence: number; listed_price_pence: number | null; listed_at: string; sold_at: string | null; status: string;
   floor: boolean; ownShopify: boolean; centreShop: boolean; noLabel: boolean; photo: string | null;
-  sold_amount: number | null; sold_channel: { type: string; owner_type: string } | null;
+  sold_amount: number | null; sold_channel: { type: string; owner_type: string } | null; centre_name?: string | null;
 };
 
 export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | "sold"; filter: string }) {
@@ -35,7 +35,7 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
         <div className="flex gap-2">
           {filter === "old" && <Pill kind="danger">Over 90 days</Pill>}
           {noLabelCount > 0 && (
-            <button className={`pill ${noLabelOnly ? "pill-warning" : "pill-neutral"}`} onClick={() => setNoLabelOnly(!noLabelOnly)}>No label · {noLabelCount}</button>
+            <button className={`pill ${noLabelOnly ? "pill-warning" : "pill-neutral"}`} onClick={() => setNoLabelOnly(!noLabelOnly)}>No label, {noLabelCount}</button>
           )}
         </div>
       )}
@@ -60,7 +60,7 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
                   ) : (
                     <>
                       <Pill kind="success">Sold</Pill>
-                      <span>{r.sold_channel?.type === "shopify" ? (r.sold_channel.owner_type === "centre" ? "Centre shop" : "Shopify") : "Floor"}{r.sold_at ? ` · ${when(r.sold_at)}` : ""}</span>
+                      <span>{r.centre_name ?? (r.sold_channel?.type === "shopify" ? (r.sold_channel.owner_type === "centre" ? "Centre shop" : "Your Shopify") : "Floor")}{r.sold_at ? `, ${when(r.sold_at)}` : ""}</span>
                     </>
                   )}
                 </span>

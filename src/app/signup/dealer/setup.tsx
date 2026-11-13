@@ -1,6 +1,6 @@
 "use client";
 import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER } from "@/lib/labels/models";
-import { TIER_NAME, TIER_POUNDS, type Tier } from "@/lib/billing/plan-copy";
+import { labelPriceLabel } from "@/lib/billing/pricing";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,15 +11,12 @@ type ListMode = "self" | "staff";
 type Dealer = { name: string; code: string; plan: string; stripe_customer_id: string | null; listing_mode: ListMode | null; listing_tokens: number; listing_tokens_bought: number; card_added_at: string | null } | null;
 type Step = "business" | "who" | "card" | "tokens" | "centre" | "printers" | "shopify" | "summary";
 type HP = { idx: number; total: number; step: Step; steps: Step[]; next: () => void };
-const PLANS: Tier[] = ["25", "100", "150"];
-
 function stepsFor(mode: ListMode | null): Step[] {
   const tail: Step[] = ["centre", "printers", "shopify", "summary"];
   return mode === "staff" ? ["business", "who", "card", "tokens", ...tail] : ["business", "who", "card", ...tail];
 }
 
-export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, plan, listHint }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string; listHint?: ListMode | null }) {
-  const preselected: Tier | null = plan === "starter" ? "25" : plan === "trade" ? "100" : plan === "pro" ? "150" : null;
+export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, listHint }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string; listHint?: ListMode | null }) {
   const router = useRouter();
   const [mode, setMode] = useState<ListMode | null>(dealer?.listing_mode ?? listHint ?? null);
   const [step, setStep] = useState<Step>((["business", "who", "card", "tokens", "centre", "printers", "shopify", "summary"] as Step[]).includes(initial as Step) ? (initial as Step) : "business");
@@ -34,7 +31,7 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
     <Phone>
       {step === "business" && <Business email={email} hp={hp} onDone={next} />}
       {step === "who" && <WhoLists hp={hp} initial={mode} onDone={(m) => { setMode(m); go("card"); }} />}
-      {step === "card" && <CardPlan hp={hp} preselected={preselected} staff={staff} />}
+      {step === "card" && <CardPlan hp={hp} staff={staff} />}
       {step === "tokens" && <HowMany hp={hp} />}
       {step === "centre" && <Centre hp={hp} centres={centres} onDone={next} />}
       {step === "printers" && <Printers hp={hp} ownPrinters={ownPrinters} centres={centres} onDone={next} />}
@@ -44,8 +41,8 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
           <StepHeader {...hp} title="You are set" sub="Anything skipped stays in Settings until it is done." />
           <div className="flex flex-col gap-3 px-5 pt-6">
             <div className="card divide-y divide-border">
-              <Row label="Business" ok={!!dealer} value={dealer ? `${dealer.name} · ${dealer.code}` : "Not done"} />
-              <Row label="Card" ok={!!dealer?.card_added_at} value={dealer?.card_added_at ? (staff ? "Saved, £0.00 today" : "5 day trial started") : "Not added"} />
+              <Row label="Business" ok={!!dealer} value={dealer ? `${dealer.name}, ${dealer.code}` : "Not done"} />
+              <Row label="Full plan" ok={!!dealer?.card_added_at || dealer?.plan === "pro"} value={dealer?.card_added_at || dealer?.plan === "pro" ? "£25 a month plus VAT" : "Not started"} />
               {staff && <Row label="Listing tokens" ok={(dealer?.listing_tokens_bought ?? 0) > 0} value={(dealer?.listing_tokens_bought ?? 0) > 0 ? `${dealer?.listing_tokens ?? 0} left` : "Not paid"} />}
               <Row label="Centre" ok={centres.length > 0} value={centres[0] ? `${centres[0].name}${centres[0].status === "active" ? "" : ", awaiting approval"}` : "None yet"} />
               <Row label="Printer" ok={ownPrinters > 0 || centres.length > 0} value={centres.length > 0 ? "Centre till printer" : ownPrinters > 0 ? "Your printer" : "None yet"} />
@@ -74,12 +71,12 @@ function WhoLists({ hp, initial, onDone }: { hp: HP; initial: ListMode | null; o
     onDone(pick);
   }
   const choices: { id: ListMode; title: string; sub: string }[] = [
-    { id: "staff", title: "Dealer Centre will list it", sub: "£1 per item plus VAT. We photograph, write and label them." },
-    { id: "self", title: "I'll list it myself", sub: "Add your card and your 5 day trial starts." },
+    { id: "staff", title: "Label my stock", sub: "75p an item plus VAT." },
+    { id: "self", title: "I load my own stock", sub: "Free." },
   ];
   return (
     <>
-      <StepHeader {...hp} title="Who lists your stock?" sub="You can use the app either way, including marking something sold. This only decides who puts the items on." />
+      <StepHeader {...hp} title="Who lists your stock?" sub="Who puts the items on." />
       <div className="flex flex-col gap-3 px-5 pt-6">
         {choices.map((c) => (
           <button key={c.id} type="button" aria-pressed={pick === c.id} onClick={() => setPick(c.id)} className={`rounded-[16px] border p-4 text-left ${pick === c.id ? "border-2 border-gold bg-gold-soft" : "border-border bg-white"}`}>
@@ -94,28 +91,16 @@ function WhoLists({ hp, initial, onDone }: { hp: HP; initial: ListMode | null; o
   );
 }
 
-function CardPlan({ hp, preselected, staff }: { hp: HP; preselected: Tier | null; staff: boolean }) {
-  const [tier, setTier] = useState<Tier | null>(preselected);
-  const pounds = tier ? TIER_POUNDS[tier] : null;
+function CardPlan({ hp, staff }: { hp: HP; staff: boolean }) {
   return (
     <>
-      <StepHeader {...hp} title={staff ? "Card for your monthly plan" : "Card and 5 day trial"} sub={staff ? "Due today is £0.00. Nothing is charged for the plan while we list your stock. You then get 5 days at £0.00. We email you three days before the first payment." : "Nothing is charged today. First payment in 5 days, we email you three days before."} />
+      <StepHeader {...hp} title="Full" sub="£25 a month plus VAT. Direct Debit. One bill." />
       <div className="flex flex-col gap-3 px-5 pt-6">
-        <div className="card divide-y divide-border">
-          {PLANS.map((t) => (
-            <button key={t} type="button" onClick={() => setTier(t)} className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-[14px] ${tier === t ? "bg-gold-soft" : ""}`}>
-              <span className="font-medium">{TIER_NAME[t]}{tier === t ? <span className="ml-2 pill pill-accent">Your pick</span> : null}</span>
-              <span className="shrink-0 text-right"><span className="block font-semibold">£0.00 today</span><span className="block whitespace-nowrap text-[12px] text-ink-muted">then £{TIER_POUNDS[t]} a month plus VAT</span></span>
-            </button>
-          ))}
+        <div className="card px-4 py-4 text-[15px] leading-6">
+          <p className="font-semibold">Named sales at every centre.</p>
+          {staff && <p className="mt-2 text-ink-muted">Labels are 75p an item plus VAT, next.</p>}
         </div>
-        <div className="card px-4 py-3 text-[14px]">
-          <div className="flex items-center justify-between"><span>Due today</span><span className="font-semibold">£0.00</span></div>
-          <div className="mt-1 flex items-center justify-between gap-3 text-ink-muted"><span>Then</span><span className="text-right">{pounds ? `£${pounds} a month plus VAT${staff ? " after the 5 day trial" : ""}` : "Choose a plan"}</span></div>
-        </div>
-        {staff && <p className="text-[12px] text-ink-muted">The 5 days at £0.00 start when your stock is ready, not today.</p>}
-        <p className="text-[12px] text-ink-muted">Prices are plus VAT. Plans are by what you sell, not what you list. Taken on the web by Stripe.</p>
-        <a className={`btn ${tier ? "" : "pointer-events-none opacity-50"}`} href={tier ? `/api/billing/checkout?tier=${tier}` : "#"}>Add card</a>
+        <a className="btn" href="/api/billing/checkout">Start Full</a>
       </div>
     </>
   );
@@ -128,16 +113,16 @@ function HowMany({ hp }: { hp: HP }) {
   const href = ok ? `/api/billing/tokens?qty=${n}&next=${encodeURIComponent("/signup/dealer?step=centre")}` : "#";
   return (
     <>
-      <StepHeader {...hp} title="How many items?" sub="One listing token per item, £1 each plus VAT. You can buy more later if you have extras. We photograph the stock after this is paid." />
+      <StepHeader {...hp} title="How many items?" sub="75p an item plus VAT." />
       <div className="flex flex-col gap-3 px-5 pt-6">
-        <label className="text-[14px] font-medium" htmlFor="qty">How many items should we list?</label>
+        <label className="text-[14px] font-medium" htmlFor="qty">How many</label>
         <div className="card px-4 py-6"><input id="qty" inputMode="numeric" className="w-full bg-transparent text-center text-[44px] font-semibold outline-none" value={qty} onChange={(e) => setQty(e.target.value.replace(/[^0-9]/g, ""))} /></div>
         <div className="card px-4 py-3 text-[14px]">
-          <div className="flex items-center justify-between"><span>{ok ? n : 0} listing tokens</span><span className="font-semibold">£{ok ? n : 0} plus VAT</span></div>
-          <div className="mt-1 text-[12px] text-ink-muted">£1 each plus VAT</div>
+          <div className="flex items-center justify-between"><span>{ok ? n : 0} labels</span><span className="font-semibold">{ok ? labelPriceLabel(n) : "£0.00 plus VAT"}</span></div>
+          <div className="mt-1 text-[12px] text-ink-muted">75p each plus VAT</div>
         </div>
-        <p className="text-[13px] text-ink-muted">You can use the full app while we list, including marking something sold.</p>
-        <a className={`btn ${ok ? "" : "pointer-events-none opacity-50"}`} href={href}>{ok ? `Pay £${n} plus VAT` : "Enter how many items"}</a>
+        <p className="text-[13px] text-ink-muted">Full stays on while we label.</p>
+        <a className={`btn ${ok ? "" : "pointer-events-none opacity-50"}`} href={href}>{ok ? `Pay ${labelPriceLabel(n)}` : "Enter how many items"}</a>
       </div>
     </>
   );

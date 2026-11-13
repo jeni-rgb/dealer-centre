@@ -26,7 +26,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
 
   let q = sb
     .from("items")
-    .select("id, sku, title, price_pence, listed_price_pence, listed_at, sold_at, status, centre_id, photos, item_listings(status, channels:channel_id(type, owner_type)), print_jobs(status), sales(amount_pence, channels:channel_id(type, owner_type))")
+    .select("id, sku, title, price_pence, listed_price_pence, listed_at, sold_at, status, centre_id, centres(name), photos, item_listings(status, channels:channel_id(type, owner_type)), print_jobs(status), sales(amount_pence, channels:channel_id(type, owner_type))")
     .eq("dealer_id", me.dealer_id)
     .eq("status", mode);
   q = mode === "sold" ? q.order("sold_at", { ascending: false }) : q.order("listed_at", { ascending: false });
@@ -52,6 +52,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
       noLabel: !pj || pj.status === "not_printed",
       photo: (i.photos as { url?: string }[])[0]?.url ?? null,
       sold_amount: sale?.amount_pence ?? null, sold_channel: sale?.channels ?? null,
+      centre_name: (i.centres as unknown as { name: string } | null)?.name ?? null,
     };
   });
 
