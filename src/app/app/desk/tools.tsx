@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessColumns, mapBringRows, parseCsv } from "@/lib/full/sumup";
 
-type Pitch = { id: string; name: string; count: number; target: number | null; short: number | null };
+type Centre = { id: string; name: string };
 
-export function DeskTools({ pitches, goalPounds, exportToken }: { pitches: Pitch[]; goalPounds: number; exportToken: string | null }) {
+export function DeskTools({ centres, goalPounds, exportToken }: { centres: Centre[]; goalPounds: number; exportToken: string | null }) {
   const router = useRouter();
   const [goal, setGoal] = useState(goalPounds ? String(goalPounds) : "");
-  const [targets, setTargets] = useState<Record<string, string>>(Object.fromEntries(pitches.map((p) => [p.id, p.target ? String(p.target) : ""])));
-  const [centre, setCentre] = useState(pitches[0]?.id ?? "");
+  const [centre, setCentre] = useState(centres[0]?.id ?? "");
   const [ticket, setTicket] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
@@ -66,21 +65,9 @@ export function DeskTools({ pitches, goalPounds, exportToken }: { pitches: Pitch
       </section>
 
       <section className="card flex flex-col gap-3 p-4">
-        <h2 className="text-[16px] font-semibold">Pitch size</h2>
-        <p className="text-[13px] text-ink-muted">How many items you want on the floor at each centre. Today tells you when you are short.</p>
-        {pitches.map((p) => (
-          <div key={p.id} className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 text-[14px]">{p.name}<span className="block text-[12px] text-ink-muted">{p.count} on the floor{p.short ? `, ${p.short} short` : ""}</span></span>
-            <input className="field num !h-10 !w-20" inputMode="numeric" value={targets[p.id] ?? ""} onChange={(e) => setTargets((s) => ({ ...s, [p.id]: e.target.value }))} />
-            <button className="btn-sm" disabled={busy} onClick={() => save({ centre_id: p.id, floor_target: Number(targets[p.id] || 0) })}>Save</button>
-          </div>
-        ))}
-      </section>
-
-      <section className="card flex flex-col gap-3 p-4">
         <h2 className="text-[16px] font-semibold">Paper book or SumUp</h2>
         <p className="text-[13px] text-ink-muted">For a centre that is not on our till. Type a ticket, or upload the SumUp file. Only your own tickets are recorded.</p>
-        <select className="field" value={centre} onChange={(e) => setCentre(e.target.value)}>{pitches.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <select className="field" value={centre} onChange={(e) => setCentre(e.target.value)}>{centres.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <div className="grid grid-cols-2 gap-2">
           <input className="field ticket uppercase" placeholder="Ticket" value={ticket} onChange={(e) => setTicket(e.target.value)} />
           <input className="field" inputMode="decimal" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />

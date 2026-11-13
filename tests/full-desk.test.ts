@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { londonMidnight, sumBetween, weekRange } from "@/lib/full/weeks";
 import { guessColumns, mapBringRows, parseCsv } from "@/lib/full/sumup";
-import { groupName, pitchShort, rankSold } from "@/lib/full/insights";
+import { groupName, rankSold } from "@/lib/full/insights";
 import { BASIC_LINE, COMPARE_HEADLINE, FULL_POINTS } from "@/lib/billing/pricing";
 
 const noDash = (s: string) => expect(s).not.toMatch(/[-–—]/);
@@ -35,7 +35,7 @@ describe("full desk", () => {
     expect(mapBringRows(simple, simpleCols!) .rows[0].amountPence).toBe(12000);
   });
 
-  it("ranks what sold and how short a pitch is", () => {
+  it("ranks what sold", () => {
     const ranked = rankSold([
       { title: "Jug", group: groupName("small"), amountPence: 2000 },
       { title: "Jug", group: groupName("small"), amountPence: 2500 },
@@ -44,9 +44,6 @@ describe("full desk", () => {
     expect(ranked.items[0].title).toBe("Coffer");
     expect(ranked.items.find((i) => i.title === "Jug")?.count).toBe(2);
     expect(ranked.groups[0].title).toBe("Furniture");
-    expect(pitchShort(6, 10)).toBe(4);
-    expect(pitchShort(10, 10)).toBeNull();
-    expect(pitchShort(6, null)).toBeNull();
   });
 
   it("keeps the plan words free of dashes", () => {

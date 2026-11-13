@@ -46,7 +46,7 @@ export const FULL_POINTS = [
   "Every centre in one place. Paper book, SumUp or our till, every sale lands in one app.",
   "Live sales. What sold, for how much, at which centre, the minute it goes through the till.",
   "Know your money. What each centre owes you before payout day, so nothing gets missed.",
-  "Stock that tells you when to restock. What's on the floor, what's sold, and when your pitch needs filling.",
+  "Stock at a glance. What's on the floor and what's sold, at every centre.",
   "Never lose a sale when you're away. Staff scan your label and see the price, so the customer buys today.",
   "Weekly targets. This week against last week and against your goal.",
   "Best sellers and slow stock. See what moves and what to reprice.",

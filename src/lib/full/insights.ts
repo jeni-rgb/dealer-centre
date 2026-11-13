@@ -1,4 +1,4 @@
-/** Best sellers and how far a pitch is below the number of items the dealer wants on the floor. */
+/** Best sellers by piece size and by item. */
 
 export type SoldPiece = { title: string; group: string; amountPence: number };
 
@@ -21,10 +21,4 @@ export function rankSold(rows: SoldPiece[], limit = 5): { items: { title: string
     return [...map.values()].sort((a, b) => b.amountPence - a.amountPence || b.count - a.count).slice(0, limit);
   };
   return { items: fold((r) => r.title || "Untitled"), groups: fold((r) => r.group) };
-}
-
-export function pitchShort(live: number, target: number | null | undefined): number | null {
-  if (target == null || target < 1) return null;
-  const short = target - live;
-  return short > 0 ? short : null;
 }

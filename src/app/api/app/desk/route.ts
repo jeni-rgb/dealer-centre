@@ -8,12 +8,10 @@ import { namedSales } from "@/lib/billing/pricing";
 
 const Input = z.object({
   weekly_goal_pounds: z.number().min(0).max(1000000).optional(),
-  centre_id: z.string().min(1).optional(),
-  floor_target: z.number().int().min(0).max(100000).optional(),
   export_token: z.enum(["new", "stop"]).optional(),
 });
 
-/** Save a weekly goal, a pitch size, or turn the private export link on or off. */
+/** Save a weekly goal, or turn the private export link on or off. */
 export async function POST(req: Request) {
   const me = await getMe();
   if (!me?.dealer_id) return NextResponse.json({ error: "sign in" }, { status: 401 });
@@ -24,10 +22,6 @@ export async function POST(req: Request) {
   const db = supabaseAdmin();
   if (p.data.weekly_goal_pounds !== undefined) {
     const { error } = await db.from("dealers").update({ weekly_goal_pence: Math.round(p.data.weekly_goal_pounds * 100) }).eq("id", me.dealer_id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-  if (p.data.centre_id && p.data.floor_target !== undefined) {
-    const { error } = await db.from("dealer_centres").update({ floor_target: p.data.floor_target }).eq("dealer_id", me.dealer_id).eq("centre_id", p.data.centre_id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   }
   if (p.data.export_token) {

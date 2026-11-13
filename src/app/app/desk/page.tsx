@@ -5,7 +5,7 @@ import { DealerNav, Screen, money } from "@/components/ui";
 import { dealerWithListing } from "@/lib/billing/tokens";
 import { namedSales } from "@/lib/billing/pricing";
 import { PlanCompare } from "@/components/plan-compare";
-import { groupName, pitchShort, rankSold } from "@/lib/full/insights";
+import { groupName, rankSold } from "@/lib/full/insights";
 import { DeskTools } from "./tools";
 
 export const dynamic = "force-dynamic";
@@ -25,26 +25,22 @@ export default async function Desk() {
   }
   const since = new Date(Date.now() - 90 * 86400000).toISOString();
   const goal = await sb.from("dealers").select("weekly_goal_pence, export_token").eq("id", me.dealer_id).maybeSingle();
-  const linksTry = await sb.from("dealer_centres").select("centre_id, floor_target, centres(name)").eq("dealer_id", me.dealer_id).is("left_at", null);
-  const links = linksTry.error ? (await sb.from("dealer_centres").select("centre_id, centres(name)").eq("dealer_id", me.dealer_id).is("left_at", null)).data : linksTry.data;
-  const { data: live } = await sb.from("items").select("id, centre_id").eq("dealer_id", me.dealer_id).eq("status", "live");
+  const { data: links } = await sb.from("dealer_centres").select("centre_id, centres(name)").eq("dealer_id", me.dealer_id).is("left_at", null);
   const { data: sold } = await sb.from("sales").select("amount_pence, items(title, delivery)").eq("dealer_id", me.dealer_id).is("voided_at", null).gte("sold_at", since);
   const { data: slow } = await sb.from("items").select("id, title, sku, price_pence, listed_at, centres(name)").eq("dealer_id", me.dealer_id).eq("status", "live").lte("listed_at", since).order("listed_at").limit(12);
   const ranked = rankSold((sold ?? []).map((s) => {
     const item = s.items as unknown as { title: string; delivery: string } | null;
     return { title: item?.title ?? "Sale", group: groupName(item?.delivery), amountPence: s.amount_pence };
   }));
-  const pitches = (links ?? []).map((c) => {
-    const name = (c.centres as unknown as { name: string } | null)?.name ?? "Centre";
-    const count = (live ?? []).filter((i) => i.centre_id === c.centre_id).length;
-    const target = (c as { floor_target?: number | null }).floor_target ?? null;
-    return { id: c.centre_id, name, count, target, short: pitchShort(count, target) };
-  });
+  const centres = (links ?? []).map((c) => ({
+    id: c.centre_id,
+    name: (c.centres as unknown as { name: string } | null)?.name ?? "Centre",
+  }));
 
   return (
     <Screen title="Your desk" back={{ href: "/app" }}>
       <DeskTools
-        pitches={pitches}
+        centres={centres}
         goalPounds={(goal.data?.weekly_goal_pence ?? 0) / 100}
         exportToken={goal.error ? null : goal.data?.export_token ?? null}
       />

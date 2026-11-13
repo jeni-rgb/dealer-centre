@@ -54,7 +54,7 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
-    { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", floor_target: 10, joined_at: d(4), left_at: null },
+    { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
     { id: "dc2", dealer_id: IDS.dealer2, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["3"], rent_pence: 13000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "centre", joined_at: d(40), left_at: null },
     { id: "dc3", dealer_id: IDS.dealer3, centre_id: IDS.centre, status: "pending", square_category_id: null, pitch_numbers: [], rent_pence: 9000, rent_mode: "rent", rent_schedule: "weekly_friday", rent_set_by: "dealer", joined_at: null, left_at: null },
   ],
