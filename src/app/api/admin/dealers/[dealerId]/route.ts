@@ -5,7 +5,7 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
 import { pushStripeTrialEnd } from "@/lib/billing/dealer-trial";
-import { startTaster } from "@/lib/billing/taster";
+import { applyBasicChoice, moveToBasicDecision, startTaster } from "@/lib/billing/taster";
 import { billOwedLabels } from "@/lib/billing/labels";
 
 const Input = z.discriminatedUnion("action", [
@@ -16,6 +16,7 @@ const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start_trial") }),
   z.object({ action: z.literal("start_taster") }),
   z.object({ action: z.literal("bill_labels") }),
+  z.object({ action: z.literal("move_to_basic") }),
   z.object({ action: z.literal("cancel_subscription"), at_period_end: z.boolean().default(true) }),
   z.object({ action: z.literal("move_centre"), from_centre_id: z.string().uuid().nullable(), to_centre_id: z.string().uuid(), move_items: z.boolean().default(true) }),
   z.object({ action: z.literal("note"), note: z.string().max(2000) }),
@@ -36,7 +37,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
   try {
     if (a.action === "resend_link") { const { data: link, error } = await db.auth.admin.generateLink({ type: "magiclink", email: a.email.toLowerCase(), options: { redirectTo: `${env.appUrl()}/api/auth/callback?next=/app` } }); if (error) throw error; result = { link: link.properties?.action_link }; }
     if (a.action === "set_limit") await db.from("dealers").update({ monthly_sold_limit: a.monthly_sold_limit }).eq("id", dealerId);
-    if (a.action === "set_plan") await db.from("dealers").update({ plan: a.plan }).eq("id", dealerId);
+    if (a.action === "set_plan") await db.from("dealers").update(a.plan === "comp" ? { plan: "comp", monthly_sold_limit: 100000 } : { plan: a.plan }).eq("id", dealerId);
     if (a.action === "extend_trial") {
       const current = dealer.taster_ends_at ?? dealer.trial_ends_at;
       const base = current && new Date(current) > new Date() ? new Date(current) : new Date();
@@ -53,6 +54,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
     if (a.action === "bill_labels") {
       const billed = await billOwedLabels(db, dealerId);
       result = { copies: billed.copies, note: `Billed ${billed.copies} labels, ${billed.amount}.` };
+    }
+    if (a.action === "move_to_basic") {
+      const decision = moveToBasicDecision(dealer);
+      if (decision.already) throw new Error("This dealer is already on Basic.");
+      if (decision.cancelSubscriptionId && process.env.STRIPE_SECRET_KEY && process.env.DEMO_MODE !== "1") {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        await stripe.subscriptions.update(decision.cancelSubscriptionId, { cancel_at_period_end: true });
+      }
+      await applyBasicChoice(db, dealerId);
+      result = { charged: false };
     }
     if (a.action === "cancel_subscription") {
       if (!dealer.stripe_subscription_id || !process.env.STRIPE_SECRET_KEY) throw new Error("no Stripe subscription on this dealer");

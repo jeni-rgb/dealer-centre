@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { applyBasicChoice } from "@/lib/billing/taster";
 
 /** After the 14 days, the dealer stays on Basic. Full is the Stripe checkout. Labels are not charged here. */
 export async function POST(req: Request) {
@@ -14,8 +15,10 @@ export async function POST(req: Request) {
   if (!dealer?.taster_accepted_at || !dealer.taster_ends_at) return NextResponse.json({ error: "Start the taster first." }, { status: 400 });
   if (dealer.billing_model === "full") return NextResponse.json({ error: "You are on Full." }, { status: 400 });
   if (new Date(dealer.taster_ends_at).getTime() > Date.now()) return NextResponse.json({ error: "Your 14 days are still running." }, { status: 400 });
-  const { error } = await db.from("dealers").update({ billing_model: "basic" }).eq("id", me.dealer_id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  await db.from("dealers").update({ taster_choice: "basic" }).eq("id", me.dealer_id);
+  try {
+    await applyBasicChoice(db, me.dealer_id);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
   return NextResponse.json({ ok: true });
 }

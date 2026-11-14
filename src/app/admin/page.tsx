@@ -1,13 +1,16 @@
+import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { Kpi, Pill, money } from "@/components/ui";
-
+import { Kpi, money } from "@/components/ui";
+import { centreAdminStatus, dealerAdminFacts } from "@/lib/admin/status";
+import { PageHeader } from "./ui";
+import { CentresTable, DealersTable } from "./directory";
 
 export default async function Admin() {
   const db = supabaseAdmin();
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const [{ data: centres }, { data: dealers }, { data: sales }, { data: channels }] = await Promise.all([
     db.from("centres").select("id, name, invite_code, status, created_at, plan, stripe_customer_id, till"),
-    db.from("dealers").select("id, name, code, plan, trial_ends_at, created_at, monthly_sold_limit"),
+    db.from("dealers").select("id, name, code, plan, placeholder, billing_model, trial_ends_at, taster_accepted_at, taster_ends_at, created_at, monthly_sold_limit, stripe_customer_id"),
     db.from("sales").select("dealer_id, centre_id, amount_pence").is("voided_at", null).gte("sold_at", monthStart.toISOString()),
     db.from("channels").select("owner_type, owner_id, type, status, last_webhook_at"),
   ]);
@@ -17,62 +20,43 @@ export default async function Admin() {
     if (s.dealer_id) byDealer.set(s.dealer_id, (byDealer.get(s.dealer_id) ?? 0) + s.amount_pence);
     if (s.centre_id) byCentre.set(s.centre_id, (byCentre.get(s.centre_id) ?? 0) + s.amount_pence);
   }
-  const paying = (dealers ?? []).filter((d) => d.plan === "pro").length;
-  const trial = (dealers ?? []).filter((d) => d.plan === "trial").length;
+  const paying = (dealers ?? []).filter((d) => d.plan === "pro" || d.billing_model === "full").length;
+  const trial = (dealers ?? []).filter((d) => dealerAdminFacts(d).status === "Trial").length;
   const priceFor = (limit: number) => (limit >= 100000 ? 15000 : limit > 25 ? 10000 : 2500);
-  const dealerMrr = (dealers ?? []).filter((d) => d.plan === "pro").reduce((a, d) => a + priceFor(d.monthly_sold_limit ?? 25), 0);
+  const dealerMrr = (dealers ?? []).filter((d) => d.plan === "pro" && d.billing_model !== "basic").reduce((a, d) => a + priceFor(d.monthly_sold_limit ?? 25), 0);
   const centreMrr = (centres ?? []).filter((c) => c.plan === "pro").reduce((a, c) => a + ((c as { till?: string }).till === "ordinary" ? 29900 : 24900), 0);
-  const mrr = dealerMrr + centreMrr;
 
+  const centreRows = (centres ?? []).map((c) => {
+    const ch = (channels ?? []).find((x) => x.owner_type === "centre" && x.owner_id === c.id && x.type === "square");
+    const status = centreAdminStatus(c);
+    return { id: c.id, href: `/admin/centres/${c.id}`, name: c.name, code: c.invite_code, status, square: ch ? ch.status : "Not connected", sales: byCentre.get(c.id) ?? 0 };
+  });
+  const dealerRows = (dealers ?? []).map((d) => {
+    const facts = dealerAdminFacts(d);
+    const sh = (channels ?? []).find((x) => x.owner_type === "dealer" && x.owner_id === d.id && x.type === "shopify");
+    return { id: d.id, href: `/admin/dealers/${d.id}`, name: d.name, code: d.code, status: facts.status, plan: facts.plan, usage: facts.usage, shopify: sh ? sh.status : "Not connected", sales: byDealer.get(d.id) ?? 0, joined: new Date(d.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) };
+  });
   return (
     <>
-      <div className="mb-6 flex items-center justify-between"><h1 className="text-[24px] font-semibold">Centres and dealers</h1><a href="/admin/onboard" className="btn-sm">Onboard a centre</a></div>
-      <div className="mb-8 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
+      <PageHeader title="Centres and dealers" subtitle="Every centre and dealer account, with plan, status and sales this month.">
+        <Link href="/admin/onboard" className="btn-sm">Onboard a centre</Link>
+      </PageHeader>
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Centres" value={String((centres ?? []).length)} />
-        <Kpi label="Paying dealers" value={String(paying)} />
-        <Kpi label="On trial" value={String(trial)} />
-        <Kpi label="MRR" value={money(mrr)} sub={`${money(dealerMrr)} dealers · ${money(centreMrr)} centres`} />
+        <Kpi label="Active dealers" value={String(paying)} />
+        <Kpi label="Trial" value={String(trial)} />
+        <Kpi label="MRR" value={money(dealerMrr + centreMrr)} sub={`Dealers ${money(dealerMrr)}. Centres ${money(centreMrr)}.`} />
       </div>
 
-      <div className="card mb-8 overflow-hidden"><div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Centres</h2></div>
-      <table className="w-full text-[14px]">
-        <thead className="text-left text-[12px] text-ink-muted"><tr className="border-b border-border"><th className="px-5 py-2 font-medium">Name</th><th className="py-2 font-medium">Code</th><th className="py-2 font-medium">Plan</th><th className="py-2 font-medium">Square</th><th className="py-2 text-right font-medium">Sales MTD</th><th className="py-2 text-right font-medium">Export</th></tr></thead>
-        <tbody>
-          {(centres ?? []).map((c) => {
-            const ch = (channels ?? []).find((x) => x.owner_type === "centre" && x.owner_id === c.id && x.type === "square");
-            return (
-              <tr key={c.id} className="border-b border-border">
-                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/admin/centres/${c.id}`}>{c.name}</a></td>
-                <td className="ticket py-2 text-[12px]">{c.invite_code}</td>
-                <td className="py-2 text-xs">{c.status === "unclaimed" ? <Pill kind="neutral">Added by dealers</Pill> : c.plan === "pro" ? <Pill kind="success">Paying</Pill> : c.plan === "comp" ? <Pill kind="accent">Free</Pill> : c.stripe_customer_id ? <Pill kind="warning">Trial</Pill> : <Pill kind="danger">No card</Pill>}</td>
-                <td className="py-2 text-xs">{ch ? `${ch.status}${ch.last_webhook_at ? `, ${new Date(ch.last_webhook_at).toLocaleString("en-GB")}` : ""}` : <Pill kind="danger">Not connected</Pill>}</td>
-                <td className="num py-2 text-right">{money(byCentre.get(c.id) ?? 0)}</td>
-                <td className="py-2 text-right text-xs"><a className="underline" href={`/centre?centre=${c.id}`}>Open</a> · <a className="underline" href={`/api/admin/export?centre=${c.id}`}>CSV</a></td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table></div>
+      <section className="card mb-8 overflow-hidden">
+        <div className="border-b border-border px-4 py-3"><h2 className="text-[15px] font-semibold">Centres</h2></div>
+        <CentresTable rows={centreRows} />
+      </section>
 
-      <div className="card overflow-hidden"><div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Dealers</h2></div>
-      <table className="w-full text-[14px]">
-        <thead className="text-left text-[12px] text-ink-muted"><tr className="border-b border-border"><th className="px-5 py-2 font-medium">Name</th><th className="py-2 font-medium">Code</th><th className="py-2 font-medium">Plan</th><th className="py-2 font-medium">Shopify</th><th className="py-2 text-right font-medium">Sales MTD</th><th className="py-2 text-right font-medium">Joined</th></tr></thead>
-        <tbody>
-          {(dealers ?? []).map((d) => {
-            const sh = (channels ?? []).find((x) => x.owner_type === "dealer" && x.owner_id === d.id && x.type === "shopify");
-            return (
-              <tr key={d.id} className="border-b border-border">
-                <td className="px-5 py-2"><a className="font-medium text-accent" href={`/admin/dealers/${d.id}`}>{d.name}</a></td>
-                <td className="ticket py-2 text-[12px]">{d.code}</td>
-                <td className="py-2">{d.plan === "trial" && !d.trial_ends_at ? "onboarding" : d.plan === "trial" && d.trial_ends_at ? `trial to ${new Date(d.trial_ends_at).toLocaleDateString("en-GB")}` : d.plan}</td>
-                <td className="py-2 text-xs">{sh ? sh.status : "–"}</td>
-                <td className="num py-2 text-right">{money(byDealer.get(d.id) ?? 0)}</td>
-                <td className="py-2 text-right text-xs text-ink-3">{new Date(d.created_at).toLocaleDateString("en-GB")}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table></div>
+      <section className="card overflow-hidden">
+        <div className="border-b border-border px-4 py-3"><h2 className="text-[15px] font-semibold">Dealers</h2></div>
+        <DealersTable rows={dealerRows} />
+      </section>
     </>
   );
 }

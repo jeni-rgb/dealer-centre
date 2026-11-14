@@ -124,12 +124,27 @@ export function isCentrePrice(priceId: string | undefined): boolean {
   return (!!kit && priceId === kit) || (!!own && priceId === own);
 }
 
+/** A deleted Stripe subscription must not knock a free dealer, or a dealer now on a different subscription, down to the £25 band. */
+export function deletedSubscriptionUpdate(
+  row: { plan: string; stripe_subscription_id: string | null } | null,
+  deletedId: string,
+): { plan: "cancelled"; stripe_subscription_id: null } | null {
+  if (!row || row.plan === "comp") return null;
+  if (row.stripe_subscription_id !== deletedId) return null;
+  return { plan: "cancelled", stripe_subscription_id: null };
+}
+
 export async function syncDealerSubscription(db: Admin, stripe: Stripe, s: Stripe.Subscription): Promise<void> {
   const priceId = s.items.data[0]?.price?.id;
   if (isCentrePrice(priceId)) return;
   const customer = customerId(s.customer);
-  const { data: row } = await db.from("dealers").select("id, plan, trial_ends_at, monthly_sold_limit").eq("stripe_customer_id", customer).maybeSingle();
+  const { data: row } = await db.from("dealers").select("id, plan, trial_ends_at, monthly_sold_limit, stripe_subscription_id").eq("stripe_customer_id", customer).maybeSingle();
   const dealerId = row?.id ?? s.metadata?.dealer_id ?? null;
+  if (s.status === "canceled") {
+    const update = deletedSubscriptionUpdate(row, s.id);
+    if (update && row) await db.from("dealers").update(update).eq("id", row.id);
+    return;
+  }
   if (!dealerId && !knownDealerPrice(priceId)) return;
   const limit = limitFromSub(s);
   const started = s.metadata?.trial_started === "1";
