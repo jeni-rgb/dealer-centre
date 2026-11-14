@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
   try {
     if (a.action === "resend_link") { const { data: link, error } = await db.auth.admin.generateLink({ type: "magiclink", email: a.email.toLowerCase(), options: { redirectTo: `${env.appUrl()}/api/auth/callback?next=/app` } }); if (error) throw error; result = { link: link.properties?.action_link }; }
     if (a.action === "set_limit") await db.from("dealers").update({ monthly_sold_limit: a.monthly_sold_limit }).eq("id", dealerId);
-    if (a.action === "set_plan") await db.from("dealers").update({ plan: a.plan }).eq("id", dealerId);
+    if (a.action === "set_plan") await db.from("dealers").update(a.plan === "comp" ? { plan: "comp", monthly_sold_limit: 100000 } : { plan: a.plan }).eq("id", dealerId);
     if (a.action === "extend_trial") {
       const current = dealer.taster_ends_at ?? dealer.trial_ends_at;
       const base = current && new Date(current) > new Date() ? new Date(current) : new Date();

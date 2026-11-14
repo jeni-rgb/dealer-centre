@@ -4,7 +4,9 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { Kpi, Pill, money } from "@/components/ui";
 import { centreOverview } from "@/lib/admin/centre";
 import { periodLabel } from "@/lib/statements/compute";
-import { Actions } from "../../actions";
+import { ActionMenu } from "../../actions";
+import { PageHeader, StatusBadge } from "../../ui";
+import { centreAdminStatus } from "@/lib/admin/status";
 
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "never");
 const stripeUrl = (id: string | null) => (id ? `https://dashboard.stripe.com/customers/${id}` : null);
@@ -24,23 +26,31 @@ export default async function CentreAdmin({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link href="/admin" className="text-[12px] text-ink-muted">‹ All centres</Link>
-          <h1 className="text-[26px] font-semibold">{c.name}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-[13px] text-ink-muted">{planPill}<span>code <span className="ticket">{c.invite_code}</span></span><span>· {c.till === "ordinary" ? "kit plan (no POS)" : c.till === "square" ? "own till plan, Square" : "own till plan, other POS"}</span><span>· {c.address ?? "no address"}</span><span>· since {new Date(c.created_at).toLocaleDateString("en-GB")}</span></p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/centre?centre=${id}`} className="btn-sm">Open as this centre</Link>
-          {stripeUrl(c.stripe_customer_id) && <a className="btn-sm-secondary" href={stripeUrl(c.stripe_customer_id)!} target="_blank" rel="noreferrer">Stripe customer</a>}
-          <a className="btn-sm-secondary" href={`/api/admin/export?centre=${id}`}>CSV</a>
-        </div>
-      </div>
+      <PageHeader eyebrow="Centres" title={c.name} subtitle={`Code ${c.invite_code}. ${c.till === "ordinary" ? "Kit plan" : c.till === "square" ? "Own till, Square" : "Own till"}. ${c.address ?? "No address"}. Created ${new Date(c.created_at).toLocaleDateString("en-GB")}.`}>
+        <StatusBadge status={centreAdminStatus(c)} />
+        {planPill}
+        <Link href={`/centre?centre=${id}`} className="btn-sm-secondary">Open as centre</Link>
+        {stripeUrl(c.stripe_customer_id) && <a className="btn-sm-secondary" href={stripeUrl(c.stripe_customer_id)!} target="_blank" rel="noreferrer">Stripe customer</a>}
+        <a className="btn-sm-secondary" href={`/api/admin/export?centre=${id}`}>Export</a>
+        <ActionMenu endpoint={api} actions={[
+          { label: "Resend sign in link", body: { action: "resend_link", email: o.owners[0]?.email ?? "" }, prompt: o.owners[0] ? undefined : { key: "email", label: "Owner email", type: "email" } },
+          { label: "Add an owner", body: { action: "add_owner" }, prompt: { key: "email", label: "Email of the new owner", type: "email" } },
+          { label: "Add free months", body: { action: "free_months" }, prompt: { key: "months", label: "How many free months?", type: "number" } },
+          { label: "Reset till PIN", body: { action: "reset_pin" }, confirm: "Reset the till PIN? The old one stops working now." },
+          { label: "Set till: kit plan", body: { action: "set_till", till: "ordinary" } },
+          { label: "Set till: Square", body: { action: "set_till", till: "square" } },
+          { label: "Set till: other POS", body: { action: "set_till", till: "other" } },
+          { label: "Edit note", body: { action: "note" }, prompt: { key: "note", label: "Private note about this centre" } },
+          { label: "Mark paying, no Stripe", body: { action: "set_plan", plan: "pro" }, confirm: "Mark as paying without Stripe? Only for centres invoiced by hand." },
+          { label: "Cancel at period end", body: { action: "cancel_subscription", at_period_end: true }, confirm: "Cancel the Stripe subscription at the end of the paid period?", danger: true },
+          { label: "Cancel now", body: { action: "cancel_subscription", at_period_end: false }, confirm: "Cancel immediately? Access stops now.", danger: true },
+        ]} />
+      </PageHeader>
 
       <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-        <Kpi label="Sales this month" value={money(o.month.gross)} sub={`${o.month.count} sales · ${o.month.gross ? Math.round((o.month.card / o.month.gross) * 100) : 0}% card`} />
-        <Kpi label="Online this month" value={money(o.month.online)} sub={`${o.month.online_count} orders · ${o.orders.open} open`} tone={o.orders.missing ? "danger" : undefined} />
-        <Kpi label="Dealers" value={String(o.dealers.filter((d) => d.status === "active").length)} sub={`${o.dealers.filter((d) => d.on_app && d.status === "active").length} on the app · ${o.dealers.filter((d) => d.status === "pending").length} pending`} />
+        <Kpi label="Sales this month" value={money(o.month.gross)} sub={`${o.month.count} sales. ${o.month.gross ? Math.round((o.month.card / o.month.gross) * 100) : 0}% card.`} />
+        <Kpi label="Online this month" value={money(o.month.online)} sub={`${o.month.online_count} orders. ${o.orders.open} open.`} tone={o.orders.missing ? "danger" : undefined} />
+        <Kpi label="Dealers" value={String(o.dealers.filter((d) => d.status === "active").length)} sub={`${o.dealers.filter((d) => d.on_app && d.status === "active").length} on the app. ${o.dealers.filter((d) => d.status === "pending").length} pending.`} />
         <Kpi label="Live items" value={String(o.items_live)} />
         <Kpi label="Last sale recorded" value={o.last_sale_recorded_at ? new Date(o.last_sale_recorded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "never"} sub={stale ? "Over 3 days, check End of day" : `${o.month.eod_count} by End of day this month`} tone={stale ? "warning" : undefined} />
         <Kpi label={`Statements ${periodLabel(o.lastStatements.period).split(" ")[0]}`} value={`${o.lastStatements.paid}/${o.lastStatements.total} paid`} sub={o.lastStatements.owed ? `${money(o.lastStatements.owed)} still owed to dealers` : "All paid"} tone={o.lastStatements.owed ? "warning" : undefined} />
@@ -50,27 +60,14 @@ export default async function CentreAdmin({ params }: { params: Promise<{ id: st
         <div className="card p-5">
           <h2 className="mb-3 text-[15px] font-semibold">Account</h2>
           <dl className="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">
-            <dt className="text-ink-muted">Owners</dt><dd>{o.owners.length ? o.owners.map((w) => <span key={w.user_id} className="block">{w.email}</span>) : <span className="text-danger">No owner account</span>}</dd>
-            <dt className="text-ink-muted">Plan</dt><dd>{c.plan} {c.trial_ends_at ? `· until ${new Date(c.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</dd>
-            <dt className="text-ink-muted">Stripe</dt><dd>{c.stripe_subscription_id ? <span>subscription {c.stripe_subscription_id}</span> : c.stripe_customer_id ? <span>customer {c.stripe_customer_id}, no subscription yet</span> : <span className="text-danger">No card on file</span>}</dd>
-            <dt className="text-ink-muted">Terms</dt><dd>{c.commission_bps / 100}% floor · 20% online (15/5) · rent {c.charges_rent ? c.rent_frequency : "none"} · statement day {c.statement_day}</dd>
-            <dt className="text-ink-muted">Square</dt><dd>{square ? `${square.status} · ${square.external_account_id} · last event ${when(square.last_webhook_at)}` : c.till === "square" ? <span className="text-danger">Not connected</span> : "n/a"}</dd>
-            <dt className="text-ink-muted">Shopify shop</dt><dd>{shop ? `${shop.status} · ${shop.external_account_id} · last event ${when(shop.last_webhook_at)}` : <span className="text-warning">Not connected</span>}</dd>
+            <dt className="text-ink-muted">Owner</dt><dd>{o.owners.length ? o.owners.map((w) => <span key={w.user_id} className="block">{w.email}</span>) : <span className="text-danger">No owner</span>}</dd>
+            <dt className="text-ink-muted">Plan</dt><dd>{c.plan}{c.trial_ends_at ? `. Until ${new Date(c.trial_ends_at).toLocaleDateString("en-GB")}` : ""}</dd>
+            <dt className="text-ink-muted">Subscription</dt><dd>{c.stripe_subscription_id ?? (c.stripe_customer_id ? "Customer only" : <span className="text-danger">No card</span>)}</dd>
+            <dt className="text-ink-muted">Terms</dt><dd>{c.commission_bps / 100}% floor. 20% online. Rent {c.charges_rent ? c.rent_frequency : "none"}. Statement day {c.statement_day}.</dd>
+            <dt className="text-ink-muted">Square</dt><dd>{square ? `${square.status}. ${square.external_account_id}. Last event ${when(square.last_webhook_at)}.` : c.till === "square" ? <span className="text-danger">Not connected</span> : "Not used"}</dd>
+            <dt className="text-ink-muted">Shopify</dt><dd>{shop ? `${shop.status}. ${shop.external_account_id}. Last event ${when(shop.last_webhook_at)}.` : <span className="text-warning">Not connected</span>}</dd>
             <dt className="text-ink-muted">Note</dt><dd className="whitespace-pre-wrap">{c.admin_note ?? <span className="text-ink-muted">none</span>}</dd>
           </dl>
-          <div className="mt-4 border-t border-border pt-4">
-            <Actions endpoint={api} actions={[
-              { label: "Resend owner sign in link", body: { action: "resend_link", email: o.owners[0]?.email ?? "" }, prompt: o.owners[0] ? undefined : { key: "email", label: "Owner email", type: "email" } },
-              { label: "Add an owner", body: { action: "add_owner" }, prompt: { key: "email", label: "Email of the new owner", type: "email" } },
-              { label: "Add free months", body: { action: "free_months" }, prompt: { key: "months", label: "How many free months?", type: "number" } },
-              { label: "Reset till PIN", body: { action: "reset_pin" }, confirm: "Reset the till PIN? The old one stops working now." },
-              { label: "Set till: kit plan", body: { action: "set_till", till: "ordinary" } }, { label: "Set till: Square", body: { action: "set_till", till: "square" } }, { label: "Set till: other POS", body: { action: "set_till", till: "other" } },
-              { label: "Edit note", body: { action: "note" }, prompt: { key: "note", label: "Private note about this centre" } },
-              { label: "Mark paying (no Stripe)", body: { action: "set_plan", plan: "pro" }, confirm: "Mark as paying without Stripe? Only for centres invoiced by hand." },
-              { label: "Cancel at period end", body: { action: "cancel_subscription", at_period_end: true }, confirm: "Cancel the Stripe subscription at the end of the paid period?", danger: true },
-              { label: "Cancel now", body: { action: "cancel_subscription", at_period_end: false }, confirm: "Cancel immediately? Access stops now.", danger: true },
-            ]} />
-          </div>
         </div>
 
         <div className="card overflow-hidden">
@@ -82,7 +79,7 @@ export default async function CentreAdmin({ params }: { params: Promise<{ id: st
                 <tr key={d.dealer_id} className="border-b border-border last:border-0">
                   <td className="px-4 py-2"><Link href={`/admin/dealers/${d.dealer_id}`} className="font-medium text-accent">{d.name}</Link> <span className="ticket text-ink-muted">{d.code}</span>{d.status === "pending" && <Pill kind="warning" className="ml-2">pending</Pill>}</td>
                   <td className="py-2 pr-3">{d.on_app ? <Pill kind="success">yes</Pill> : <Pill kind="neutral">no</Pill>}</td>
-                  <td className="py-2 pr-3 text-ink-muted">{d.on_app ? d.plan : "–"}</td>
+                  <td className="py-2 pr-3 text-ink-muted">{d.on_app ? d.plan : "None"}</td>
                   <td className="py-2 pr-3 text-ink-muted">{d.pitches.join(", ")}</td>
                   <td className="num py-2 pr-3 text-right text-ink-muted">{d.rent_mode === "rent" ? money(d.rent_pence) : "comm."}</td>
                   <td className="num px-4 py-2 text-right">{money(d.sales_month)}</td>

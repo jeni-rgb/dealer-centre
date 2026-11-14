@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { Kpi, money } from "@/components/ui";
+import { PageHeader } from "../ui";
 
 
 export default async function Health() {
@@ -15,7 +16,7 @@ export default async function Health() {
 
   return (
     <div className="space-y-8 text-[14px]">
-      <h1 className="text-[24px] font-semibold">Health</h1>
+      <PageHeader title="Health" subtitle="Webhooks, jobs, and sales that did not match a dealer." />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         <Kpi label="Webhooks, 48h" value={String((webhooks ?? []).length)} />
         <Kpi label="Jobs queued" value={String(queued?.length ?? 0)} />
@@ -33,20 +34,20 @@ export default async function Health() {
       <section>
         <h2 className="mb-3 text-[16px] font-semibold">Unmatched sales</h2>
         {(unmatched ?? []).length === 0 ? <p className="card px-5 py-4 text-ink-muted">None.</p> : (
-          <ul className="card divide-y divide-border px-5">{(unmatched ?? []).map((s) => <li key={s.id} className="flex justify-between py-2"><span>{new Date(s.sold_at).toLocaleString("en-GB")} · {(s.centres as unknown as { name: string })?.name ?? "online"} · ticket {s.ticket_no ?? "none"}</span><span className="num">{money(s.amount_pence)}</span></li>)}</ul>
+          <ul className="card divide-y divide-border px-5">{(unmatched ?? []).map((s) => <li key={s.id} className="flex justify-between py-2"><span>{new Date(s.sold_at).toLocaleString("en-GB")}. {(s.centres as unknown as { name: string })?.name ?? "online"}. Ticket {s.ticket_no ?? "none"}.</span><span className="num">{money(s.amount_pence)}</span></li>)}</ul>
         )}
       </section>
 
       <section>
         <h2 className="mb-3 text-[16px] font-semibold">Failed jobs</h2>
         {(failedJobs ?? []).length === 0 ? <p className="card px-5 py-4 text-ink-muted">None.</p> : (
-          <ul className="card divide-y divide-border px-5">{(failedJobs ?? []).map((j) => <li key={j.id} className="py-2">{j.type} · {j.status} · {j.attempts} attempts · <span className="text-danger">{j.last_error}</span></li>)}</ul>
+          <ul className="card divide-y divide-border px-5">{(failedJobs ?? []).map((j) => <li key={j.id} className="py-2">{j.type}. {j.status}. {j.attempts} attempts. <span className="text-danger">{j.last_error}</span></li>)}</ul>
         )}
       </section>
 
       <section>
         <h2 className="mb-3 text-[16px] font-semibold">Recent webhooks</h2>
-        <ul className="card divide-y divide-border px-5">{(webhooks ?? []).map((w, i) => <li key={i} className="flex justify-between py-1.5 text-[12px]"><span>{w.source} · {w.event_type} · <span className={w.status === "error" ? "text-danger" : "text-ink-muted"}>{w.status}</span>{w.error ? ` · ${w.error.slice(0, 80)}` : ""}</span><span className="text-ink-muted">{new Date(w.received_at).toLocaleString("en-GB")}</span></li>)}</ul>
+        <ul className="card divide-y divide-border px-5">{(webhooks ?? []).map((w, i) => <li key={i} className="flex justify-between py-1.5 text-[12px]"><span>{w.source}. {w.event_type}. <span className={w.status === "error" ? "text-danger" : "text-ink-muted"}>{w.status}</span>{w.error ? `. ${w.error.slice(0, 80)}` : ""}</span><span className="text-ink-muted">{new Date(w.received_at).toLocaleString("en-GB")}</span></li>)}</ul>
       </section>
     </div>
   );
