@@ -6,9 +6,9 @@ import { dealerOverview } from "@/lib/admin/centre";
 import { periodLabel } from "@/lib/statements/compute";
 import { Actions } from "../../actions";
 import { MoveCentre } from "./move";
-import { BuyTokens } from "@/components/buy-tokens";
 import { dealerPlanSentence } from "@/lib/billing/plan-copy";
-import { formatShortDate } from "@/lib/billing/pricing";
+import { formatShortDate, plusVat } from "@/lib/billing/pricing";
+import { labelFigures } from "@/lib/billing/labels";
 import { reconcileDealerTrial } from "@/lib/billing/dealer-trial";
 
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) : "never");
@@ -24,6 +24,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
     const synced = await reconcileDealerTrial(db, d).catch((e) => { console.error("[dealer trial]", e); return null; });
     if (synced) d = { ...d, plan: synced.plan, trial_ends_at: synced.trial_ends_at };
   }
+  const labels = await labelFigures(db, id);
   const [{ data: log }, { data: allCentres }] = await Promise.all([
     db.from("admin_actions").select("action, created_at, users:actor_id(email)").eq("target_type", "dealer").eq("target_id", id).order("created_at", { ascending: false }).limit(20),
     db.from("centres").select("id, name").neq("status", "unclaimed").order("name"),
@@ -68,7 +69,17 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
             <dt className="text-ink-muted">Sign ins</dt><dd>{o.users.length ? o.users.map((u) => <span key={u.id} className="block">{u.email}</span>) : <span className="text-ink-muted">none, placeholder dealer</span>}</dd>
             <dt className="text-ink-muted">Plan</dt><dd className="flex flex-wrap items-center gap-2"><span>{dealerPlanSentence(d)}</span>{d.billing_model !== "full" && d.plan !== "pro" && !tasterOn && <Actions endpoint={api} actions={[{ label: "Start 2 week taster", body: { action: "start_taster" }, confirm: "Start 2 weeks of named sales and 25 free labels? Nothing is charged." }]} />}</dd>
             {!(onFull && !d.taster_accepted_at) && <><dt className="text-ink-muted">Taster</dt><dd>{d.taster_accepted_at ? `Said yes ${formatShortDate(d.taster_accepted_at)}.${d.taster_ends_at ? ` Named sales until ${formatShortDate(d.taster_ends_at)}.` : ""} 25 free labels.` : "Not yet."}{!onFull && d.taster_token ? <span className="mt-1 block text-[12px]"><a className="text-accent" href={`/taster?t=${d.taster_token}`}>Open the invite</a></span> : null}</dd></>}
-            <dt className="text-ink-muted">Labelling</dt><dd>{d.listing_mode === "self" ? "Dealer loads their own stock. Free." : d.listing_mode === "staff" ? `We label the stock. ${d.listing_tokens_bought > 0 ? `${d.listing_tokens} labels left. Further labels are 75p plus VAT.` : "No labels paid yet."}` : "Not chosen. Label after they say yes, or they load their own stock."}{d.listing_mode === "staff" && <BuyTokens dealerId={id} next={`/admin/dealers/${id}`} />}</dd>
+            <dt className="text-ink-muted">Labels</dt><dd>
+              <span className="block">Printed {labels.tally.printed}. Free used {labels.tally.freeUsed}.</span>
+              <span className="block">Owed {labels.tally.owed}{labels.tally.owed > 0 ? `, ${plusVat(labels.tally.amountPence)}` : ""}.</span>
+              <span className="block">Billed {labels.unpaidCopies}{labels.unpaidCopies > 0 ? `, ${plusVat(labels.unpaidPence)}` : ""}.</span>
+              <span className="block">Paid {labels.paidCopies}{labels.paidCopies > 0 ? `, ${plusVat(labels.paidPence)}` : ""}.</span>
+              <span className="mt-1 block text-ink-muted">{d.listing_mode === "self" ? "Dealer loads their own stock. Centre labels still count." : d.listing_mode === "staff" ? "We label the stock. Those labels count too." : "Centre labels count. Their own labels count when we label the stock."}</span>
+              {labels.tally.owed > 0 && <div className="mt-2"><Actions endpoint={api} actions={[{ label: "Bill", body: { action: "bill_labels" }, confirm: `Bill ${labels.tally.owed} labels, ${plusVat(labels.tally.amountPence)}?` }]} /></div>}
+              <span className="mt-3 block font-medium">History</span>
+              {labels.bills.length === 0 && <span className="block text-ink-muted">None yet.</span>}
+              {labels.bills.map((b) => <span key={b.id} className="block">{b.paid_at ? "Paid" : "Billed"} {b.copies} labels, {plusVat(b.amount_pence)}, {formatShortDate(b.created_at)}{b.stripe_invoice_id ? `. ${b.stripe_invoice_id}` : ""}</span>)}
+            </dd>
             <dt className="text-ink-muted">Stripe</dt><dd>{d.stripe_subscription_id ?? <span className="text-ink-muted">no subscription</span>}</dd>
             <dt className="text-ink-muted">Own Shopify</dt><dd>{shop ? `${shop.status}, ${shop.external_account_id}, last event ${when(shop.last_webhook_at)}` : "not connected"}</dd>
             <dt className="text-ink-muted">Defaults</dt><dd>Your Shopify {d.default_own_shopify ? "on" : "off"}. Centre shop {d.default_centre_shopify ? "on" : "off"}.</dd>

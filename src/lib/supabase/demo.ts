@@ -105,6 +105,14 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.printer_centre, owner_type: "centre", owner_id: IDS.centre, centre_id: IDS.centre, name: "Till printer", provider: "printnode", provider_id: "7391", status: "ready", source: "centre" },
     { id: IDS.printer_own, owner_type: "dealer", owner_id: IDS.dealer, centre_id: null, name: "Brother QL at home", provider: "browser", provider_id: null, status: "ready", source: "own" },
   ],
+  label_prints: [
+    { id: "lp1", dealer_id: IDS.dealer, print_job_id: "p1", copies: 31, source: "centre", created_at: d(2) },
+    { id: "lp2", dealer_id: IDS.dealer, print_job_id: "p3", copies: 4, source: "centre", created_at: d(40) },
+  ],
+  label_bills: [
+    { id: "lb1", dealer_id: IDS.dealer, copies: 4, amount_pence: 300, vat_pence: 60, stripe_invoice_id: "in_demo_labels", source: "admin", paid_at: d(20), created_at: d(30) },
+    { id: "lb2", dealer_id: IDS.dealer, copies: 2, amount_pence: 150, vat_pence: 30, stripe_invoice_id: "ii_demo_full", source: "full", paid_at: null, created_at: d(1) },
+  ],
   print_jobs: [
     { id: "p1", item_id: "i01", dealer_id: IDS.dealer, printer_id: IDS.printer_centre, status: "printed", created_at: d(3), updated_at: d(3) },
     { id: "p2", item_id: "i02", dealer_id: IDS.dealer, printer_id: null, status: "not_printed", created_at: d(12), updated_at: d(12) },

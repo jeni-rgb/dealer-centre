@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import type { Admin } from "@/lib/supabase/server";
+import { recordPrepaidLabels } from "@/lib/billing/labels";
 
 export { LABEL_PENCE as TOKEN_PENCE } from "@/lib/billing/pricing";
 
@@ -42,6 +43,7 @@ export async function recordTokenPayment(db: Admin, stripe: Stripe, session: Str
   if (session.payment_status !== "paid") return;
   const qty = Number(session.metadata.tokens);
   await creditTokenPurchase(db, dealerId, qty, session.id);
+  await recordPrepaidLabels(db, dealerId, qty, session.id).catch(() => undefined);
   const customerId = session.customer ? String(session.customer) : null;
   if (!customerId) return;
   await db.from("dealers").update({ stripe_customer_id: customerId, listing_mode: "staff" }).eq("id", dealerId);

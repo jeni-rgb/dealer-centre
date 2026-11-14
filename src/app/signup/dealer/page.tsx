@@ -6,8 +6,7 @@ import { confirmTokenPurchase, dealerWithListing } from "@/lib/billing/tokens";
 import { DealerSetup } from "./setup";
 
 /**
- * Business, who lists the stock, then the card (£0.00 today).
- * Tokens come after the card, and only when Dealer Centre lists the stock.
+ * Business, who lists the stock, then a 14 day Full taster. No card and no label payment up front.
  */
 export default async function DealerSignup({ searchParams }: { searchParams: Promise<{ step?: string; plan?: string; list?: string; session_id?: string }> }) {
   const me = await getMe();
@@ -17,7 +16,7 @@ export default async function DealerSignup({ searchParams }: { searchParams: Pro
     await confirmTokenPurchase(supabaseAdmin(), new Stripe(process.env.STRIPE_SECRET_KEY), session_id, me.dealer_id).catch((e) => console.error("[tokens]", e));
   }
   const sb = await supabaseServer();
-  let dealer: { name: string; code: string; plan: string; stripe_customer_id: string | null; listing_mode: "self" | "staff" | null; listing_tokens: number; listing_tokens_bought: number; card_added_at: string | null } | null = null;
+  let dealer: { name: string; code: string; plan: string; stripe_customer_id: string | null; listing_mode: "self" | "staff" | null; listing_tokens: number; listing_tokens_bought: number; card_added_at: string | null; taster_accepted_at?: string | null } | null = null;
   let centres: { name: string; status: string }[] = [];
   let hasShopify = false;
   let ownPrinters = 0;
@@ -36,9 +35,8 @@ export default async function DealerSignup({ searchParams }: { searchParams: Pro
   const mode = dealer?.listing_mode ?? null;
   const initial = step ?? (
     !dealer ? "business" :
-    !mode && !dealer.stripe_customer_id ? "who" :
-    mode && !dealer.card_added_at ? "card" :
-    mode === "staff" && (dealer?.listing_tokens_bought ?? 0) < 1 ? "tokens" :
+    !mode ? "who" :
+    !dealer.taster_accepted_at ? "taster" :
     "centre"
   );
   const listHint = list === "self" || list === "staff" ? list : null;

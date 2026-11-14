@@ -4,6 +4,7 @@ import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
 import { renderLabelBatch, renderLabelPdf } from "@/lib/labels/render";
 import { logoForDealer } from "@/lib/labels/load";
+import { noteLabelPrinted } from "@/lib/billing/labels";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
@@ -99,10 +100,12 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       if (!r.ok) throw new Error(`printnode ${r.status}`);
       const providerJobId = await r.text();
       await db.from("print_jobs").update({ status: "sent", pdf_path: path, provider_job_id: providerJobId }).eq("id", jobId);
+      await noteLabelPrinted(db, { id: pj.id, dealer_id: item.dealer_id, copies, printer_id: pj.printer_id }, "sent");
     } else {
       // Don't undo "printed": the user may have tapped Open label to print before this background render finished.
       await db.from("print_jobs").update({ pdf_path: path }).eq("id", jobId);
       await db.from("print_jobs").update({ status: "ready" }).eq("id", jobId).neq("status", "printed");
+      await noteLabelPrinted(db, { id: pj.id, dealer_id: item.dealer_id, copies, printer_id: pj.printer_id }, "ready");
     }
   },
 

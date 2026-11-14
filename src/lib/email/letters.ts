@@ -61,7 +61,7 @@ export function tasterEndedLetter(name: string, joinUrl: string, centreName = "y
   const pricing = pricingPage(joinUrl);
   const text = `Hello ${name},
 
-Your 2 weeks of named sales have ended. You are on Basic. Nothing is charged.
+Your 2 weeks of named sales have ended. You are on Basic. Nothing is charged for the plan. Labels past the free 25 stay on your account until they are billed.
 
 Join Full, £25 a month plus VAT, by Direct Debit:
 ${joinUrl}
@@ -79,7 +79,7 @@ Dealer Centre`;
     appUrl: appUrl(),
     button: { href: joinUrl, label: "Join Full" },
     text,
-    bodyHtml: `${para(`Hello ${name}. You are on Basic. Nothing was charged.`)}
+    bodyHtml: `${para(`Hello ${name}. You are on Basic. Nothing was charged for the plan. Labels past the free 25 stay on your account until they are billed.`)}
 ${dayMarks(14, "Day 14 of 14")}
 <div style="height:14px;line-height:14px;font-size:1px;">&nbsp;</div>
 ${compareMini()}
