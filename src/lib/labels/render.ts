@@ -12,7 +12,7 @@ export type LabelInput = {
   qrUrl?: string | null;
   widthMm?: number;
   heightMm?: number;
-  /** Black and white logo. When set, it takes the place of the dealer name on the centre line. */
+  /** Black and white logo. On a tall label it takes the place of the business name at the top. */
   logo?: { png: Uint8Array; width: number; height: number } | null;
 };
 
@@ -89,27 +89,8 @@ async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout
   }
   const smallParts = [input.centreName, input.dealerName].map((t) => t?.trim()).filter(Boolean) as string[];
   const smallLines = tall ? [...smallParts].reverse() : smallParts.length ? [smallParts.join(" · ")] : [];
-  const logo = input.logo && input.logo.width > 0 && input.logo.height > 0 ? input.logo : null;
-  const placeLogo = (used: number) => {
-    if (!logo) return;
-    const room = Math.max(0, maxTitleW - used);
-    const box = fitBox(room, smallSize, logo.width / logo.height);
-    if (box.width > 1 && box.height > 1) ops.push({ kind: "image", x: pad + used, y, width: box.width, height: box.height });
-  };
-  if (logo && smallLines.length === 0) {
-    placeLogo(0);
-    y += smallSize + 1;
-  }
   for (const line of smallLines) {
-    if (logo) {
-      const centre = input.centreName?.trim() ?? "";
-      const prefix = centre ? `${centre} · ` : "";
-      const shown = prefix ? fit(prefix, smallSize) : "";
-      if (shown) ops.push({ kind: "text", text: shown, x: pad, y, size: smallSize, font: "sans", grey: true });
-      placeLogo(shown ? sans.widthOfTextAtSize(shown, smallSize) : 0);
-    } else {
-      ops.push({ kind: "text", text: fit(line, smallSize), x: pad, y, size: smallSize, font: "sans", grey: true });
-    }
+    ops.push({ kind: "text", text: fit(line, smallSize), x: pad, y, size: smallSize, font: "sans", grey: true });
     y += smallSize + 1;
   }
   return { w, h, ops };
@@ -180,13 +161,21 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
   }
 
   // Top: dealer trading name, bold uppercase, centred, up to 2 lines, auto-shrunk.
+  // A logo, when there is one, sits in that same band. The price and everything under it stay put.
   let top = h - pad;
   const name = (input.dealerName?.trim() || input.dealerCode).toUpperCase();
   const nm = fitWrap(bold, name, 15 * s, 7 * s, innerW, 2, h * 0.24);
+  const logo = input.logo && input.logo.width > 0 && input.logo.height > 0 ? input.logo : null;
+  const nameTop = top;
   for (const line of nm.lines) {
     top -= nm.size * 0.85;
-    ops.push({ kind: "text", text: line, x: centre(line, nm.size, bold), y: top, size: nm.size, font: "bold" });
+    if (!logo) ops.push({ kind: "text", text: line, x: centre(line, nm.size, bold), y: top, size: nm.size, font: "bold" });
     top -= nm.size * 0.25;
+  }
+  if (logo) {
+    const band = Math.max(nm.size, nameTop - top);
+    const box = fitBox(innerW, band, logo.width / logo.height);
+    ops.push({ kind: "image", x: (w - box.width) / 2, y: top + (band - box.height) / 2, width: box.width, height: box.height });
   }
 
   // Price, large and bold, centred.

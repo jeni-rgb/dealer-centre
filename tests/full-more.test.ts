@@ -94,11 +94,15 @@ describe("logo on a label", () => {
     const src = await sharp({ create: { width: 40, height: 40, channels: 3, background: { r: 200, g: 20, b: 20 } } }).png().toBuffer();
     const mono = await toMonoPng(src);
     const logo = { png: new Uint8Array(mono), ...pngSize(mono) };
-    const withLogo = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Oak coffer", pricePence: 39500, logo });
-    const plain = await renderLabelSvg({ sku: "B140372", dealerCode: "B14", title: "Oak coffer", pricePence: 39500 });
+    const sheet = { sku: "B140372", dealerCode: "B14", dealerName: "Bloom Antiques", title: "Oak coffer", pricePence: 39500, centreName: "Looses Emporium", widthMm: 80, heightMm: 50 };
+    const withLogo = await renderLabelSvg({ ...sheet, logo });
+    const plain = await renderLabelSvg(sheet);
     expect(withLogo).toContain("<image");
     expect(plain).not.toContain("<image");
+    expect(plain).toContain("BLOOM ANTIQUES");
+    expect(withLogo).not.toContain("BLOOM ANTIQUES");
     expect(withLogo).toContain("£395");
     expect(withLogo).toContain("B14 0372");
+    expect(withLogo).toContain("Looses Emporium");
   });
 });
