@@ -10,6 +10,7 @@ import { formatShortDate, plusVat } from "@/lib/billing/pricing";
 import { labelFigures } from "@/lib/billing/labels";
 import { reconcileDealerTrial } from "@/lib/billing/dealer-trial";
 import { dealerAdminFacts } from "@/lib/admin/status";
+import { showMoveToBasic } from "@/lib/billing/taster";
 import { PageHeader, StatusBadge, Tabs } from "../../ui";
 
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString("en-GB", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) : "Never");
@@ -50,6 +51,7 @@ export default async function DealerAdmin({ params }: { params: Promise<{ id: st
           { label: "Extend taster", body: { action: "extend_trial" }, prompt: { key: "days", label: "Add how many days?", type: "number" } },
           { label: "Resend sign in link", body: { action: "resend_link", email: o.users[0]?.email ?? "" }, prompt: o.users[0] ? undefined : { key: "email", label: "Email", type: "email" } },
           { label: "Give Full free", body: { action: "set_plan", plan: "comp" }, confirm: "Give this dealer Full free, with unlimited named sales?" },
+          ...(showMoveToBasic(d.billing_model) ? [{ label: "Move to Basic", body: { action: "move_to_basic" }, confirm: "Move this dealer to Basic? Nothing is charged." }] : []),
           { label: "Edit note", body: { action: "note" }, prompt: { key: "note", label: "Private note about this dealer" } },
           { label: "Bill labels", body: { action: "bill_labels" }, confirm: owed > 0 ? `Bill ${owed} labels, ${plusVat(labels.tally.amountPence)}?` : undefined, disabled: owed < 1, hint: owed < 1 ? "Nothing owed" : `${owed} labels, ${plusVat(labels.tally.amountPence)}` },
           { label: "Cancel at period end", body: { action: "cancel_subscription", at_period_end: true }, confirm: "Cancel the Stripe subscription at period end?", danger: true },

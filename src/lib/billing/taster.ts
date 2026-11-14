@@ -10,6 +10,28 @@ export { LABEL_PENCE, TASTER_DAYS, TASTER_FREE_LABELS };
 
 const DAY = 86400000;
 
+/** The day 14 Basic choice. Named sales stop. Labels are not billed here. */
+export function basicChoiceFields(): { billing_model: "basic"; taster_choice: "basic" } {
+  return { billing_model: "basic", taster_choice: "basic" };
+}
+
+export async function applyBasicChoice(db: Admin, dealerId: string): Promise<void> {
+  const fields = basicChoiceFields();
+  const { error } = await db.from("dealers").update({ billing_model: fields.billing_model }).eq("id", dealerId);
+  if (error) throw new Error(error.message);
+  await db.from("dealers").update({ taster_choice: fields.taster_choice }).eq("id", dealerId);
+}
+
+/** Admin Move to Basic. Already Basic is a no. An existing subscription is cancelled at period end, then the day 14 fields are written. Labels are not billed. */
+export function moveToBasicDecision(dealer: { billing_model?: string | null; stripe_subscription_id?: string | null }): { already: boolean; cancelSubscriptionId: string | null } {
+  if (dealer.billing_model === "basic") return { already: true, cancelSubscriptionId: null };
+  return { already: false, cancelSubscriptionId: dealer.stripe_subscription_id || null };
+}
+
+export function showMoveToBasic(billingModel: string | null | undefined): boolean {
+  return !moveToBasicDecision({ billing_model: billingModel }).already;
+}
+
 export function newTasterToken(): string {
   return randomBytes(18).toString("hex");
 }
