@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import bwipjs from "bwip-js/node";
 import { displaySku } from "@/lib/sku";
+import { pngSize, trimMark } from "@/lib/labels/mono";
 
 export type LabelInput = {
   sku: string;
@@ -24,11 +25,21 @@ type RectOp = { kind: "rect"; x: number; y: number; width: number; height: numbe
 type ImageOp = { kind: "image"; x: number; y: number; width: number; height: number };
 type Layout = { w: number; h: number; ops: (TextOp | BarOp | RectOp | ImageOp)[] };
 
-function fitBox(maxW: number, maxH: number, aspect: number): { width: number; height: number } {
-  let width = maxW;
-  let height = width / Math.max(aspect, 0.2);
-  if (height > maxH) { height = maxH; width = height * aspect; }
+/** Fill the band height. Width stops at the inner label width. */
+function fitHeight(maxW: number, maxH: number, aspect: number): { width: number; height: number } {
+  const ratio = Math.max(aspect, 0.05);
+  let height = maxH;
+  let width = height * ratio;
+  if (width > maxW) { width = maxW; height = width / ratio; }
   return { width, height };
+}
+
+async function withTrimmedLogo(input: LabelInput): Promise<LabelInput> {
+  if (!input.logo || input.logo.width < 1 || input.logo.height < 1) return input;
+  const buf = await trimMark(Buffer.from(input.logo.png));
+  const size = pngSize(new Uint8Array(buf));
+  if (size.width < 2 || size.height < 2) return input;
+  return { ...input, logo: { png: new Uint8Array(buf), width: size.width, height: size.height } };
 }
 
 /** Lays out one label in PDF points (origin bottom left). Shared by the PDF and SVG/PNG outputs. */
@@ -174,7 +185,7 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
   }
   if (logo) {
     const band = Math.max(nm.size, nameTop - top);
-    const box = fitBox(innerW, band, logo.width / logo.height);
+    const box = fitHeight(innerW, band, logo.width / logo.height);
     ops.push({ kind: "image", x: (w - box.width) / 2, y: top + (band - box.height) / 2, width: box.width, height: box.height });
   }
 
@@ -199,7 +210,8 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
 const barOpts = (sku: string) => ({ bcid: "code128", text: sku, scale: 3, height: 8, includetext: false });
 
 /** Renders one label as a single page PDF sized to the roll. Black on white, Code 128 of the SKU. */
-export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
+export async function renderLabelPdf(raw: LabelInput): Promise<Uint8Array> {
+  const input = await withTrimmedLogo(raw);
   const pdf = await PDFDocument.create();
   const fonts = {
     sans: await pdf.embedFont(StandardFonts.Helvetica),
@@ -222,7 +234,8 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** Same label as a vector SVG (viewBox in points, size in mm). Rasterised to PNG in the browser for share/print. */
-export async function renderLabelSvg(input: LabelInput): Promise<string> {
+export async function renderLabelSvg(raw: LabelInput): Promise<string> {
+  const input = await withTrimmedLogo(raw);
   const bar = bwipjs.toSVG(barOpts(input.sku));
   const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(bar)!;
   const { w, h, ops } = await layoutLabel(input, Number(vb[1]) / Number(vb[2]));

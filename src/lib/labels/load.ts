@@ -1,5 +1,5 @@
 import type { Admin } from "@/lib/supabase/server";
-import { pngSize } from "./mono";
+import { pngSize, trimMark } from "./mono";
 import type { LabelInput } from "./render";
 
 export async function logoForDealer(db: Admin, dealerId: string | null | undefined): Promise<LabelInput["logo"]> {
@@ -10,7 +10,8 @@ export async function logoForDealer(db: Admin, dealerId: string | null | undefin
   const file = await db.storage.from("files").download(path);
   const blob = file.data;
   if (!blob) return null;
-  const png = new Uint8Array(await blob.arrayBuffer());
+  const trimmed = await trimMark(Buffer.from(await blob.arrayBuffer()));
+  const png = new Uint8Array(trimmed);
   const { width, height } = pngSize(png);
   if (width < 2 || height < 2) return null;
   return { png, width, height };
