@@ -26,7 +26,7 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
 
   let q = sb
     .from("items")
-    .select("id, sku, title, price_pence, listed_price_pence, listed_at, sold_at, status, centre_id, centres(name), photos, item_listings(status, channels:channel_id(type, owner_type)), print_jobs(status), sales(amount_pence, channels:channel_id(type, owner_type))")
+    .select("id, sku, title, price_pence, listed_price_pence, listed_at, sold_at, status, centre_id, qty, qty_start, centres(name), photos, item_listings(status, channels:channel_id(type, owner_type)), print_jobs(status), sales(amount_pence, channels:channel_id(type, owner_type))")
     .eq("dealer_id", me.dealer_id)
     .eq("status", mode);
   q = mode === "sold" ? q.order("sold_at", { ascending: false }) : q.order("listed_at", { ascending: false });
@@ -39,6 +39,8 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
   const sf = searchFilter(search);
   if (sf) q = q.or(sf);
   const { data: items } = await q.limit(500);
+  const ids = (items ?? []).map((i) => i.id);
+  const { data: placeRows } = ids.length ? await sb.from("item_places").select("item_id, qty, centres(name)").in("item_id", ids) : { data: [] };
 
   const rows = (items ?? []).map((i) => {
     const listings = i.item_listings as unknown as { status: string; channels: { type: string; owner_type: string } | null }[];
@@ -53,11 +55,14 @@ export default async function Stock({ searchParams }: { searchParams: Promise<{ 
       photo: (i.photos as { url?: string }[])[0]?.url ?? null,
       sold_amount: sale?.amount_pence ?? null, sold_channel: sale?.channels ?? null,
       centre_name: (i.centres as unknown as { name: string } | null)?.name ?? null,
+      qty: typeof i.qty === "number" ? i.qty : 1,
+      qty_start: typeof i.qty_start === "number" ? i.qty_start : 1,
+      places: (placeRows ?? []).filter((p) => p.item_id === i.id).map((p) => ({ name: (p.centres as { name?: string } | null)?.name ?? "Home", qty: p.qty as number })),
     };
   });
 
   return (
-    <Screen title="Stock" right={<Link href="/app/stock-check" className="text-[13px] font-medium text-accent">Check</Link>}>
+    <Screen title="Stock" right={<span className="flex gap-3"><Link href="/app/items/import" className="text-[13px] font-medium text-accent">Upload</Link><Link href="/app/stock-check" className="text-[13px] font-medium text-accent">Check</Link></span>}>
       <StockSearch initial={search} />
       <StockList rows={rows} mode={mode} filter={f ?? ""} />
       {rows.length === 0 && search.trim() ? <Empty text="No items match your search." /> : rows.length === 0 && (mode === "live" ? <Empty text="No stock listed yet." href="/app/items/new" cta="List your first item" /> : <Empty text="Nothing sold yet." />)}

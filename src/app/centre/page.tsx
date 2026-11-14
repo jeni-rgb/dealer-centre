@@ -2,8 +2,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AddDealer } from "./add-dealer";
 import { currentCentre } from "@/lib/centre";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { Kpi, Pill, money } from "@/components/ui";
+import { env } from "@/lib/env";
+import { sumupMarker } from "@/lib/sumup/sync";
+import { SumupLive } from "@/components/sumup-live";
 
 type Row = { dealer_id: string; name: string; code: string; pitch_numbers: string[]; rent_pence: number; sales_month_pence: number; items_live: number; last_sale_at: string | null; placeholder?: boolean };
 
@@ -26,9 +29,18 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
   const unmatched = (sales ?? []).filter((s) => !s.dealer_id).length;
   const stale = (r: Row) => !r.last_sale_at || Date.now() - new Date(r.last_sale_at).getTime() > 30 * 86400000;
   const maxSales = Math.max(1, ...list.map((r) => Number(r.sales_month_pence)));
+  const { data: here } = await supabaseAdmin().from("item_places").select("qty, items(title, sku)").eq("centre_id", centre.id).gt("qty", 0).limit(12);
+  const floor = (here ?? []).map((p) => ({ title: (p.items as { title?: string } | null)?.title ?? "Item", sku: (p.items as { sku?: string } | null)?.sku ?? "", qty: p.qty as number }));
+  let sumupSeen: string | null = null;
+  if (env.sumup.configured()) {
+    const db = supabaseAdmin();
+    const { data: sumup } = await db.from("sumup_connections").select("id").eq("owner_type", "centre").eq("owner_id", centre.id).maybeSingle();
+    if (sumup) sumupSeen = await sumupMarker(db, sumup.id);
+  }
 
   return (
     <>
+      {sumupSeen !== null && <SumupLive owner="centre" centreId={centre.id} seen={sumupSeen} />}
       <div className="mb-6 flex items-baseline justify-between">
         <div><h1 className="text-[28px] font-semibold">{centre.name}</h1><p className="flex items-center gap-2 text-[13px] text-ink-muted">Centre code <span className="tag !h-6 !text-[11px]">{centre.invite_code}</span> · {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</p></div>
         <div className="flex items-center gap-2">
@@ -47,6 +59,17 @@ export default async function CentreHome({ searchParams }: { searchParams: Promi
         <Kpi label="Unmatched sales" value={String(unmatched)} sub={unmatched ? "Till sales with no dealer" : "All sales assigned"} tone={unmatched ? "danger" : undefined} />
       </div>
 
+      {floor.length > 0 && (
+        <div className="card mb-8 overflow-hidden">
+          <div className="border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Stock here</h2></div>
+          {floor.map((p, i) => (
+            <div key={i} className="flex items-center justify-between border-b border-border px-5 py-3 text-[14px] last:border-0">
+              <span className="font-medium">{p.title}</span>
+              <span>{p.qty} here</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-5 py-4"><h2 className="text-[16px] font-semibold">Dealers ranked</h2><a className="text-[13px] font-medium text-accent" href={`/api/admin/export?centre=${centre.id}`}>Export CSV</a></div>
         <table className="w-full text-[14px]">

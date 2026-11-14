@@ -17,6 +17,7 @@ const IDS = {
   dealer2: "22222222-2222-2222-2222-222222222223",
   dealer3: "22222222-2222-2222-2222-222222222224",
   centre: "11111111-1111-1111-1111-111111111111",
+  centre2: "11111111-1111-1111-1111-111111111112",
   ch_manual: "33333333-3333-3333-3333-333333333331",
   ch_shopify: "33333333-3333-3333-3333-333333333332",
   ch_square: "33333333-3333-3333-3333-333333333333",
@@ -51,10 +52,12 @@ const T: Record<string, Record<string, unknown>[]> = {
   ],
   centres: [
     { id: IDS.centre, name: "Looses Emporium", address: "23 to 25 Magdalen Street, Norwich", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "LOOSES", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: "cus_demo_centre", created_at: d(10) },
+    { id: IDS.centre2, name: "Painted Barn", address: "The Street, Holt", commission_bps: 1000, online_commission_bps: 2000, centre_online_share_bps: 500, rent_day: 1, statement_day: 1, invite_code: "BARN", status: "active", till: "ordinary", charges_rent: true, rent_frequency: "monthly", plan: "pro", stripe_customer_id: null, created_at: d(8) },
   ],
   centre_owners: [{ user_id: IDS.user_centre, centre_id: IDS.centre }],
   dealer_centres: [
     { id: "dc1", dealer_id: IDS.dealer, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["12", "14", "15"], rent_pence: 39000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
+    { id: "dc4", dealer_id: IDS.dealer, centre_id: IDS.centre2, status: "active", square_category_id: null, pitch_numbers: ["2"], rent_pence: 15000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "dealer", joined_at: d(4), left_at: null },
     { id: "dc2", dealer_id: IDS.dealer2, centre_id: IDS.centre, status: "active", square_category_id: null, pitch_numbers: ["3"], rent_pence: 13000, rent_mode: "rent", rent_schedule: "first", rent_set_by: "centre", joined_at: d(40), left_at: null },
     { id: "dc3", dealer_id: IDS.dealer3, centre_id: IDS.centre, status: "pending", square_category_id: null, pitch_numbers: [], rent_pence: 9000, rent_mode: "rent", rent_schedule: "weekly_friday", rent_set_by: "dealer", joined_at: null, left_at: null },
   ],
@@ -102,6 +105,14 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: IDS.printer_centre, owner_type: "centre", owner_id: IDS.centre, centre_id: IDS.centre, name: "Till printer", provider: "printnode", provider_id: "7391", status: "ready", source: "centre" },
     { id: IDS.printer_own, owner_type: "dealer", owner_id: IDS.dealer, centre_id: null, name: "Brother QL at home", provider: "browser", provider_id: null, status: "ready", source: "own" },
   ],
+  label_prints: [
+    { id: "lp1", dealer_id: IDS.dealer, print_job_id: "p1", copies: 31, source: "centre", created_at: d(2) },
+    { id: "lp2", dealer_id: IDS.dealer, print_job_id: "p3", copies: 4, source: "centre", created_at: d(40) },
+  ],
+  label_bills: [
+    { id: "lb1", dealer_id: IDS.dealer, copies: 4, amount_pence: 300, vat_pence: 60, stripe_invoice_id: "in_demo_labels", source: "admin", paid_at: d(20), created_at: d(30) },
+    { id: "lb2", dealer_id: IDS.dealer, copies: 2, amount_pence: 150, vat_pence: 30, stripe_invoice_id: "ii_demo_full", source: "full", paid_at: null, created_at: d(1) },
+  ],
   print_jobs: [
     { id: "p1", item_id: "i01", dealer_id: IDS.dealer, printer_id: IDS.printer_centre, status: "printed", created_at: d(3), updated_at: d(3) },
     { id: "p2", item_id: "i02", dealer_id: IDS.dealer, printer_id: null, status: "not_printed", created_at: d(12), updated_at: d(12) },
@@ -140,6 +151,13 @@ const T: Record<string, Record<string, unknown>[]> = {
     { id: "cc1", centre_id: IDS.centre, period: periodOf(-1), online_gross_pence: 86500, platform_bps: 1500, centre_bps: 500, platform_pence: 12975, vat_pence: 2595, centre_pence: 4325, stripe_invoice_item_id: "ii_demo", charged_at: d(1) },
   ],
   sku_counters: [{ dealer_id: IDS.dealer, next_number: 373 }],
+  sumup_connections: [
+    { id: "su1", owner_type: "dealer", owner_id: IDS.dealer, merchant_code: "MDEMO", access_token: "demo", refresh_token: null, expires_at: null, synced_at: d(0), connected_at: d(2) },
+    { id: "su2", owner_type: "centre", owner_id: IDS.centre, merchant_code: "MCENTRE", access_token: "demo", refresh_token: null, expires_at: null, synced_at: d(0), connected_at: d(2) },
+  ],
+  sumup_transactions: [
+    { id: "sut1", connection_id: "su1", sumup_id: "txdemo", transaction_code: "TDEMO", amount_pence: 4500, currency: "GBP", paid_at: d(0, 11, 5), description: "B14 0372 writing slope", ticket: "B140372", match_status: "unmatched", sale_id: null, raw: {} },
+  ],
   webhook_log: [
     { source: "shopify", event_type: "orders/create", status: "processed", received_at: d(1, 16, 40), error: null },
     { source: "stripe", event_type: "customer.subscription.updated", status: "processed", received_at: d(2, 8, 0), error: null },
@@ -148,6 +166,18 @@ const T: Record<string, Record<string, unknown>[]> = {
   jobs: [{ id: "j1", type: "sync_item_to_channel", status: "failed", attempts: 2, last_error: "shopify gql: 429 throttled", updated_at: d(0, 9, 0) }],
   files: [],
 };
+T.items.push(
+  { id: "i20", dealer_id: IDS.dealer, centre_id: IDS.centre, sku: "B140380", alt_skus: [], title: "Key box, blue", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 8, qty_start: 10, invoice_id: "inv1" },
+  { id: "i21", dealer_id: IDS.dealer, centre_id: null, sku: "B140381", alt_skus: [], title: "Key box, pink", description: null, price_pence: 800, listed_price_pence: 800, cost_pence: 150, photos: [], delivery: "small", status: "live", listed_at: d(1), sold_at: null, on_own_shopify: false, on_centre_shopify: false, qty: 10, qty_start: 10, invoice_id: "inv1" },
+);
+T.item_places = [
+  { id: "pl1", item_id: "i21", centre_id: IDS.centre, qty: 5 },
+  { id: "pl2", item_id: "i21", centre_id: IDS.centre2, qty: 5 },
+  { id: "pl3", item_id: "i20", centre_id: IDS.centre, qty: 8 },
+];
+T.invoices = [
+  { id: "inv1", dealer_id: IDS.dealer, supplier: "Box Co", file_path: null, file_name: "box-co.pdf", created_at: d(1) },
+];
 T.channels_public = T.channels;
 T.items_centre_view = T.items.map(({ cost_pence: _c, ...rest }) => rest);
 void monthDay;
@@ -193,6 +223,7 @@ class Q implements PromiseLike<{ data: unknown; error: null; count: number | nul
   in(c: string, vs: unknown[]) { this.filters.push((r) => vs.includes(r[c])); return this; }
   is(c: string, v: unknown) { this.filters.push((r) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v)); return this; }
   not(c: string, op: string, v: unknown) { this.filters.push((r) => !(op === "is" && v === null ? r[c] == null : r[c] === v)); return this; }
+  gt(c: string, v: unknown) { this.filters.push((r) => Number(r[c]) > Number(v)); return this; }
   gte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) >= String(v)); return this; }
   lte(c: string, v: unknown) { this.filters.push((r) => String(r[c]) <= String(v)); return this; }
   lt(c: string, v: unknown) { this.filters.push((r) => String(r[c]) < String(v)); return this; }
@@ -261,6 +292,30 @@ const rpc = async (fn: string, args: Record<string, unknown>) => {
   return { data: null, error: null };
 };
 
+const demoFiles = () => {
+  const g = globalThis as unknown as { __dcFiles?: Map<string, Uint8Array> };
+  if (!g.__dcFiles) g.__dcFiles = new Map();
+  return g.__dcFiles;
+};
+
+function demoStorage() {
+  return {
+    from: () => ({
+      upload: async (path: string, body: Blob | Buffer | Uint8Array) => {
+        const bytes = body instanceof Uint8Array ? body : new Uint8Array(await (body as Blob).arrayBuffer());
+        demoFiles().set(path, bytes);
+        return { error: null };
+      },
+      download: async (path: string) => {
+        const bytes = demoFiles().get(path);
+        return { data: bytes ? new Blob([Buffer.from(bytes)]) : null, error: bytes ? null : { message: "missing" } };
+      },
+      getPublicUrl: (path: string) => ({ data: { publicUrl: demoFiles().has(path) ? `/api/dealers/logo?path=${encodeURIComponent(path)}` : "" } }),
+      createSignedUrl: async () => ({ data: null }),
+    }),
+  };
+}
+
 export async function demoRole(): Promise<"dealer" | "centre" | "admin"> {
   const c = (await cookies()).get("demo_role")?.value;
   return c === "centre" || c === "admin" ? c : "dealer";
@@ -273,7 +328,7 @@ export async function demoClient() {
     from: (table: string) => new Q(table),
     rpc,
     auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
-    storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
+    storage: demoStorage(),
   };
 }
 
@@ -284,7 +339,7 @@ export function demoSyncClient() {
     from: (table: string) => new Q(table),
     rpc,
     auth: { getClaims: async () => ({ data: { claims: { sub: user.id } }, error: null }), getUser: async () => ({ data: { user: { id: user.id, email: user.email } }, error: null }), signOut: async () => ({ error: null }) },
-    storage: { from: () => ({ upload: async () => ({ error: null }), getPublicUrl: () => ({ data: { publicUrl: "" } }), createSignedUrl: async () => ({ data: null }) }) },
+    storage: demoStorage(),
   };
 }
 

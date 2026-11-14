@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import bwipjs from "bwip-js/node";
 import { displaySku } from "@/lib/sku";
+import { pngSize, trimMark } from "@/lib/labels/mono";
 
 export type LabelInput = {
   sku: string;
@@ -12,6 +13,8 @@ export type LabelInput = {
   qrUrl?: string | null;
   widthMm?: number;
   heightMm?: number;
+  /** Black and white logo. On a tall label it takes the place of the business name at the top. */
+  logo?: { png: Uint8Array; width: number; height: number } | null;
 };
 
 const MM = 72 / 25.4;
@@ -19,7 +22,25 @@ const MM = 72 / 25.4;
 type TextOp = { kind: "text"; text: string; x: number; y: number; size: number; font: "sans" | "bold" | "mono"; grey?: boolean };
 type BarOp = { kind: "barcode"; x: number; y: number; width: number; height: number };
 type RectOp = { kind: "rect"; x: number; y: number; width: number; height: number; line: number };
-type Layout = { w: number; h: number; ops: (TextOp | BarOp | RectOp)[] };
+type ImageOp = { kind: "image"; x: number; y: number; width: number; height: number };
+type Layout = { w: number; h: number; ops: (TextOp | BarOp | RectOp | ImageOp)[] };
+
+/** Fill the band height. Width stops at the inner label width. */
+function fitHeight(maxW: number, maxH: number, aspect: number): { width: number; height: number } {
+  const ratio = Math.max(aspect, 0.05);
+  let height = maxH;
+  let width = height * ratio;
+  if (width > maxW) { width = maxW; height = width / ratio; }
+  return { width, height };
+}
+
+async function withTrimmedLogo(input: LabelInput): Promise<LabelInput> {
+  if (!input.logo || input.logo.width < 1 || input.logo.height < 1) return input;
+  const buf = await trimMark(Buffer.from(input.logo.png));
+  const size = pngSize(new Uint8Array(buf));
+  if (size.width < 2 || size.height < 2) return input;
+  return { ...input, logo: { png: new Uint8Array(buf), width: size.width, height: size.height } };
+}
 
 /** Lays out one label in PDF points (origin bottom left). Shared by the PDF and SVG/PNG outputs. */
 async function layoutLabel(input: LabelInput, barAspect: number): Promise<Layout> {
@@ -151,13 +172,21 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
   }
 
   // Top: dealer trading name, bold uppercase, centred, up to 2 lines, auto-shrunk.
+  // A logo, when there is one, sits in that same band. The price and everything under it stay put.
   let top = h - pad;
   const name = (input.dealerName?.trim() || input.dealerCode).toUpperCase();
   const nm = fitWrap(bold, name, 15 * s, 7 * s, innerW, 2, h * 0.24);
+  const logo = input.logo && input.logo.width > 0 && input.logo.height > 0 ? input.logo : null;
+  const nameTop = top;
   for (const line of nm.lines) {
     top -= nm.size * 0.85;
-    ops.push({ kind: "text", text: line, x: centre(line, nm.size, bold), y: top, size: nm.size, font: "bold" });
+    if (!logo) ops.push({ kind: "text", text: line, x: centre(line, nm.size, bold), y: top, size: nm.size, font: "bold" });
     top -= nm.size * 0.25;
+  }
+  if (logo) {
+    const band = Math.max(nm.size, nameTop - top);
+    const box = fitHeight(innerW, band, logo.width / logo.height);
+    ops.push({ kind: "image", x: (w - box.width) / 2, y: top + (band - box.height) / 2, width: box.width, height: box.height });
   }
 
   // Price, large and bold, centred.
@@ -181,7 +210,8 @@ function layoutTall(input: LabelInput, barAspect: number, w: number, h: number, 
 const barOpts = (sku: string) => ({ bcid: "code128", text: sku, scale: 3, height: 8, includetext: false });
 
 /** Renders one label as a single page PDF sized to the roll. Black on white, Code 128 of the SKU. */
-export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
+export async function renderLabelPdf(raw: LabelInput): Promise<Uint8Array> {
+  const input = await withTrimmedLogo(raw);
   const pdf = await PDFDocument.create();
   const fonts = {
     sans: await pdf.embedFont(StandardFonts.Helvetica),
@@ -189,12 +219,14 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
     mono: await pdf.embedFont(StandardFonts.Courier),
   };
   const img = await pdf.embedPng(await bwipjs.toBuffer(barOpts(input.sku)));
+  const logo = input.logo ? await pdf.embedPng(input.logo.png) : null;
   const { w, h, ops } = await layoutLabel(input, img.width / img.height);
   const page = pdf.addPage([w, h]);
   for (const o of ops) {
     if (o.kind === "barcode") page.drawImage(img, o);
+    else if (o.kind === "image" && logo) page.drawImage(logo, o);
     else if (o.kind === "rect") page.drawRectangle({ x: o.x, y: o.y, width: o.width, height: o.height, borderWidth: o.line, borderColor: rgb(0, 0, 0) });
-    else page.drawText(o.text, { x: o.x, y: o.y, size: o.size, font: fonts[o.font], color: o.grey ? rgb(0.3, 0.3, 0.3) : rgb(0, 0, 0) });
+    else if (o.kind === "text") page.drawText(o.text, { x: o.x, y: o.y, size: o.size, font: fonts[o.font], color: o.grey ? rgb(0.3, 0.3, 0.3) : rgb(0, 0, 0) });
   }
   return pdf.save();
 }
@@ -202,7 +234,8 @@ export async function renderLabelPdf(input: LabelInput): Promise<Uint8Array> {
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** Same label as a vector SVG (viewBox in points, size in mm). Rasterised to PNG in the browser for share/print. */
-export async function renderLabelSvg(input: LabelInput): Promise<string> {
+export async function renderLabelSvg(raw: LabelInput): Promise<string> {
+  const input = await withTrimmedLogo(raw);
   const bar = bwipjs.toSVG(barOpts(input.sku));
   const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(bar)!;
   const { w, h, ops } = await layoutLabel(input, Number(vb[1]) / Number(vb[2]));
@@ -213,6 +246,11 @@ export async function renderLabelSvg(input: LabelInput): Promise<string> {
       return `<svg x="${o.x}" y="${h - o.y - o.height}" width="${o.width}" height="${o.height}" viewBox="0 0 ${vb[1]} ${vb[2]}" preserveAspectRatio="none" shape-rendering="crispEdges">${inner}</svg>`;
     }
     if (o.kind === "rect") return `<rect x="${o.x + o.line / 2}" y="${h - o.y - o.height + o.line / 2}" width="${o.width - o.line}" height="${o.height - o.line}" fill="none" stroke="#000" stroke-width="${o.line}"/>`;
+    if (o.kind === "image" && input.logo) {
+      const b64 = Buffer.from(input.logo.png).toString("base64");
+      return `<image x="${o.x}" y="${h - o.y - o.height}" width="${o.width}" height="${o.height}" href="data:image/png;base64,${b64}"/>`;
+    }
+    if (o.kind !== "text") return "";
     return `<text x="${o.x}" y="${h - o.y}" font-size="${o.size}" font-family="${family[o.font]}"${o.font === "bold" ? ' font-weight="700"' : ""} fill="${o.grey ? "#4d4d4d" : "#000"}">${esc(o.text)}</text>`;
   });
   const wm = input.widthMm ?? 62, hm = input.heightMm ?? 29;

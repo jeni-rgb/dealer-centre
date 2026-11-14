@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Pill, Sku, when } from "@/components/ui";
 import { nextLabelTitle } from "@/lib/labels/title";
 
-type Row = { id: string; item_id: string; status: string; sku: string; title: string; photo: string | null; at: string };
+type Row = { id: string; item_id: string; status: string; sku: string; title: string; photo: string | null; at: string; copies?: number };
 type Printer = { id: string; name: string; kind: string; cloud: boolean; size?: string };
 
 export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; printers: Printer[]; lastPrinterId: string | null }) {
@@ -81,7 +81,7 @@ export function LabelsView({ rows, printers, lastPrinterId }: { rows: Row[]; pri
                 </div>
                 <div className="flex items-center justify-end gap-3">
                   {r.status === "failed" && <Pill kind="danger">Failed</Pill>}
-                  <span className="mr-auto text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" /></span>
+                  <span className="mr-auto text-[12px] text-ink-muted"><Sku sku={r.sku} className="!font-medium !tracking-normal" />{(r.copies ?? 1) > 1 ? ` ${r.copies} labels` : ""}</span>
                   <button className="btn-sm-secondary" disabled={busy !== null} onClick={() => print([r.item_id])}>{busy === r.item_id ? "…" : "Print"}</button>
                   <button className="text-[12px] font-medium text-ink-muted underline" disabled={busy !== null} onClick={() => mark([r.item_id])}>{busy === `m${r.item_id}` ? "…" : "Mark printed"}</button>
                 </div>

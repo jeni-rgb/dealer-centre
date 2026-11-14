@@ -24,7 +24,8 @@ export async function GET(req: Request) {
   const { data: dealer } = await db.from("dealers").select("stripe_customer_id, listing_mode").eq("id", dealerId).single();
   if (!dealer) return NextResponse.json({ error: "Dealer not found" }, { status: 404 });
   if (dealer.listing_mode !== "staff") return NextResponse.json({ error: "Listing tokens are for dealers who asked Dealer Centre to list the stock." }, { status: 400 });
-  const next = safeNext(url.searchParams.get("next"), me.is_platform_admin && requested ? `/admin/dealers/${dealerId}` : "/signup/dealer?step=centre");
+  const next = safeNext(url.searchParams.get("next"), me.is_platform_admin && requested ? `/admin/dealers/${dealerId}` : "/app/settings");
+  const cancel = next.includes("after-labels") ? "/app/settings?step=who-labels" : next.startsWith("/admin") ? next : "/app/settings";
   const vat = env.stripe.vatRate();
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   const session = await stripe.checkout.sessions.create({
@@ -44,7 +45,7 @@ export async function GET(req: Request) {
     payment_intent_data: { setup_future_usage: "off_session", metadata: { dealer_id: dealerId, purpose: "listing_tokens" } },
     metadata: { dealer_id: dealerId, purpose: "listing_tokens", tokens: String(qty) },
     success_url: `${env.appUrl()}${next}${next.includes("?") ? "&" : "?"}session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.appUrl()}${next.startsWith("/admin") ? next : "/signup/dealer?step=tokens"}`,
+    cancel_url: `${env.appUrl()}${cancel}`,
     locale: "en-GB",
   });
   return NextResponse.redirect(session.url!);

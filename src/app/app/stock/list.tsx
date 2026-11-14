@@ -8,6 +8,8 @@ type Row = {
   id: string; sku: string; title: string; price_pence: number; listed_price_pence: number | null; listed_at: string; sold_at: string | null; status: string;
   floor: boolean; ownShopify: boolean; centreShop: boolean; noLabel: boolean; photo: string | null;
   sold_amount: number | null; sold_channel: { type: string; owner_type: string } | null; centre_name?: string | null;
+  qty?: number; qty_start?: number;
+  places?: { name: string; qty: number }[];
 };
 
 export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | "sold"; filter: string }) {
@@ -55,11 +57,15 @@ export function StockList({ rows, mode, filter }: { rows: Row[]; mode: "live" | 
                       {r.ownShopify && <Pill kind="accent">Shopify</Pill>}
                       {r.centreShop && <Pill kind="accent">Centre shop</Pill>}
                       {r.noLabel && <Pill kind="warning">No label</Pill>}
+                      {(r.places ?? []).length > 1 && <span>{r.places!.map((p) => `${p.qty} at ${p.name}`).join(". ")}. {r.places!.reduce((a, p) => a + p.qty, 0)} left</span>}
+                      {(r.places ?? []).length === 1 && <span>{r.places![0].qty} at {r.places![0].name}</span>}
+                      {(r.qty_start ?? 1) > 1 && !(r.places ?? []).length && <span>{r.qty ?? 1} left</span>}
+                      {(r.qty_start ?? 1) > 2 && (r.qty ?? 1) > 0 && (r.qty ?? 1) <= 2 && <Pill kind="warning">Low</Pill>}
                       <DaysBand listedAt={r.listed_at} />
                     </>
                   ) : (
                     <>
-                      <Pill kind="success">Sold</Pill>
+                      <Pill kind="success">{(r.qty_start ?? 1) > 1 ? "Sold out" : "Sold"}</Pill>
                       <span>{r.centre_name ?? (r.sold_channel?.type === "shopify" ? (r.sold_channel.owner_type === "centre" ? "Centre shop" : "Your Shopify") : "Floor")}{r.sold_at ? `, ${when(r.sold_at)}` : ""}</span>
                     </>
                   )}

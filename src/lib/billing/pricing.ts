@@ -64,11 +64,20 @@ Full, £${FULL_POUNDS} a month plus VAT.
 ${points}`;
 }
 
-export function labelPriceLabel(qty: number): string {
-  const pence = LABEL_PENCE * qty;
+export function plusVat(pence: number): string {
   const pounds = pence / 100;
   const amount = Number.isInteger(pounds) ? `£${pounds}` : `£${pounds.toFixed(2)}`;
   return `${amount} plus VAT`;
+}
+
+export function labelPriceLabel(qty: number): string {
+  return plusVat(LABEL_PENCE * qty);
+}
+
+/** What Account shows. The first 25 labels are free. The rest are owed at 75p plus VAT. */
+export function labelAccountLine(printed: number, owed: number): string {
+  const freeUsed = Math.min(TASTER_FREE_LABELS, Math.max(0, printed));
+  return `Labels so far: ${printed}. ${freeUsed} free, ${owed} at 75p.`;
 }
 
 export function formatShortDate(iso: string): string {

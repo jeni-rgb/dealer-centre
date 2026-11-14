@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { limitForTier } from "@/lib/billing/plan-copy";
 import { emailIfTrialEnding, isCentrePrice, saveDealerCard, stopUnstartedTrialInvoice, syncDealerSubscription } from "@/lib/billing/dealer-trial";
 import { recordTokenPayment } from "@/lib/billing/tokens";
+import { markLabelInvoicePaid } from "@/lib/billing/labels";
 
 /** Pro (unlimited sales) has no cap; stored as a large number so comparisons stay simple. */
 const planFor = (s: Stripe.Subscription) =>
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
   }
   if (evt.type === "invoice.created" || evt.type === "invoice.finalized" || evt.type === "invoice.paid") {
     await stopUnstartedTrialInvoice(db, stripe, evt.data.object).catch((e) => console.error("[dealer trial] invoice", e));
+    if (evt.type === "invoice.paid") await markLabelInvoicePaid(db, evt.data.object).catch((e) => console.error("[labels] paid", e));
   }
   if (evt.type === "customer.subscription.trial_will_end") {
     await emailIfTrialEnding(db, evt.data.object).catch((e) => console.error("[dealer trial] remind", e));

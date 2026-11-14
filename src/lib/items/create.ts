@@ -1,7 +1,6 @@
 import { z } from "zod";
 import type { Admin } from "@/lib/supabase/server";
 import { enqueue } from "@/lib/jobs/queue";
-import { consumeStaffToken, staffListingGate } from "@/lib/billing/tokens";
 
 export const CreateItemInput = z.object({
   title: z.string().min(2).max(120),
@@ -15,7 +14,9 @@ export const CreateItemInput = z.object({
   on_centre_shopify: z.boolean().default(false),
   print_now: z.boolean().default(true),
   printer_id: z.string().uuid().nullable().optional(),
-  source: z.enum(["app", "till"]).default("app"),
+  source: z.enum(["app", "till", "invoice"]).default("app"),
+  qty: z.number().int().min(1).max(200).optional(),
+  invoice_id: z.string().nullable().optional(),
 });
 export type CreateItemInput = z.infer<typeof CreateItemInput>;
 
@@ -40,11 +41,8 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
   if (dealer && input.source === "app" && (dealer.plan === "lapsed" || dealer.plan === "cancelled")) {
     throw new PlanLimitError("Your subscription has lapsed. Update your card in Settings to keep listing.");
   }
-  if (opts?.staffListing) {
-    const gate = await staffListingGate(db, dealerId);
-    if (gate === "need_purchase") throw new PlanLimitError("Labels have not been paid for this dealer yet. They are 75p plus VAT each.", "tokens");
-    if (gate === "none_left") throw new PlanLimitError("No labels left. Buy more before we photograph another item. They are 75p plus VAT.", "tokens");
-  }
+  // Labels are counted when they print. Listing is not held back for a token payment.
+  void opts?.staffListing;
   // Retry guard: a resubmit of the same item within 10 minutes returns the first one, never a duplicate.
   const { data: dup } = await db.from("items").select("*").eq("dealer_id", dealerId).eq("title", input.title).eq("price_pence", input.price_pence)
     .gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString()).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -69,18 +67,11 @@ export async function createItem(db: Admin, dealerId: string, input: CreateItemI
       price_source: input.source,
       on_own_shopify: input.on_own_shopify,
       on_centre_shopify: input.on_centre_shopify,
+      ...(input.source === "invoice" ? { qty: input.qty ?? 1, qty_start: input.qty ?? 1, invoice_id: input.invoice_id ?? null } : {}),
     })
     .select("*")
     .single();
   if (error || !item) throw new Error(error?.message ?? "item insert failed");
-  if (opts?.staffListing) {
-    try {
-      await consumeStaffToken(db, dealerId, item.id);
-    } catch {
-      await db.from("items").delete().eq("id", item.id);
-      throw new PlanLimitError("No labels left. Buy more before we photograph another item. They are 75p plus VAT.", "tokens");
-    }
-  }
 
   // Target channels: the centre's Square if placed at a centre, the dealer's own Square if any,
   // the dealer's Shopify if connected and wanted.

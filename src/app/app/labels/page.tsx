@@ -8,7 +8,7 @@ export default async function Labels() {
   const me = await requireDealer();
   const sb = await supabaseServer();
   const [{ data: jobs }, { data: printers }, { data: last }] = await Promise.all([
-    sb.from("print_jobs").select("id, status, created_at, updated_at, printer_id, item_id, items(sku, title, status, photos)").eq("dealer_id", me.dealer_id).order("updated_at", { ascending: false }).limit(200),
+    sb.from("print_jobs").select("id, status, copies, created_at, updated_at, printer_id, item_id, items(sku, title, status, photos)").eq("dealer_id", me.dealer_id).order("updated_at", { ascending: false }).limit(200),
     sb.from("printers").select("id, name, owner_type, provider, status, label_width_mm, label_height_mm, centres:centre_id(name)").eq("status", "ready"),
     sb.from("print_jobs").select("printer_id").eq("dealer_id", me.dealer_id).not("printer_id", "is", null).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
@@ -16,7 +16,7 @@ export default async function Labels() {
     .filter((j) => { const st = (j.items as unknown as { status: string } | null)?.status; return st === "live" || (!!st && !["not_printed", "queued", "ready", "failed"].includes(j.status)); })
     .map((j) => {
       const it = j.items as unknown as { sku: string; title: string; photos: { url?: string }[] };
-      return { id: j.id, item_id: j.item_id, status: j.status, sku: it.sku, title: it.title, photo: it.photos?.[0]?.url ?? null, at: j.updated_at };
+      return { id: j.id, item_id: j.item_id, status: j.status, sku: it.sku, title: it.title, photo: it.photos?.[0]?.url ?? null, at: j.updated_at, copies: Number(j.copies) || 1 };
     });
   return (
     <Screen title="Labels" back={{ href: "/app" }}>

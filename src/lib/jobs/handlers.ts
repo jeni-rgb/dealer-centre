@@ -2,7 +2,9 @@ import type { Admin } from "@/lib/supabase/server";
 import type { ChannelRow, ItemRow } from "@/lib/channels/types";
 import { squareAdapter } from "@/lib/channels/square";
 import { shopifyAdapter } from "@/lib/channels/shopify";
-import { renderLabelPdf } from "@/lib/labels/render";
+import { renderLabelBatch, renderLabelPdf } from "@/lib/labels/render";
+import { logoForDealer } from "@/lib/labels/load";
+import { noteLabelPrinted } from "@/lib/billing/labels";
 import { recordSale } from "@/lib/sales/record";
 import { sendSaleNotification } from "@/lib/notify/sale";
 import { enqueue, type JobType } from "./queue";
@@ -57,21 +59,26 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
     const { data: pj } = await db.from("print_jobs").select("*, items(*), dealers(code, name), printers(provider, provider_id, label_width_mm, label_height_mm)").eq("id", jobId).single();
     if (!pj || pj.status === "not_printed") return;
     const item = pj.items as ItemRow;
-    let centreName: string | null = null;
-    if (item.centre_id) {
-      const { data: c } = await db.from("centres").select("name").eq("id", item.centre_id).single();
+    let centreName: string | null = pj.place_label ?? null;
+    const placeCentre = pj.centre_id ?? (!pj.place_label ? item.centre_id : null);
+    if (!centreName && placeCentre) {
+      const { data: c } = await db.from("centres").select("name").eq("id", placeCentre).single();
       centreName = c?.name ?? null;
     }
-    const pdf = await renderLabelPdf({
+    const dealer = pj.dealers as { code: string; name?: string | null };
+    const sheet = {
       sku: item.sku,
-      dealerCode: (pj.dealers as { code: string }).code,
-      dealerName: (pj.dealers as { name?: string | null }).name ?? null,
+      dealerCode: dealer.code,
+      dealerName: dealer.name ?? null,
       title: item.title,
       pricePence: item.price_pence,
       centreName,
       widthMm: pj.printers?.label_width_mm ?? 62,
       heightMm: pj.printers?.label_height_mm ?? 29,
-    });
+      logo: await logoForDealer(db, item.dealer_id),
+    };
+    const copies = Math.min(100, Math.max(1, Number(pj.copies) || 1));
+    const pdf = copies === 1 ? await renderLabelPdf(sheet) : await renderLabelBatch(Array.from({ length: copies }, () => sheet));
     const path = `labels/${item.dealer_id}/${item.sku}.pdf`;
     await db.storage.from("files").upload(path, pdf, { contentType: "application/pdf", upsert: true });
 
@@ -93,10 +100,12 @@ export const handlers: Record<JobType, (db: Admin, p: Record<string, unknown>) =
       if (!r.ok) throw new Error(`printnode ${r.status}`);
       const providerJobId = await r.text();
       await db.from("print_jobs").update({ status: "sent", pdf_path: path, provider_job_id: providerJobId }).eq("id", jobId);
+      await noteLabelPrinted(db, { id: pj.id, dealer_id: item.dealer_id, copies, printer_id: pj.printer_id }, "sent");
     } else {
       // Don't undo "printed": the user may have tapped Open label to print before this background render finished.
       await db.from("print_jobs").update({ pdf_path: path }).eq("id", jobId);
       await db.from("print_jobs").update({ status: "ready" }).eq("id", jobId).neq("status", "printed");
+      await noteLabelPrinted(db, { id: pj.id, dealer_id: item.dealer_id, copies, printer_id: pj.printer_id }, "ready");
     }
   },
 

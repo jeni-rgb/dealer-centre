@@ -4,6 +4,7 @@ import { requireDealer } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ChannelLabel, DaysBand, DealerNav, Pill, Screen, Sku, money, when } from "@/components/ui";
 import { ItemActions } from "./actions";
+import { MoveStock } from "./move";
 import { MarginCard } from "./margin";
 
 export default async function ItemDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,12 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
   const photos = item.photos as { url?: string }[];
   const label = (item.print_jobs as unknown as { status: string }[])[0];
 
+  const { data: mine } = await sb.from("dealers").select("card_machine").eq("id", me.dealer_id).maybeSingle();
+  const invoice = item.invoice_id ? (await sb.from("invoices").select("supplier, file_path").eq("id", item.invoice_id).maybeSingle()).data : null;
+  const { data: placeRows } = await sb.from("item_places").select("centre_id, qty, centres(name)").eq("item_id", item.id);
+  const places = (placeRows ?? []).map((p) => ({ id: (p.centre_id as string | null) ?? "home", name: (p.centres as { name?: string } | null)?.name ?? "Home", qty: p.qty as number }));
+  const machine = mine?.card_machine === "sumup" || mine?.card_machine === "square" || mine?.card_machine === "zettle" ? mine.card_machine : null;
+
   return (
     <Screen title="Item" back={{ href: "/app/stock" }}>
       {photos.length > 0 && (
@@ -32,7 +39,9 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         <h2 className="text-[20px] font-semibold leading-6">{item.title}</h2>
         <div className="mt-2 flex items-center gap-2 text-[12px] text-ink-muted">
           <Sku sku={item.sku} tag />
-          {item.status === "sold" ? <Pill kind="success">Sold</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
+          {item.status === "sold" ? <Pill kind="success">{(item.qty_start ?? 1) > 1 ? "Sold out" : "Sold"}</Pill> : item.status === "withdrawn" ? <Pill kind="neutral">Withdrawn</Pill> : <DaysBand listedAt={item.listed_at} />}
+          {(item.qty_start ?? 1) > 1 && item.status !== "sold" && <span>{places.length ? places.reduce((a, p) => a + p.qty, 0) : (item.qty ?? 1)} left</span>}
+          {(item.qty_start ?? 1) > 2 && (item.qty ?? 1) > 0 && (item.qty ?? 1) <= 2 && item.status !== "sold" && <Pill kind="warning">Low</Pill>}
           {centre && <span>{centre.name}</span>}
         </div>
       </div>
@@ -71,8 +80,21 @@ export default async function ItemDetail({ params }: { params: Promise<{ id: str
         </div>
       )}
       <div className="card flex items-center justify-between p-4 text-[14px]"><span>Listed</span><span className="text-ink-muted">{new Date(item.listed_at).toLocaleDateString("en-GB")}</span></div>
+      {places.length > 0 && (
+        <div className="card flex flex-col gap-1 p-4 text-[14px]">
+          {places.map((p) => <div key={p.id} className="flex items-center justify-between"><span>{p.name}</span><span>{p.qty}</span></div>)}
+          <div className="flex items-center justify-between font-medium"><span>In all</span><span>{places.reduce((a, p) => a + p.qty, 0)}</span></div>
+        </div>
+      )}
+      {places.length > 1 && <MoveStock itemId={item.id} places={places} />}
+      {invoice && (
+        <div className="card flex items-center justify-between p-4 text-[14px]">
+          <span>Invoice kept{invoice.supplier ? `, ${invoice.supplier}` : ""}</span>
+          {invoice.file_path ? <a className="font-medium text-accent" href={`/api/items/invoice/file?id=${item.invoice_id}`}>Open</a> : null}
+        </div>
+      )}
 
-      <ItemActions id={item.id} status={item.status} title={item.title} price={item.price_pence} cost={item.cost_pence ?? null} atCentre={!!item.centre_id} sale={sale ? { id: sale.id, amount_pence: sale.amount_pence, payment_type: sale.payment_type, sold_at: sale.sold_at } : null} />
+      <ItemActions id={item.id} status={item.status} title={item.title} price={item.price_pence} cost={item.cost_pence ?? null} atCentre={!!item.centre_id} machine={machine} sale={sale ? { id: sale.id, amount_pence: sale.amount_pence, payment_type: sale.payment_type, sold_at: sale.sold_at } : null} />
       <Link href="/app/stock" className="btn-ghost">Back to stock</Link>
       <DealerNav active="stock" />
     </Screen>

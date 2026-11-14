@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { env } from "@/lib/env";
 import { pushStripeTrialEnd } from "@/lib/billing/dealer-trial";
 import { startTaster } from "@/lib/billing/taster";
+import { billOwedLabels } from "@/lib/billing/labels";
 
 const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("resend_link"), email: z.string().email() }),
@@ -14,6 +15,7 @@ const Input = z.discriminatedUnion("action", [
   z.object({ action: z.literal("extend_trial"), days: z.number().int().min(1).max(365) }),
   z.object({ action: z.literal("start_trial") }),
   z.object({ action: z.literal("start_taster") }),
+  z.object({ action: z.literal("bill_labels") }),
   z.object({ action: z.literal("cancel_subscription"), at_period_end: z.boolean().default(true) }),
   z.object({ action: z.literal("move_centre"), from_centre_id: z.string().uuid().nullable(), to_centre_id: z.string().uuid(), move_items: z.boolean().default(true) }),
   z.object({ action: z.literal("note"), note: z.string().max(2000) }),
@@ -47,6 +49,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ dealerI
     if (a.action === "start_trial" || a.action === "start_taster") {
       const started = await startTaster(db, dealerId);
       result = { until: started.until, already: started.already, charged: false };
+    }
+    if (a.action === "bill_labels") {
+      const billed = await billOwedLabels(db, dealerId);
+      result = { copies: billed.copies, note: `Billed ${billed.copies} labels, ${billed.amount}.` };
     }
     if (a.action === "cancel_subscription") {
       if (!dealer.stripe_subscription_id || !process.env.STRIPE_SECRET_KEY) throw new Error("no Stripe subscription on this dealer");

@@ -2,19 +2,25 @@ import Link from "next/link";
 import { Mark } from "@/components/logo";
 import { NotificationsCard } from "@/components/notifications";
 import { dealerWithListing } from "@/lib/billing/tokens";
-import { namedSales } from "@/lib/billing/pricing";
+import { namedSales, tasterLive } from "@/lib/billing/pricing";
+import { labelFigures } from "@/lib/billing/labels";
 import { PlanCompare } from "@/components/plan-compare";
+import { PlanChoice } from "@/components/plan-choice";
 import { sumBetween, weekRange } from "@/lib/full/weeks";
 import { requireDealer } from "@/lib/auth";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { ChannelLabel, DealerNav, Icon, Phone, money, when } from "@/components/ui";
 import { displaySku } from "@/lib/sku";
+import { env } from "@/lib/env";
+import { sumupMarker } from "@/lib/sumup/sync";
+import { SumupLive } from "@/components/sumup-live";
 
 export default async function Today() {
   const me = await requireDealer();
   const sb = await supabaseServer();
   const weeks = weekRange();
   const goalSelect = await dealerWithListing(sb, me.dealer_id, "name, code, plan, trial_ends_at, monthly_sold_limit");
+  const choice = await sb.from("dealers").select("taster_choice").eq("id", me.dealer_id).maybeSingle();
   const goalRow = await sb.from("dealers").select("weekly_goal_pence").eq("id", me.dealer_id).maybeSingle();
   const links = await sb.from("dealer_centres").select("status, centres(name), centre_id").eq("dealer_id", me.dealer_id).is("left_at", null);
   const [{ data: summary }, { data: recent }, { data: weekSales }, { data: toPrint }, { data: old }] = await Promise.all([
@@ -25,6 +31,8 @@ export default async function Today() {
     sb.from("items").select("id", { count: "exact", head: true }).eq("dealer_id", me.dealer_id).eq("status", "live").lte("listed_at", new Date(Date.now() - 90 * 86400000).toISOString()),
   ]);
   const dealer = goalSelect;
+  const choosePlan = !!dealer?.taster_accepted_at && !!dealer?.taster_ends_at && !tasterLive(dealer) && dealer.billing_model !== "full" && choice.data?.taster_choice !== "basic";
+  const labelCount = choosePlan ? (await labelFigures(supabaseAdmin(), me.dealer_id)).tally.printed : 0;
   const centres = links.data;
   const s = (summary ?? {}) as Record<string, number>;
   const delta = (s.month ?? 0) - (s.last_month_to_date ?? 0);
@@ -38,6 +46,12 @@ export default async function Today() {
   const thisWeek = sumBetween(weekSales ?? [], weeks.thisStart, weeks.nextStart);
   const lastWeek = sumBetween(weekSales ?? [], weeks.lastStart, weeks.thisStart);
   const goalPence = goalRow.data?.weekly_goal_pence ?? 0;
+  let sumupSeen: string | null = null;
+  if (env.sumup.configured()) {
+    const db = supabaseAdmin();
+    const { data: sumup } = await db.from("sumup_connections").select("id").eq("owner_type", "dealer").eq("owner_id", me.dealer_id).maybeSingle();
+    if (sumup) sumupSeen = await sumupMarker(db, sumup.id);
+  }
 
   return (
     <Phone>
@@ -69,6 +83,7 @@ export default async function Today() {
       </header>
 
       <div className="flex flex-col gap-4 px-5 pt-5">
+        {sumupSeen !== null && <SumupLive owner="dealer" seen={sumupSeen} />}
         <div className="grid grid-cols-2 gap-3">
           <Link href="/app/items/new" className="btn !h-12 !text-[14px]">{Icon.plus} List item</Link>
           <Link href="/app/labels" className="btn-secondary !h-12 !gap-1.5 !px-2 !text-[14px]">{Icon.printer} Labels{printCount > 0 && <span className="pill pill-warning !h-5 !rounded-full whitespace-nowrap !px-1.5 !text-[11px]">{printCount} to print</span>}</Link>
@@ -82,7 +97,8 @@ export default async function Today() {
             {goalPence > 0 && <p className="mt-2 text-[13px] text-ink-muted">{thisWeek >= goalPence ? `Goal ${money(goalPence)} met.` : `${money(goalPence - thisWeek)} to the ${money(goalPence)} goal.`}</p>}
           </Link>
         )}
-        {dealer && !namedSales(dealer) && <PlanCompare join />}
+        {choosePlan && <PlanChoice printed={labelCount} />}
+        {dealer && !namedSales(dealer) && !choosePlan && <PlanCompare join />}
         {pending.map((c) => (
           <div key={c.centre_id} className="rounded-[14px] border border-[#FDE68A] bg-warning-soft px-3.5 py-3 text-[13px] text-warning">
             Waiting for {(c.centres as unknown as { name: string })?.name} to approve you.

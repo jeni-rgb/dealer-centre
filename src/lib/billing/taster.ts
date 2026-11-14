@@ -39,23 +39,7 @@ export async function inviteBasicDealer(db: Admin, dealerId: string, name: strin
   return { link, emailed };
 }
 
-async function grantFreeLabels(db: Admin, dealerId: string): Promise<void> {
-  const session = `taster-${dealerId}`;
-  const rpc = await db.rpc("apply_listing_tokens", { p_dealer_id: dealerId, p_delta: TASTER_FREE_LABELS, p_reason: "taster", p_session: session, p_item: null });
-  if (rpc.error || rpc.data == null) {
-    const purchase = await db.rpc("apply_listing_tokens", { p_dealer_id: dealerId, p_delta: TASTER_FREE_LABELS, p_reason: "purchase", p_session: session, p_item: null });
-    if (purchase.error || purchase.data == null) {
-      const { data } = await db.from("dealers").select("listing_tokens, listing_tokens_bought").eq("id", dealerId).maybeSingle();
-      await db.from("dealers").update({
-        listing_tokens: (data?.listing_tokens ?? 0) + TASTER_FREE_LABELS,
-        listing_tokens_bought: (data?.listing_tokens_bought ?? 0) + TASTER_FREE_LABELS,
-      }).eq("id", dealerId);
-    }
-  }
-  await db.from("dealers").update({ listing_mode: "staff" }).eq("id", dealerId);
-}
-
-/** Dealer said yes, or staff recorded a yes. Starts the 14 day clock and the 25 free labels. Does not charge. */
+/** Dealer said yes, or staff recorded a yes. Starts the 14 day clock. The first 25 printed labels are free. Does not charge. */
 export async function startTaster(db: Admin, dealerId: string): Promise<{ until: string; already: boolean }> {
   const { data: dealer } = await db.from("dealers").select("id, name, taster_accepted_at, taster_ends_at, billing_model").eq("id", dealerId).maybeSingle();
   if (!dealer) throw new Error("Dealer not found");
@@ -73,7 +57,6 @@ export async function startTaster(db: Admin, dealerId: string): Promise<{ until:
     monthly_sold_limit: 100000,
   }).eq("id", dealerId);
   if (error) throw new Error(error.message);
-  await grantFreeLabels(db, dealerId);
   return { until, already: false };
 }
 

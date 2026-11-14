@@ -4,17 +4,26 @@ import { PRINTER_MODELS, SIZE_HELP, SIZE_LABEL, SIZE_PLACEHOLDER, modelBySize } 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pill, Toggle, ToggleGroup, money } from "@/components/ui";
-import { BuyTokens } from "@/components/buy-tokens";
 import { dealerPlanSentence } from "@/lib/billing/plan-copy";
+import { labelAccountLine, plusVat } from "@/lib/billing/pricing";
 import { PlanCompare } from "@/components/plan-compare";
+import { PlanChoice } from "@/components/plan-choice";
+import { WhoLabels } from "@/components/who-labels";
+import { LogoField } from "@/components/logo-field";
 
 type Channel = { id: string; type: string; external_account_id: string; status: string; last_webhook_at: string | null } | null;
 type Dealer = { name: string; code: string; plan: string; trial_ends_at: string | null; item_limit: number; monthly_sold_limit: number; listing_mode: string | null; listing_tokens: number; listing_tokens_bought: number; billing_model?: string | null; default_own_shopify: boolean; default_centre_shopify: boolean };
 
-export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers }: {
+export function SettingsView({ email, meId, people, dealer, shopify, square, centres, printers, sumupOn = false, hasLogo = false, machine = null, labels = { printed: 0, owed: 0, amountPence: 0 }, choosePlan = false, whoLabels = false }: {
   email: string; meId: string; people: { id: string; email: string }[]; dealer: Dealer; shopify: Channel; square: Channel;
   centres: { id: string; name: string; status: string; rent_pence: number; rent_mode: string }[];
   printers: { id: string; name: string; own: boolean; cloud: boolean; w: number; h: number }[];
+  sumupOn?: boolean;
+  hasLogo?: boolean;
+  machine?: "sumup" | "square" | "zettle" | null;
+  labels?: { printed: number; owed: number; amountPence: number };
+  choosePlan?: boolean;
+  whoLabels?: boolean;
 }) {
   const router = useRouter();
   const [shop, setShop] = useState("");
@@ -76,8 +85,18 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
             <p className="text-[15px] font-medium">{dealer.billing_model === "full" ? "Full, £25 a month plus VAT" : dealerPlanSentence(dealer)}</p>
             <Link href="/api/billing/portal" className="mt-2 inline-block text-[13px] font-medium text-accent">Manage plan</Link>
           </div>
-          {dealer.billing_model !== "full" && dealer.plan !== "pro" && <div className="px-4 py-4"><PlanCompare join /></div>}
-          {dealer.listing_mode === "staff" && <div className="px-4 py-3.5"><span className="block text-[15px] font-medium">Labels</span><span className="text-[12px] text-ink-muted">{dealer.listing_tokens_bought > 0 ? `${dealer.listing_tokens} left. Further labels are 75p plus VAT. We photograph the stock from these.` : "None yet. We photograph the stock after labels are paid, 75p plus VAT each, unless your 25 free taster labels are still to come."}</span><BuyTokens next="/app/settings" /></div>}
+          {whoLabels && <div className="px-4 py-4"><WhoLabels /></div>}
+          {choosePlan && !whoLabels && <div className="px-4 py-4"><PlanChoice printed={labels.printed} /></div>}
+          {dealer.billing_model !== "full" && dealer.plan !== "pro" && !choosePlan && <div className="px-4 py-4"><PlanCompare join /></div>}
+          <div className="px-4 py-3.5">
+            <span className="block text-[15px] font-medium">Logo</span>
+            <div className="mt-2"><LogoField saved={hasLogo} /></div>
+          </div>
+          <div className="px-4 py-3.5">
+            <span className="block text-[15px] font-medium">Labels</span>
+            <span className="text-[13px] text-ink-muted">{labelAccountLine(labels.printed, labels.owed)}</span>
+            {labels.owed > 0 && <span className="mt-1 block text-[13px]">Owed {plusVat(labels.amountPence)}.</span>}
+          </div>
         </div>
       </Section>
 
@@ -99,6 +118,15 @@ export function SettingsView({ email, meId, people, dealer, shopify, square, cen
             )}
           </div>
           <div className="flex items-center justify-between px-4 py-3.5"><span className="flex flex-col"><span className="text-[15px] font-medium">Your own till</span><span className="text-[12px] text-ink-muted">Only if you run your own shop on Square</span></span>{square ? <Pill kind="success">Connected</Pill> : <a className="btn-sm-secondary" href="/api/oauth/square?owner=dealer">Connect</a>}</div>
+          {sumupOn && <div className="flex items-center justify-between px-4 py-3.5"><span className="text-[15px] font-medium">SumUp</span><a className="btn-sm" href="/app/sumup">Connect SumUp</a></div>}
+          <div className="px-4 py-3.5">
+            <span className="block text-[15px] font-medium">Card machine</span>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {(["sumup", "square", "zettle"] as const).map((m) => (
+                <button key={m} type="button" className={`btn-sm ${machine === m ? "" : "btn-sm-secondary"}`} onClick={() => fetch("/api/dealers/me", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ card_machine: m }) }).then(() => router.refresh())}>{m === "sumup" ? "SumUp" : m === "square" ? "Square" : "Zettle"}</button>
+              ))}
+            </div>
+          </div>
         </div>
       </Section>
 
