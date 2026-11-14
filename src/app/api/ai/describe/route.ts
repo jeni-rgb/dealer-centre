@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getMe } from "@/lib/auth";
+import { DESCRIBE_FAIL, runDescribe } from "@/lib/ai/describe";
+
+export const maxDuration = 30;
 
 const Input = z.object({ image: z.string().startsWith("data:image/").max(4_000_000) });
 
@@ -16,20 +19,10 @@ function allow(key: string) {
   return true;
 }
 
-const PROMPT = `You write listings for an antiques and collectables centre in the UK.
-Look at the photo and reply with JSON only: {"title": string, "description": string}.
-- title: short and honest, at most 70 characters, the way a dealer would label it (e.g. "Victorian brass carriage clock").
-- description: 2 to 4 sentences in British English, describing what can actually be seen: object, material, style, colour, condition.
-- Never invent provenance, makers, dates, marks, measurements or values. If unsure of age or maker, say "appears to be" or leave it out.
-- Mention visible wear or damage plainly. No hype, no emojis.`;
-
 /** Suggests a title and description from a photo using Google Gemini. 503 when no AI key is set so the app hides the button. */
 export async function GET() {
   return NextResponse.json({ enabled: !!process.env.GEMINI_API_KEY });
 }
-
-const BUSY = "AI is busy, please type the description or try again shortly";
-const FAIL = "Couldn't write a description just now";
 
 export async function POST(req: Request) {
   const key = process.env.GEMINI_API_KEY;
@@ -42,36 +35,12 @@ export async function POST(req: Request) {
 
   const m = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i.exec(p.data.image);
   if (!m) return NextResponse.json({ error: "Send a photo" }, { status: 400 });
-  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-    method: "POST",
-    headers: { "x-goog-api-key": key, "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: PROMPT }] },
-      contents: [{ role: "user", parts: [
-        { text: "Write the title and description for this item." },
-        { inline_data: { mime_type: m[1] || "image/jpeg", data: m[2] } },
-      ] }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 400,
-        responseMimeType: "application/json",
-        responseSchema: { type: "OBJECT", properties: { title: { type: "STRING" }, description: { type: "STRING" } }, required: ["title", "description"] },
-      },
-    }),
-  }).catch(() => null);
-  if (r?.status === 429) return NextResponse.json({ error: BUSY }, { status: 429 });
-  if (!r?.ok) return NextResponse.json({ error: FAIL }, { status: 502 });
-  const j = await r.json().catch(() => null);
   try {
-    const text = (j?.candidates?.[0]?.content?.parts ?? []).map((x: { text?: string }) => x.text ?? "").join("");
-    const out = JSON.parse(text || "{}");
-    const title = String(out.title ?? "").trim().slice(0, 120);
-    const description = String(out.description ?? "").trim().slice(0, 2000);
-    if (!title && !description) throw new Error("empty");
-    return NextResponse.json({ title, description });
+    const result = await runDescribe({ key, model: process.env.GEMINI_MODEL, mime: m[1] || "image/jpeg", data: m[2] });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ title: result.title, description: result.description });
   } catch {
-    return NextResponse.json({ error: FAIL }, { status: 502 });
+    return NextResponse.json({ error: DESCRIBE_FAIL }, { status: 502 });
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 import { DELIVERY, type Delivery } from "@/lib/items/delivery";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { displaySku } from "@/lib/sku";
@@ -13,13 +13,13 @@ type Props = {
 };
 
 /** Shrinks a photo to a small JPEG data URL so the AI request stays light. */
-async function toDataUrl(f: File, max = 1024): Promise<string> {
+async function toDataUrl(f: File, max = 768): Promise<string> {
   const img = await createImageBitmap(f);
   const k = Math.min(1, max / Math.max(img.width, img.height));
   const cv = document.createElement("canvas");
   cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
   cv.getContext("2d")!.drawImage(img, 0, 0, cv.width, cv.height);
-  return cv.toDataURL("image/jpeg", 0.8);
+  return cv.toDataURL("image/jpeg", 0.7);
 }
 
 /** Resizes an iPhone photo (often 3-5MB) to a ~300KB JPEG before upload. */
@@ -68,7 +68,16 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkDone, setBulkDone] = useState<{ id: string; sku: string; title: string; qty: number }[] | null>(null);
   const [invoiceLines, setInvoiceLines] = useState<{ title: string; qty: number; costPence: number }[]>([]);
+  const uploads = useRef(new WeakMap<File, Promise<Blob>>());
+  const describing = useRef<{ file: File; promise: Promise<void> } | null>(null);
+  const describeSeq = useRef(0);
   const c = centres.find((x) => x.id === centre);
+
+  function prepareUpload(f: File) {
+    let job = uploads.current.get(f);
+    if (!job) { job = compress(f); uploads.current.set(f, job); }
+    return job;
+  }
 
   async function readInvoice(file: File) {
     setBulkNote(null); setBulkBusy(true);
@@ -91,7 +100,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     else if (next.length > 1) setBulkNote("More than one line. Pick the one to list.");
   }
 
-  function useLine(line: { title: string; qty: number; costPence: number }) {
+  function pickLine(line: { title: string; qty: number; costPence: number }) {
     setBulkName(line.title);
     setBulkQty(String(line.qty));
     setBulkCost((line.costPence / 100).toFixed(2));
@@ -139,18 +148,41 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
     setBulkDone(j.items ?? []);
   }
 
-  async function describe() {
-    const f = files[0] ?? shopFiles[0];
-    if (!f) return;
-    setAiErr(null); setAiBusy(true);
-    try {
-      const r = await fetch("/api/ai/describe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: await toDataUrl(f) }) });
-      if (r.status === 503) { setAi(false); return; }
-      const j = await r.json();
-      if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Couldn't write a description");
-      if (j.title) setTitle(j.title);
-      if (j.description) setDescription(j.description);
-    } catch (e) { setAiErr(e instanceof Error ? e.message : String(e)); } finally { setAiBusy(false); }
+  async function describe(f: File) {
+    if (!ai) return;
+    if (describing.current?.file === f) return describing.current.promise;
+    const seq = ++describeSeq.current;
+    const promise = (async () => {
+      setAiErr(null); setAiBusy(true);
+      try {
+        const r = await fetch("/api/ai/describe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ image: await toDataUrl(f) }) });
+        if (describeSeq.current !== seq) return;
+        if (r.status === 503) { setAi(false); return; }
+        const j = await r.json();
+        if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Couldn't write a description");
+        if (j.title) setTitle(j.title);
+        if (j.description) setDescription(j.description);
+      } catch (e) {
+        if (describeSeq.current === seq) setAiErr(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (describeSeq.current === seq) setAiBusy(false);
+        if (describing.current?.file === f) describing.current = null;
+      }
+    })();
+    describing.current = { file: f, promise };
+    return promise;
+  }
+
+  function onReference(list: File[]) {
+    setFiles(list);
+    for (const f of list) prepareUpload(f);
+    if (list[0]) void describe(list[0]);
+  }
+
+  function onShopPhotos(list: File[]) {
+    setShopFiles(list);
+    for (const f of list) prepareUpload(f);
+    if (!files[0] && list[0]) void describe(list[0]);
   }
 
   async function submit(e: React.FormEvent) {
@@ -166,7 +198,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
       let n = 0;
       if (all.length) setStep(`Uploading photos 0/${all.length}…`);
       const up = async (f: File, role: "reference" | "listing") => {
-        const blob = await compress(f);
+        const blob = await prepareUpload(f);
         const jpeg = blob !== f;
         const path = `items/${crypto.randomUUID()}.${jpeg ? "jpg" : (f.name.split(".").pop() ?? "jpg")}`;
         const { error } = await sb.storage.from("files").upload(path, blob, { contentType: jpeg ? "image/jpeg" : f.type });
@@ -263,7 +295,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
             {invoiceLines.length > 1 && (
               <div className="flex flex-col gap-2">
                 {invoiceLines.map((line, i) => (
-                  <button type="button" key={i} className="card px-4 py-3 text-left text-[14px]" onClick={() => useLine(line)}>
+                  <button type="button" key={i} className="card px-4 py-3 text-left text-[14px]" onClick={() => pickLine(line)}>
                     <span className="font-medium">{line.title}</span>
                     <span className="text-ink-muted"> {line.qty}</span>
                   </button>
@@ -344,13 +376,13 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
         </div>
         <div className="flex flex-1 flex-col gap-4 px-5 pb-4 pt-1">
           <label className="flex h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[16px] border border-dashed border-border bg-surface-2 text-[14px] font-medium text-ink">
-            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => onReference(Array.from(e.target.files ?? []))} />
             {files.length > 0 ? <span>Reference photo ready</span> : <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>Quick snap for your records</>}
             <span className="text-[12px] font-normal text-ink-muted">Only you see this one</span>
           </label>
           {(own || shop) && (
             <label className="flex min-h-[72px] cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-border bg-white px-4 py-3 text-[14px]">
-              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setShopFiles(Array.from(e.target.files ?? []))} />
+              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onShopPhotos(Array.from(e.target.files ?? []))} />
               <span className="flex flex-col"><span className="font-medium">Photos for online</span><span className="text-[12px] text-ink-muted">{shopFiles.length > 0 ? `${shopFiles.length} chosen, first one is the cover` : "Up to 10. These go to your Shopify and the centre shop."}</span></span>
               <span className="pill pill-accent">{shopFiles.length > 0 ? "Change" : "Add"}</span>
             </label>
@@ -360,7 +392,7 @@ export function ListItemForm({ dealerCode, nextNumber, centres, hasOwnShopify, d
 
           {ai && (files.length > 0 || shopFiles.length > 0) && (
             <div className="flex flex-col gap-1">
-              <button type="button" className="btn-secondary" onClick={describe} disabled={aiBusy}>{aiBusy ? "Writing…" : "Write description with AI"}</button>
+              <button type="button" className="btn-secondary" onClick={() => { const f = files[0] ?? shopFiles[0]; if (f) void describe(f); }} disabled={aiBusy}>{aiBusy ? "Writing…" : "Write description with AI"}</button>
               <span className="text-[12px] text-ink-muted">{aiErr ?? "A suggestion from the photo. Check and edit it before listing."}</span>
             </div>
           )}
