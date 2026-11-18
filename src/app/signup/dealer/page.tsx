@@ -4,6 +4,7 @@ import { getMe } from "@/lib/auth";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { confirmTokenPurchase, dealerWithListing } from "@/lib/billing/tokens";
 import { DealerSetup } from "./setup";
+import { passwordNeed } from "@/lib/password-user";
 
 /**
  * Business, who lists the stock, then a 14 day Full taster. No card and no label payment up front.
@@ -40,5 +41,6 @@ export default async function DealerSignup({ searchParams }: { searchParams: Pro
     "centre"
   );
   const listHint = list === "self" || list === "staff" ? list : null;
-  return <DealerSetup email={me.email} initial={initial} dealer={dealer} centres={centres} hasShopify={hasShopify} ownPrinters={ownPrinters} plan={plan} listHint={dealer?.listing_mode ? null : listHint} />;
+  const need = await passwordNeed();
+  return <DealerSetup email={me.email} initial={initial} dealer={dealer} centres={centres} hasShopify={hasShopify} ownPrinters={ownPrinters} plan={plan} listHint={dealer?.listing_mode ? null : listHint} needsPassword={need !== null} tempPassword={need === "temp"} />;
 }
