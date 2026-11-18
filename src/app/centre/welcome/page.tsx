@@ -1,12 +1,25 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentCentre } from "@/lib/centre";
+import { PASSWORD_COPY } from "@/lib/password";
+import { passwordNeed } from "@/lib/password-user";
+import { PasswordContinue } from "@/components/password-continue";
 
 /** Server rendered welcome. Safe to refresh, safe to press Back from. */
 export default async function Welcome({ searchParams }: { searchParams: Promise<{ centre?: string; paid?: string; preview?: string }> }) {
   const { centre: cp, paid, preview } = await searchParams;
   const centre = await currentCentre(cp);
   if (!centre) redirect("/signup/centre");
+  const need = await passwordNeed();
+  if (need) {
+    return (
+      <div className="mx-auto max-w-lg">
+        <h1 className="text-[24px] font-semibold">{PASSWORD_COPY.title}</h1>
+        <p className="mt-1 text-[14px] text-ink-muted">{need === "temp" ? PASSWORD_COPY.temp : PASSWORD_COPY.missing}</p>
+        <PasswordContinue />
+      </div>
+    );
+  }
   const needsCard = (!centre.stripe_customer_id || preview === "pay") && paid !== "1";
   return (
     <div className="mx-auto max-w-lg">

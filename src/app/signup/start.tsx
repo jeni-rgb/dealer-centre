@@ -24,7 +24,7 @@ export function SignupStart({ initialAs, plan }: { initialAs: Who | null; plan: 
   if (sent) return (
     <div>
       <h1 className="text-[30px] font-bold leading-tight">Check your email</h1>
-      <p className="mt-3 text-[16px] font-medium text-ink-muted">We sent a link to <span className="text-ink">{email}</span>. Tap it on this device and you are in. No password, ever.</p>
+      <p className="mt-3 text-[16px] font-medium text-ink-muted">We sent a link to <span className="text-ink">{email}</span>. Open it on this phone. Then set a password.</p>
       <p className="mt-6 text-[14px] text-ink-muted">Nothing there after a minute? Check spam, or <button className="font-semibold text-accent" onClick={() => setSent(false)}>try another address</button>.</p>
     </div>
   );
@@ -44,7 +44,7 @@ export function SignupStart({ initialAs, plan }: { initialAs: Who | null; plan: 
       <input id="email" className="field" type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
       {err && <p className="mt-2 text-[13px] text-danger">{err}</p>}
       <button className="btn mt-4" disabled={!who || busy}>{busy ? "Sending…" : who === "centre" ? "Set up my centre" : who === "dealer" ? "List my first item" : "Choose one above"}</button>
-      <p className="mt-4 text-[13px] text-ink-muted">We email you a sign in link. No password to remember. Full is £25 a month plus VAT. Basic at a signed centre needs no sign up.</p>
+      <p className="mt-4 text-[13px] text-ink-muted">We email you a sign in link. You set a password next. Full is £25 a month plus VAT. Basic at a signed centre needs no sign up.</p>
     </form>
   );
 }

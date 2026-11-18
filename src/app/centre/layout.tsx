@@ -3,6 +3,8 @@ import { env } from "@/lib/env";
 import { getMe } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CentreNav } from "./nav";
+import { passwordNeed } from "@/lib/password-user";
+import { PasswordPrompt } from "@/components/password-prompt";
 
 export default async function CentreLayout({ children }: { children: React.ReactNode }) {
   const me = await getMe();
@@ -18,6 +20,7 @@ export default async function CentreLayout({ children }: { children: React.React
       <CentreNav centreName={c?.name ?? "Centre"} showSumup={env.sumup.configured()} />
       <main className="p-4 md:ml-[220px] md:p-8">
         {banner && <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-warning-soft px-4 py-3 text-[14px] text-warning"><span>{banner.text}</span><a href={banner.href} className="font-semibold underline">{banner.cta}</a></div>}
+        {!me.is_platform_admin && <PasswordPrompt kind={await passwordNeed()} />}
         {children}
       </main>
     </div>

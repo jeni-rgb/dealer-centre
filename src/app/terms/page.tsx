@@ -27,7 +27,7 @@ const sections: { title: string; body: string[] }[] = [
   {
     "title": "Your account",
     "body": [
-      "You sign in with a link sent to your email. There is no password, so keep your email account secure, because anyone who can read it can sign in as you.",
+      "You sign in with your email and password, or with a link sent to your email. Keep your email account secure, because anyone who can read it can sign in as you.",
       "You must be 18 or over and give us accurate details. You are responsible for everything done through your account, including by staff you give access to and anyone using your centre till PIN. Tell us straight away at hello@thedealercentre.co.uk if you think someone else has used your account."
     ]
   },

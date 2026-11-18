@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/auth";
+import { passwordNeed } from "@/lib/password-user";
+import { PasswordPrompt } from "@/components/password-prompt";
 
 export default async function DealerLayout({ children }: { children: React.ReactNode }) {
   const me = await getMe();
@@ -11,9 +13,11 @@ export default async function DealerLayout({ children }: { children: React.React
     const { data: owned } = await sb.from("centre_owners").select("centre_id").eq("user_id", me.id).limit(1);
     redirect(owned?.length ? "/centre" : me.is_platform_admin ? "/admin" : "/signup/dealer");
   }
+  const need = me.impersonating ? null : await passwordNeed();
   return (
     <>
       {me.impersonating && <div className="sticky top-0 z-50 flex items-center justify-between bg-warning px-4 py-2 text-[13px] font-semibold text-ink"><span>Viewing the app as a dealer (admin)</span><a href="/api/admin/impersonate?stop=1" className="underline">Stop</a></div>}
+      {need && <div className="mx-auto max-w-[390px] px-5 pt-4"><PasswordPrompt kind={need} /></div>}
       {children}
     </>
   );

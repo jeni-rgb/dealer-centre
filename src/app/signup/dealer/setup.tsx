@@ -6,21 +6,27 @@ import { useRouter } from "next/navigation";
 import { Phone, Pill } from "@/components/ui";
 import { isValidDealerCode, suggestDealerCode } from "@/lib/sku";
 import { LogoField } from "@/components/logo-field";
+import { SetPassword } from "@/app/account/set-password";
+import { PASSWORD_COPY } from "@/lib/password";
 
 type ListMode = "self" | "staff";
 type Dealer = { name: string; code: string; plan: string; stripe_customer_id: string | null; listing_mode: ListMode | null; listing_tokens: number; listing_tokens_bought: number; card_added_at: string | null; taster_accepted_at?: string | null } | null;
-type Step = "business" | "who" | "taster" | "centre" | "printers" | "shopify" | "logo" | "summary";
+type Step = "password" | "business" | "who" | "taster" | "centre" | "printers" | "shopify" | "logo" | "summary";
 type HP = { idx: number; total: number; step: Step; steps: Step[]; next: () => void };
-function stepsFor(): Step[] {
-  return ["business", "who", "taster", "centre", "printers", "shopify", "logo", "summary"];
+const SETUP: Step[] = ["business", "who", "taster", "centre", "printers", "shopify", "logo", "summary"];
+function stepsFor(withPassword: boolean): Step[] {
+  return withPassword ? ["password", ...SETUP] : SETUP;
 }
 
-export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, listHint }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string; listHint?: ListMode | null }) {
+export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPrinters, listHint, needsPassword = false, tempPassword = false }: { email: string; initial: string; dealer: Dealer; centres: { name: string; status: string }[]; hasShopify: boolean; ownPrinters: number; plan?: string; listHint?: ListMode | null; needsPassword?: boolean; tempPassword?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<ListMode | null>(dealer?.listing_mode ?? listHint ?? null);
+  const [pwDone, setPwDone] = useState(false);
   const asked = initial === "card" || initial === "tokens" ? "taster" : initial;
-  const [step, setStep] = useState<Step>((["business", "who", "taster", "centre", "printers", "shopify", "logo", "summary"] as Step[]).includes(asked as Step) ? (asked as Step) : "business");
-  const steps = stepsFor();
+  const needPw = needsPassword && !pwDone;
+  const start = (SETUP as string[]).includes(asked) ? (asked as Step) : "business";
+  const [step, setStep] = useState<Step>(needPw ? "password" : start);
+  const steps = stepsFor(needPw);
   const go = (s: Step) => { setStep(s); router.replace(`/signup/dealer?step=${s}`); };
   const next = () => { const i = steps.indexOf(step); go(steps[Math.min(Math.max(i, 0) + 1, steps.length - 1)]); };
   const idx = Math.max(0, steps.indexOf(step));
@@ -29,6 +35,14 @@ export function DealerSetup({ email, initial, dealer, centres, hasShopify, ownPr
 
   return (
     <Phone>
+      {step === "password" && (
+        <>
+          <StepHeader {...hp} title={PASSWORD_COPY.title} sub={tempPassword ? PASSWORD_COPY.temp : PASSWORD_COPY.missing} />
+          <div className="px-5">
+            <SetPassword onSaved={() => { setPwDone(true); go(start); }} />
+          </div>
+        </>
+      )}
       {step === "business" && <Business email={email} hp={hp} onDone={next} />}
       {step === "who" && <WhoLists hp={hp} initial={mode} onDone={(m) => { setMode(m); go("taster"); }} />}
       {step === "taster" && <TasterStep hp={hp} started={!!dealer?.taster_accepted_at} onDone={next} />}

@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { env } from "@/lib/env";
 import { currentCentre } from "@/lib/centre";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Pill } from "@/components/ui";
@@ -20,6 +19,11 @@ export default async function CentreSettings({ searchParams }: { searchParams: P
   return (
     <div className="flex max-w-3xl flex-col gap-5">
       <h1 className="text-[24px] font-semibold">{centre.name} settings</h1>
+
+      <Card title="Password">
+        <p className="text-[14px] text-ink-muted">Use it with your email the next time you sign in.</p>
+        <a href="/account" className="btn-sm mt-3 !w-auto">Change password</a>
+      </Card>
 
       <Card title="Terms">
         <CentreTermsForm centreId={centre.id} initial={{ commission: centre.commission_bps / 100, online: centre.online_commission_bps / 100, share: centre.centre_online_share_bps / 100, rent_day: centre.rent_day, statement_day: centre.statement_day }} />
